@@ -256,7 +256,14 @@ class TextureBase extends EventDispatcher
 
 			if (__textureTarget == __context.gl.TEXTURE_CUBE_MAP) __context.__bindGLTextureCubeMap(__textureID);
 			else
+			{
 				__context.__bindGLTexture2D(__textureID);
+				if (state.mipfilter != MIPNONE)
+				{
+					gl.generateMipmap(__textureTarget);
+					state.mipmapGenerated = true;
+				}
+			}
 
 			var wrapModeS = 0, wrapModeT = 0;
 
@@ -309,6 +316,7 @@ class TextureBase extends EventDispatcher
 			{
 				__samplerState = state.clone();
 			}
+			#end
 
 			__samplerState.copyFrom(state);
 

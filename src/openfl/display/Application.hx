@@ -28,20 +28,17 @@ import openfl.events.InvokeEvent;
 @SuppressWarnings("checkstyle:FieldDocComment")
 class Application extends LimeApplication
 {
-	public function new(?appMeta:Map<String, String>)
+	#if !lime
+	public static var current:Application;
+
+	public var window:Window;
+	#end
+
+
+	public function new()
 	{
-		super(appMeta);
-
-		if (Lib.application == null)
-		{
-			Lib.application = this;
-		}
-
-		#if !macro
-		if (Lib.current == null) Lib.current = new MovieClip();
-		Lib.current.__loaderInfo = LoaderInfo.create(null);
-		Lib.current.__loaderInfo.content = Lib.current;
-		#end
+		super();
+		Lib.application ??= this;
 	}
 
 	@:noCompletion override public function createWindow(attributes:WindowAttributes):Window
@@ -140,8 +137,31 @@ class Application extends LimeApplication
 		}
 
 		onCreateWindow.dispatch(window);
+
+		return window;
 	}
 
+	@:noCompletion override public function exec():Int
+	{
+		#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+		// wait for the first update to dispatch invoke event
+		// to ensure that the document class constructor has completed
+		onUpdate.add(function(delta:Float):Void		{
+			if (NativeApplication.nativeApplication.hasEventListener(InvokeEvent.INVOKE))
+			{
+				var args = Sys.args();
+				var cwd = new openfl.filesystem.File(Sys.getCwd());
+				var invokeEvent = new openfl.events.InvokeEvent(InvokeEvent.INVOKE, false, false, cwd, args);
+				NativeApplication.nativeApplication.dispatchEvent(invokeEvent);
+			}
+		}, true);
+		#end
+
+		return super.exec();
+	}
+	#end
+
+	#if (lime >= "8.1.0")
 	@:noCompletion override private function __checkForAllWindowsClosed():Void
 	{
 		if (__windows.length > 0)

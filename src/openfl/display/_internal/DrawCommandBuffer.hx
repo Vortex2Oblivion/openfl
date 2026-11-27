@@ -203,25 +203,32 @@ class DrawCommandBuffer
 		// fewer temporary objects that need to be garbage collected
 
 		if ((copyOnWrite & COW_TYPES) == 0) types.resize(0);
-		else types = empty.types;
+		else
+			types = empty.types;
 
 		if ((copyOnWrite & COW_B) == 0) b.resize(0);
-		else b = empty.b;
+		else
+			b = empty.b;
 
 		if ((copyOnWrite & COW_I) == 0) i.resize(0);
-		else i = empty.i;
+		else
+			i = empty.i;
 
 		if ((copyOnWrite & COW_F) == 0) f.resize(0);
-		else f = empty.f;
+		else
+			f = empty.f;
 
 		if ((copyOnWrite & COW_O) == 0) o.resize(0);
-		else o = empty.o;
+		else
+			o = empty.o;
 
 		if ((copyOnWrite & COW_FF) == 0) ff.resize(0);
-		else ff = empty.ff;
+		else
+			ff = empty.ff;
 
 		if ((copyOnWrite & COW_II) == 0) ii.resize(0);
-		else ii = empty.ii;
+		else
+			ii = empty.ii;
 	}
 
 	public function copy():DrawCommandBuffer

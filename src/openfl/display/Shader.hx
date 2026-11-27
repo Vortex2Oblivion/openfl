@@ -11,7 +11,12 @@ import openfl.display3D.Context3DMipFilter;
 import openfl.display3D.Context3DTextureFilter;
 import openfl.display3D.Context3DWrapMode;
 import openfl.display3D.Program3D;
+import openfl.display3D._internal.GLProgram;
+import openfl.display3D._internal.GLShader;
 import openfl.utils.ByteArray;
+import openfl.utils._internal.Float32Array;
+import openfl.utils._internal.Log;
+import openfl.Lib;
 
 /**
 	// TODO: Document GLSL Shaders

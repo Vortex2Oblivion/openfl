@@ -220,6 +220,7 @@ class BitmapData implements IBitmapDrawable
 	@:noCompletion private var __worldTransform:Matrix;
 	@:noCompletion private var __asset:Bool;
 	@:noCompletion private var __renderer:OpenGLRenderer;
+	@:noCompletion private var __renderer:OpenGLRenderer;
 
 	/**
 		Creates a BitmapData object with a specified width and height. If you specify a value for
@@ -401,6 +402,7 @@ class BitmapData implements IBitmapDrawable
 			bitmapData.__framebufferContext = __framebufferContext;
 			bitmapData.__texture = __texture;
 			bitmapData.__textureContext = __textureContext;
+			bitmapData.__textureShared = __textureShared;
 			bitmapData.__textureShared = __textureShared;
 			bitmapData.__isValid = true;
 		}
@@ -747,6 +749,11 @@ class BitmapData implements IBitmapDrawable
 			__texture.dispose();
 		}
 
+		if (__texture != null && !__textureShared)
+		{
+			__texture.dispose();
+		}
+
 		__texture = null;
 		__textureContext = null;
 
@@ -932,22 +939,41 @@ class BitmapData implements IBitmapDrawable
 			__renderer.__allowSmoothing = smoothing;
 			__renderer.__pixelRatio = #if openfl_disable_hdpi 1 #else Lib.current.stage.window.scale #end;
 			__renderer.__overrideBlendMode = blendMode;
+			if (__renderer == null)
+			{
+				__renderer = new OpenGLRenderer(Lib.current.stage.context3D, this);
+			}
+			else
+			{
+				@:privateAccess __renderer.__cleanup();
+				__renderer.setShader(@:privateAccess __renderer.__defaultShader);
+			}
+			__renderer.__allowSmoothing = smoothing;
+			__renderer.__pixelRatio = #if openfl_disable_hdpi 1 #else Lib.current.stage.window.scale #end;
+			__renderer.__overrideBlendMode = blendMode;
 
+			__renderer.__worldTransform = transform;
+			__renderer.__worldAlpha = 1 / source.__worldAlpha;
+			__renderer.__worldColorTransform = _colorTransform;
 			__renderer.__worldTransform = transform;
 			__renderer.__worldAlpha = 1 / source.__worldAlpha;
 			__renderer.__worldColorTransform = _colorTransform;
 
 			__renderer.__resize(width, height);
+			__renderer.__resize(width, height);
 
 			if (clipRect != null)
 			{
 				__renderer.__pushMaskRect(clipRect, clipMatrix);
+				__renderer.__pushMaskRect(clipRect, clipMatrix);
 			}
 
+			__drawGL(source, __renderer);
 			__drawGL(source, __renderer);
 
 			if (clipRect != null)
 			{
+				__renderer.__popMaskRect();
 				__renderer.__popMaskRect();
 				Matrix.__pool.release(clipMatrix);
 			}
@@ -1337,10 +1363,14 @@ class BitmapData implements IBitmapDrawable
 
 		@param	texture	A Texture or RectangleTexture instance.
 		@param	shared Optional. If `true`, the texture is shared; otherwise, it is not. Defaults to `true`.
+		@param	texture	A Texture or RectangleTexture instance.
+		@param	shared Optional. If `true`, the texture is shared; otherwise, it is not. Defaults to `true`.
 		@returns	A new BitmapData if successful, or `null` if unsuccessful
 
 		@see `BitmapData.readable`
 	**/
+	public static function fromTexture(texture:TextureBase, shared:Bool = true):BitmapData
+
 	public static function fromTexture(texture:TextureBase, shared:Bool = true):BitmapData
 	{
 		if (texture == null) return null;
@@ -1350,8 +1380,8 @@ class BitmapData implements IBitmapDrawable
 		bitmapData.__texture = texture;
 		bitmapData.__textureContext = texture.__textureContext;
 		bitmapData.__textureShared = shared;
-		bitmapData.__resize(texture.__width, texture.__height);
-		bitmapData.__isValid = true;
+		bitmapData.__surface = null;
+		bitmapData.image = null;
 		return bitmapData;
 	}
 

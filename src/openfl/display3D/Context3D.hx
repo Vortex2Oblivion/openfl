@@ -25,7 +25,7 @@ import openfl.display3D.textures.MultiBufferTexture;
 import openfl.display3D.textures.RectangleTexture;
 import openfl.display3D.textures.S3TCTexture;
 import openfl.display3D.textures.Texture;
-import openfl.display3D.textures.TextureBase;
+import openfl.display3D.textures.ASTCTexture;
 import openfl.display3D.textures.VideoTexture;
 import openfl.errors.Error;
 import openfl.errors.IllegalOperationError;
@@ -35,6 +35,16 @@ import openfl.geom.Point;
 import openfl.geom.Rectangle;
 import openfl.utils.AGALMiniAssembler;
 import openfl.utils.ByteArray;
+import openfl.display.OpenGLRenderer;
+#if lime
+import lime.graphics.opengl.GL;
+import lime.graphics.Image;
+import lime.graphics.ImageBuffer;
+import lime.graphics.RenderContext;
+import lime.graphics.WebGLRenderContext;
+import lime.math.Rectangle as LimeRectangle;
+import lime.math.Vector2;
+#end
 
 /**
 	The Context3D class provides a context for rendering geometrically defined graphics.
@@ -126,6 +136,7 @@ import openfl.utils.ByteArray;
 	and AIR.
 **/
 @:access(openfl.display3D._internal.Context3DState)
+@:access(openfl.display3D.textures.ASTCTexture)
 @:access(openfl.display3D.textures.ASTCTexture)
 @:access(openfl.display3D.textures.CubeTexture)
 @:access(openfl.display3D.textures.RectangleTexture)
@@ -280,6 +291,7 @@ import openfl.utils.ByteArray;
 	@:noCompletion private var __stage3D:Stage3D;
 	@:noCompletion private var __state:Context3DState;
 	@:noCompletion private var __vertexConstants:Float32Array;
+	@:noCompletion private var __usingComplexBlend:Bool;
 
 	@:noCompletion private function new(stage:Stage, contextState:Context3DState = null, stage3D:Stage3D = null)
 	{
@@ -987,39 +999,6 @@ import openfl.utils.ByteArray;
 	}
 
 	/**
-		Checks whether S3TC (DXT1, DXT3, DXT5) texture compression is supported on this Context3D instance.
-
-		@return `true` if S3TC textures can be used on this device, `false` otherwise.
-	**/
-	public function isS3TCSupported():Bool
-	{
-		if (S3TCTexture.__s3tcCompressedTexturesSupported == null)
-		{
-			S3TCTexture.__s3tcCompressedTexturesSupported = gl.getSupportedExtensions().contains("EXT_texture_compression_s3tc");
-		}
-
-		return S3TCTexture.__s3tcCompressedTexturesSupported == true;
-	}
-
-	/**
-		Creates a new S3TCTexture instance from S3TC-compressed data.
-
-		You must check `isS3TCSupported()` before calling this method.
-
-		@param data A ByteArray containing S3TC-compressed texture data.
-		@return An `S3TCTexture` ready for use in rendering.
-
-		@throws IllegalOperationError If S3TC is not supported on this device (missing extension).
-		@throws IllegalOperationError If the S3TC signature in `data` is invalid.
-		@throws IllegalOperationError If the S3TC compression format is not supported.
-		@throws IllegalOperationError If the S3TC file is too short for header + blocks.
-	**/
-	public function createS3TCTexture(data:ByteArray):S3TCTexture
-	{
-		return new S3TCTexture(this, data);
-	}
-
-	/**
 		Creates a VertexBuffer3D object.
 
 		Use a VertexBuffer3D object to upload a set of vertex data to the rendering
@@ -1323,7 +1302,21 @@ import openfl.utils.ByteArray;
 
 		__bindGLElementArrayBuffer(indexBuffer.__id);
 
+		if (OpenGLRenderer.__coherentBlendsSupported)
+		{
+			gl.enable(0x9285); // BLEND_ADVANCED_COHERENT_KHR
+		}
+		else if (__usingComplexBlend)
+		{
+			gl.blendBarrier();
+		}
+
 		gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, firstIndex * 2);
+
+		if (OpenGLRenderer.__coherentBlendsSupported)
+		{
+			gl.disable(0x9285); // BLEND_ADVANCED_COHERENT_KHR
+		}
 	}
 
 	/**
@@ -2236,7 +2229,21 @@ import openfl.utils.ByteArray;
 			__state.program.__flush();
 		}
 
+		if (OpenGLRenderer.__coherentBlendsSupported)
+		{
+			gl.enable(0x9285); // BLEND_ADVANCED_COHERENT_KHR
+		}
+		else if (__usingComplexBlend)
+		{
+			gl.blendBarrier();
+		}
+
 		gl.drawArrays(gl.TRIANGLES, firstIndex, count);
+
+		if (OpenGLRenderer.__coherentBlendsSupported)
+		{
+			gl.disable(0x9285); // BLEND_ADVANCED_COHERENT_KHR
+		}
 	}
 
 	@:noCompletion private function __flushGL():Void
@@ -2566,11 +2573,13 @@ import openfl.utils.ByteArray;
 					__bindGLTextureCubeMap(texture.__getTexture());
 				}
 
+				#if lime
 				if (__context.type == OPENGL)
 				{
 					// TODO: Cache?
 					gl.enable(gl.TEXTURE_2D);
 				}
+				#end
 
 				__contextState.textures[i] = texture;
 
@@ -2585,12 +2594,37 @@ import openfl.utils.ByteArray;
 
 			if (__state.program != null && __state.program.__format == AGAL && samplerState.textureAlpha)
 			{
-				__setGLActiveTexture(sampler + 4);
+				gl.activeTexture(gl.TEXTURE0 + sampler + 4);
 
-				__bindGLTexture2D(null);
-				if (__state.program.__agalAlphaSamplerEnabled[sampler] != null)
+				if (texture != null && texture.__alphaTexture != null)
 				{
-					gl.uniform1i(__state.program.__agalAlphaSamplerEnabled[sampler].location, 0);
+					if (texture.__alphaTexture.__textureTarget == gl.TEXTURE_2D)
+					{
+						__bindGLTexture2D(texture.__alphaTexture.__getTexture());
+					}
+					else
+					{
+						__bindGLTextureCubeMap(texture.__alphaTexture.__getTexture());
+					}
+
+					texture.__alphaTexture.__setSamplerState(samplerState);
+					gl.uniform1i(__state.program.__agalAlphaSamplerEnabled[sampler].location, 1);
+
+					#if lime
+					if (__context.type == OPENGL)
+					{
+						// TODO: Cache?
+						gl.enable(gl.TEXTURE_2D);
+					}
+					#end
+				}
+				else
+				{
+					__bindGLTexture2D(null);
+					if (__state.program.__agalAlphaSamplerEnabled[sampler] != null)
+					{
+						gl.uniform1i(__state.program.__agalAlphaSamplerEnabled[sampler].location, 0);
+					}
 				}
 			}
 
@@ -2892,6 +2926,11 @@ import openfl.utils.ByteArray;
 			}
 			__contextState.__enableGLStencilTest = enable;
 		}
+	}
+
+	@:noCompletion private inline function __glBlendBarrier():Void
+	{
+		gl.blendBarrier();
 	}
 
 	@:noCompletion private inline function __glBlendBarrier():Void

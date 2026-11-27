@@ -402,7 +402,7 @@ import openfl.utils.ByteArray;
 	#end
 
 	#if lime_openal
-	@:noCompletion private function watchBuffers(_):Void
+	private function watchBuffers(i:Float):Void
 	{
 		var alAudioContext = __sound.__alAudioContext;
 		var hasSampleData = true;
