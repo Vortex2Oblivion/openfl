@@ -1,14 +1,11 @@
 package openfl.sensors;
 
-#if !flash
 import haxe.Timer;
+import lime.system.Sensor;
+import lime.system.SensorType;
 import openfl.errors.ArgumentError;
 import openfl.events.AccelerometerEvent;
 import openfl.events.EventDispatcher;
-#if lime
-import lime.system.Sensor;
-import lime.system.SensorType;
-#end
 
 /**
 	The Accelerometer class dispatches events based on activity detected by the
@@ -64,10 +61,6 @@ import lime.system.SensorType;
 
 	@see [Accelerometer input](https://books.openfl.org/openfl-developers-guide/accelerometer-input/)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class Accelerometer extends EventDispatcher
 {
 	/**
@@ -95,22 +88,6 @@ class Accelerometer extends EventDispatcher
 	@:noCompletion private var __muted:Bool;
 	@:noCompletion private var __timer:Timer;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperty(Accelerometer.prototype, "muted", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_muted (); }"),
-			set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_muted (v); }")
-		});
-		untyped Object.defineProperty(Accelerometer, "isSupported", {
-			get: function()
-			{
-				return Accelerometer.get_isSupported();
-			}
-		});
-	}
-	#end
-
 	/**
 		Creates a new Accelerometer instance.
 	**/
@@ -137,7 +114,6 @@ class Accelerometer extends EventDispatcher
 	{
 		if (!initialized)
 		{
-			#if lime
 			var sensors = Sensor.getSensors(SensorType.ACCELEROMETER);
 
 			if (sensors.length > 0)
@@ -145,7 +121,6 @@ class Accelerometer extends EventDispatcher
 				sensors[0].onUpdate.add(accelerometer_onUpdate);
 				supported = true;
 			}
-			#end
 
 			initialized = true;
 		}
@@ -234,6 +209,3 @@ class Accelerometer extends EventDispatcher
 		return value;
 	}
 }
-#else
-typedef Accelerometer = flash.sensors.Accelerometer;
-#end

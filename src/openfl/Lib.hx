@@ -1,28 +1,22 @@
 package openfl;
 
-import openfl.utils.Dictionary;
 import haxe.Constraints.Function;
 import haxe.PosInfos;
 import haxe.Timer;
-import openfl.errors.Error;
-import openfl.errors.TypeError;
-import openfl.utils._internal.Log;
-import openfl.utils._internal.Lib as InternalLib;
+import lime.system.System;
+import lime.utils.Log;
 import openfl.display.Application;
 import openfl.display.MovieClip;
+import openfl.errors.Error;
+import openfl.errors.TypeError;
 import openfl.net.URLLoader;
 import openfl.net.URLRequest;
-#if lime
-import lime.system.System;
-#end
+import openfl.utils.Dictionary;
+import openfl.utils._internal.Lib as InternalLib;
 #if (js && html5)
 import js.Browser;
 #end
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.Stage)
 @:access(openfl.events.UncaughtErrorEvents)
 class Lib
@@ -34,46 +28,15 @@ class Lib
 	@:noCompletion private static var __timers:Map<UInt, Timer> = new Map();
 	@:noCompletion private static var __registeredClassAliases:Map<String, Class<Dynamic>> = new Map();
 	@:noCompletion private static var __registeredClasses:Dictionary<Class<Dynamic>, String> = new Dictionary();
-	#if 0
-	private static var __unusedImports:Array<Class<Dynamic>> = [SWFLibrary, SWFLiteLibrary];
-	#end
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Lib, {
-			"application": {
-				get: function()
-				{
-					return Lib.get_application();
-				}
-			},
-			"current": {
-				get: function()
-				{
-					return Lib.get_current();
-				}
-			}
-		});
-	}
-	#end
 
 	public static function as<T>(v:Dynamic, c:Class<T>):Null<T>
 	{
-		#if flash
-		return flash.Lib.as(v, c);
-		#else
-		return #if (haxe_ver >= 4.2) Std.isOfType #else Std.is #end (v, c) ? v : null;
-		#end
+		return Std.isOfType(v, c) ? v : null;
 	}
 
 	public static function attach(name:String):MovieClip
 	{
-		#if flash
-		return cast flash.Lib.attach(name);
-		#else
 		return new MovieClip();
-		#end
 	}
 
 	/**
@@ -108,20 +71,6 @@ class Lib
 		}
 	}
 
-	#if flash
-	public static function eval(path:String):Dynamic
-	{
-		return flash.Lib.eval(path);
-	}
-	#end
-
-	#if flash
-	public static function fscommand(cmd:String, ?param:String)
-	{
-		return flash.Lib.fscommand(cmd, param);
-	}
-	#end
-
 	/**
 		Returns a reference to the class object of the class specified by the `name`
 		parameter.
@@ -133,17 +82,8 @@ class Lib
 	**/
 	public static function getDefinitionByName(name:String):Class<Dynamic>
 	{
-		if (name == null) return null;
-		name = StringTools.replace(name, "::", ".");
-		#if flash
-		if (StringTools.startsWith(name, "openfl."))
-		{
-			var value = Type.resolveClass(name);
-			if (value == null) value = Type.resolveClass(StringTools.replace(name, "openfl.", "flash."));
-			return value;
-		}
-		#end
-		return Type.resolveClass(name);
+		notImplemented();
+		return null;
 	}
 
 	/**
@@ -157,18 +97,8 @@ class Lib
 	**/
 	public static function getQualifiedClassName(value:Dynamic):String
 	{
-		if (value == null) return null;
-		var ref = (value is Class) ? value : Type.getClass(value);
-		if (ref == null)
-		{
-			if ((value is Bool) || value == Bool) return "Bool";
-			else if ((value is Int) || value == Int) return "Int";
-			else if ((value is Float) || value == Float) return "Float";
-			// TODO: Array? Map?
-			else
-				return null;
-		}
-		return Type.getClassName(ref);
+		notImplemented();
+		return null;
 	}
 
 	/**
@@ -197,12 +127,8 @@ class Lib
 	**/
 	public static function getQualifiedSuperclassName(value:Dynamic):String
 	{
-		if (value == null) return null;
-		var ref = (value is Class) ? value : Type.getClass(value);
-		if (ref == null) return null;
-		var parentRef = Type.getSuperClass(ref);
-		if (parentRef == null) return null;
-		return Type.getClassName(parentRef);
+		notImplemented();
+		return null;
 	}
 
 	/**
@@ -224,17 +150,9 @@ class Lib
 		another SWF file is loaded later, the return value is relative to when the first
 		SWF file was loaded.
 	**/
-	public static function getTimer():Int
+	public static function getTimer():Float
 	{
-		#if lime
-		#if flash
-		return flash.Lib.getTimer();
-		#else
 		return System.getTimer();
-		#end
-		#else
-		return 0;
-		#end
 	}
 
 	/**
@@ -265,17 +183,8 @@ class Lib
 	**/
 	public static function describeType(value:Dynamic):Xml
 	{
-		#if lime
-		#if flash
-		return Xml.parse(flash.Lib.describeType(value).toString());
-		#else
 		notImplemented();
 		return null;
-		#end
-		#else
-		notImplemented();
-		return null;
-		#end
 	}
 
 	public static function getURL(request:URLRequest, target:String = null):Void
@@ -375,12 +284,12 @@ class Lib
 		The following code shows how you can invoke the VIP Access and Connect Pro
 		applications on Android:
 
-		```as3
+		```haxe
 		//Invoke the VIP Access Application.
-		navigateToURL(new URLRequest("vipaccess://com.verisign.mvip.main?action=securitycode"));
+		Lib.navigateToURL(new URLRequest("vipaccess://com.verisign.mvip.main?action=securitycode"));
 
 		//Invoke the Connect Pro Application.
-		navigateToURL(new URLRequest("connectpro://"));
+		Lib.navigateToURL(new URLRequest("connectpro://"));
 		```
 
 		@param	request	A URLRequest object that specifies the URL to navigate to.
@@ -439,9 +348,6 @@ class Lib
 			window = "_blank";
 		}
 
-		#if flash
-		return flash.Lib.getURL(request, window);
-		#elseif lime
 		var uri = request.url;
 
 		if (Type.typeof(request.data) == Type.ValueType.TObject)
@@ -466,7 +372,6 @@ class Lib
 		}
 
 		System.openURL(uri, window);
-		#end
 	}
 
 	/**
@@ -511,13 +416,6 @@ class Lib
 		}, false);
 		#end
 	}
-
-	#if flash
-	public static function redirectTraces()
-	{
-		return flash.Lib.redirectTraces();
-	}
-	#end
 
 	/**
 		Sends a URL request to a server, but ignores any response.
@@ -593,9 +491,6 @@ class Lib
 		__timers[id] = timer;
 		timer.run = function()
 		{
-			#if flash
-			Reflect.callMethod(closure, closure, args == null ? [] : args);
-			#else
 			if (Lib.current != null && Lib.current.stage != null && Lib.current.stage.__uncaughtErrorEvents.__enabled)
 			{
 				try
@@ -611,7 +506,6 @@ class Lib
 			{
 				Reflect.callMethod(closure, closure, args == null ? [] : args);
 			}
-			#end
 		};
 		return id;
 	}
@@ -644,9 +538,6 @@ class Lib
 		__timers[id] = Timer.delay(function()
 		{
 			__timers.remove(id);
-			#if flash
-			Reflect.callMethod(closure, closure, args == null ? [] : args);
-			#else
 			if (Lib.current != null && Lib.current.stage != null && Lib.current.stage.__uncaughtErrorEvents.__enabled)
 			{
 				try
@@ -662,7 +553,6 @@ class Lib
 			{
 				Reflect.callMethod(closure, closure, args == null ? [] : args);
 			}
-			#end
 		}, delay);
 		return id;
 	}
@@ -678,9 +568,6 @@ class Lib
 	**/
 	public static function isXMLName(name:String):Bool
 	{
-		#if flash
-		return untyped __global__["isXMLName"](name);
-		#else
 		if (name == null)
 		{
 			return false;
@@ -701,7 +588,6 @@ class Lib
 			return false;
 		}
 		return true;
-		#end
 	}
 
 	/**
@@ -712,15 +598,11 @@ class Lib
 	**/
 	public static function getClassByAlias(aliasName:String):Class<Dynamic>
 	{
-		#if flash
-		return untyped __global__["flash.net.getClassByAlias"](aliasName);
-		#else
 		if (!__registeredClassAliases.exists(aliasName))
 		{
 			throw new Error('Class $aliasName could not be found.');
 		}
 		return __registeredClassAliases.get(aliasName);
-		#end
 	}
 
 	/**
@@ -742,9 +624,6 @@ class Lib
 	**/
 	public static function registerClassAlias(aliasName:String, classObject:Class<Dynamic>):Void
 	{
-		#if flash
-		untyped __global__["flash.net.registerClassAlias"](aliasName, classObject);
-		#else
 		if (classObject == null)
 		{
 			throw new TypeError("Parameter classObject must be non-null");
@@ -755,7 +634,6 @@ class Lib
 		}
 		__registeredClassAliases.set(aliasName, classObject);
 		__registeredClasses.set(classObject, aliasName);
-		#end
 	}
 
 	// Get & Set Methods
@@ -766,15 +644,7 @@ class Lib
 
 	@:noCompletion private static function get_current():MovieClip
 	{
-		#if flash
-		return cast flash.Lib.current;
-		#else
 		if (InternalLib.current == null) InternalLib.current = new MovieClip();
 		return InternalLib.current;
-		#end
 	}
-
-	// @:noCompletion private static function set_current (current:MovieClip):MovieClip {
-	// 	return cast flash.Lib.current = cast current;
-	// }
 }

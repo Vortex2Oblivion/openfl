@@ -1,22 +1,19 @@
 package openfl.media;
 
-#if !flash
-import openfl.display3D._internal.GLBuffer;
-import openfl.display3D.textures.RectangleTexture;
+import lime.graphics.RenderContext;
+import lime.graphics.opengl.GLBuffer;
+import lime.utils.Float32Array;
+import lime.utils.UInt16Array;
+import openfl.display.DisplayObject;
 import openfl.display3D.Context3D;
 import openfl.display3D.IndexBuffer3D;
 import openfl.display3D.VertexBuffer3D;
-import openfl.display.DisplayObject;
+import openfl.display3D.textures.RectangleTexture;
 import openfl.geom.ColorTransform;
 import openfl.geom.Matrix;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
 import openfl.net.NetStream;
-import openfl.utils._internal.Float32Array;
-import openfl.utils._internal.UInt16Array;
-#if lime
-import lime.graphics.RenderContext;
-#end
 
 /**
 	The Video class displays live or recorded video in an application without
@@ -75,10 +72,6 @@ import lime.graphics.RenderContext;
 	`addEventListener()` method on the display object container that contains
 	the Video object.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.textures.TextureBase)
 @:access(openfl.display3D.Context3D)
 @:access(openfl.geom.ColorTransform)
@@ -163,33 +156,23 @@ class Video extends DisplayObject
 	@:noCompletion private var __buffer:GLBuffer;
 	@:noCompletion private var __bufferAlpha:Float;
 	@:noCompletion private var __bufferColorTransform:ColorTransform;
-	@:noCompletion private var __bufferContext:#if lime RenderContext #else Dynamic #end;
+	@:noCompletion private var __bufferContext:RenderContext;
 	@:noCompletion private var __bufferData:Float32Array;
 	@:noCompletion private var __currentWidth:Float;
 	@:noCompletion private var __currentHeight:Float;
 	@:noCompletion private var __dirty:Bool;
 	@:noCompletion private var __height:Float;
 	@:noCompletion private var __indexBuffer:IndexBuffer3D;
-	@:noCompletion private var __indexBufferContext:#if lime RenderContext #else Dynamic #end;
+	@:noCompletion private var __indexBufferContext:RenderContext;
 	@:noCompletion private var __indexBufferData:UInt16Array;
 	@:noCompletion private var __stream:NetStream;
 	@:noCompletion private var __texture:RectangleTexture;
 	@:noCompletion private var __textureTime:Float;
 	@:noCompletion private var __uvRect:Rectangle;
 	@:noCompletion private var __vertexBuffer:VertexBuffer3D;
-	@:noCompletion private var __vertexBufferContext:#if lime RenderContext #else Dynamic #end;
+	@:noCompletion private var __vertexBufferContext:RenderContext;
 	@:noCompletion private var __vertexBufferData:Float32Array;
 	@:noCompletion private var __width:Float;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Video.prototype, {
-			"videoHeight": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_videoHeight (); }")},
-			"videoWidth": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_videoWidth (); }")},
-		});
-	}
-	#end
 
 	/**
 		Creates a new Video instance. If no values for the `width` and
@@ -218,24 +201,6 @@ class Video extends DisplayObject
 		smoothing = false;
 		deblocking = 0;
 	}
-
-	#if false
-	/**
-		Specifies a video stream from a camera to be displayed within the
-		boundaries of the Video object in the application.
-		Use this method to attach live video captured by the user to the Video
-		object. You can play the live video locally on the same computer or
-		device on which it is being captured, or you can send it to Flash
-		Media Server and use the server to stream it to other users.
-
-		**Note:** In an iOS AIR application, camera video cannot be displayed
-		when the application uses GPU rendering mode.
-
-		@param camera A Camera object that is capturing video data. To drop
-					  the connection to the Video object, pass `null`.
-	**/
-	// function attachCamera(camera : Camera) : Void;
-	#end
 
 	/**
 		Specifies a video stream to be displayed within the boundaries of the
@@ -297,7 +262,7 @@ class Video extends DisplayObject
 
 	@:noCompletion private function __getIndexBuffer(context:Context3D):IndexBuffer3D
 	{
-		#if (lime || js)
+		#if js
 		var gl = context.gl;
 
 		if (__indexBuffer == null || __indexBufferContext != context.__context)
@@ -351,7 +316,7 @@ class Video extends DisplayObject
 
 	@:noCompletion private function __getVertexBuffer(context:Context3D):VertexBuffer3D
 	{
-		#if (lime || js)
+		#if js
 		var gl = context.gl;
 
 		if (__vertexBuffer == null
@@ -361,26 +326,9 @@ class Video extends DisplayObject
 		{
 			__currentWidth = width;
 			__currentHeight = height;
-			#if openfl_power_of_two
-			var newWidth = 1;
-			var newHeight = 1;
 
-			while (newWidth < width)
-			{
-				newWidth <<= 1;
-			}
-
-			while (newHeight < height)
-			{
-				newHeight <<= 1;
-			}
-
-			var uvWidth = width / newWidth;
-			var uvHeight = height / newHeight;
-			#else
 			var uvWidth = 1;
 			var uvHeight = 1;
-			#end
 
 			__vertexBufferData = new Float32Array(VERTEX_BUFFER_STRIDE * 4);
 
@@ -498,6 +446,3 @@ class Video extends DisplayObject
 		return __width = value;
 	}
 }
-#else
-typedef Video = flash.media.Video;
-#end

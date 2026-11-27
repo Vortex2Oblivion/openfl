@@ -1,23 +1,20 @@
 package openfl.net;
 
-#if !flash
-import haxe.io.Bytes;
-import haxe.io.Path;
 import haxe.Serializer;
 import haxe.Unserializer;
+import haxe.io.Bytes;
+import haxe.io.Path;
+import lime.app.Application;
+import lime.system.System;
 import openfl.errors.Error;
 import openfl.events.EventDispatcher;
 import openfl.utils.Object;
-#if lime
-import lime.app.Application;
-import lime.system.System;
-#end
 #if (js && html5)
 import js.Browser;
 #end
 #if sys
-import sys.io.File;
 import sys.FileSystem;
+import sys.io.File;
 #end
 
 /**
@@ -93,11 +90,11 @@ import sys.FileSystem;
 	space and to user privacy controls. Perform these checks when you call
 	`getLocal()` and `flush()`:
 
-	* `SharedObject.getLocal()`  -  Flash Player throws an
+	* `SharedObject.getLocal()` — Flash Player throws an
 	exception when a call to this method fails, such as when the user has
 	disabled third-party shared objects and the domain of your SWF file does
 	not match the domain in the browser address bar.
-	* `SharedObject.flush()`  -  Flash Player throws an
+	* `SharedObject.flush()` — Flash Player throws an
 	exception when a call to this method fails. It returns
 	`SharedObjectFlushStatus.FLUSHED` when it succeeds. It returns
 	`SharedObjectFlushStatus.PENDING` when additional storage space
@@ -157,10 +154,6 @@ import sys.FileSystem;
 	@event sync       Dispatched when a remote shared object has been updated
 					  by the server.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class SharedObject extends EventDispatcher
 {
 	/**
@@ -191,8 +184,6 @@ class SharedObject extends EventDispatcher
 	**/
 	public static var defaultObjectEncoding:ObjectEncoding = ObjectEncoding.DEFAULT;
 
-	// @:noCompletion @:dox(hide) @:require(flash11_7) public static var preventBackup:Bool;
-
 	/**
 		Indicates the object on which callback methods are invoked. The
 		default object is `this`. You can set the client property to another
@@ -206,7 +197,7 @@ class SharedObject extends EventDispatcher
 	/**
 		The collection of attributes assigned to the `data` property of
 		the object; these attributes can be shared and stored. Each attribute can
-		be an object of any ActionScript or JavaScript type  -  Array, Number,
+		be an object of any ActionScript or JavaScript type — Array, Number,
 		Boolean, ByteArray, XML, and so on. For example, the following lines
 		assign values to various aspects of a shared object:
 
@@ -292,15 +283,6 @@ class SharedObject extends EventDispatcher
 	@:noCompletion private var __localPath:String;
 	@:noCompletion private var __name:String;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped global.Object.defineProperty(SharedObject.prototype, "size", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_size (); }")
-		});
-	}
-	#end
-
 	@:noCompletion private function new()
 	{
 		super();
@@ -356,49 +338,10 @@ class SharedObject extends EventDispatcher
 	**/
 	public function close():Void {}
 
-	#if !openfl_strict
-	/**
-		Connects to a remote shared object on a server through a specified
-		NetConnection object. Use this method after calling `getRemote()`.
-		When a connection is successful, the `sync` event is dispatched.
-		Before attempting to work with a remote shared object, first check for
-		any errors using a `try..catch..finally` statement. Then, listen for
-		and handle the `sync` event before you make changes to the shared
-		object. Any changes made locally — before the `sync` event is
-		dispatched — might be lost.
-
-		Call the `connect()` method to connect to a remote shared object, for
-		example:
-
-		```haxe
-		var myRemoteSO:SharedObject = SharedObject.getRemote("mo", myNC.uri, false);
-		myRemoteSO.connect(myNC);
-		```
-
-		@param myConnection A NetConnection object that uses the Real-Time
-							Messaging Protocol (RTMP), such as a NetConnection
-							object used to communicate with Flash Media
-							Server.
-		@param params       A string defining a message to pass to the remote
-							shared object on the server. Cannot be used with
-							Flash Media Server.
-		@throws Error Flash Player could not connect to the specified remote
-					  shared object. Verify that the NetConnection instance is
-					  valid and connected and that the remote shared object
-					  was successfully created on the server.
-	**/
-	public function connect(myConnection:NetConnection, params:String = null):Void
-	{
-		openfl.utils._internal.Lib.notImplemented();
-	}
-	#end
-
-	// @:noCompletion @:dox(hide) public static function deleteAll (url:String):Int;
-
 	/**
 		Immediately writes a locally persistent shared object to a local file. If
 		you don't use this method, Flash Player writes the shared object to a file
-		when the shared object session ends  -  that is, when the SWF file is
+		when the shared object session ends — that is, when the SWF file is
 		closed, when the shared object is garbage-collected because it no longer
 		has any references to it, or when you call
 		`SharedObject.clear()` or `SharedObject.close()`.
@@ -491,8 +434,6 @@ class SharedObject extends EventDispatcher
 
 		return SharedObjectFlushStatus.FLUSHED;
 	}
-
-	// @:noCompletion @:dox(hide) public static function getDiskUsage (url:String):Int;
 
 	/**
 		Returns a reference to a locally persistent shared object that is only
@@ -667,13 +608,11 @@ class SharedObject extends EventDispatcher
 		if (__sharedObjects == null)
 		{
 			__sharedObjects = new Map();
-			// Lib.application.onExit.add (application_onExit);
-			#if lime
+
 			if (Application.current != null)
 			{
 				Application.current.onExit.add(application_onExit);
 			}
-			#end
 		}
 
 		var id = localPath + "/" + name;
@@ -725,9 +664,7 @@ class SharedObject extends EventDispatcher
 			{
 				try
 				{
-					var unserializer = new Unserializer(encodedData);
-					unserializer.setResolver(cast {resolveEnum: Type.resolveEnum, resolveClass: __resolveClass});
-					sharedObject.data = unserializer.unserialize();
+					sharedObject.data = new Unserializer(encodedData).unserialize();
 				}
 				catch (e:Dynamic) {}
 			}
@@ -737,93 +674,6 @@ class SharedObject extends EventDispatcher
 
 		return __sharedObjects.get(id);
 	}
-
-	#if !openfl_strict
-	/**
-		Returns a reference to a shared object on Flash Media Server that
-		multiple clients can access. If the remote shared object does not
-		already exist, this method creates one.
-		To create a remote shared object, call `getRemote()` the call
-		`connect()` to connect the remote shared object to the server, as in
-		the following:
-
-		```haxe
-		var nc:NetConnection = new NetConnection();
-		nc.connect("rtmp://somedomain.com/applicationName");
-		var myRemoteSO:SharedObject = SharedObject.getRemote("mo", nc.uri, false);
-		myRemoteSO.connect(nc);
-		```
-
-		To confirm that the local and remote copies of the shared object are
-		synchronized, listen for and handle the `sync` event. All clients that
-		want to share this object must pass the same values for the `name` and
-		`remotePath` parameters.
-
-		To create a shared object that is available only to the current
-		client, use `SharedObject.getLocal()`.
-
-		@param name        The name of the remote shared object. The name can
-						   include forward slashes (/); for example,
-						   work/addresses is a legal name. Spaces are not
-						   allowed in a shared object name, nor are the
-						   following characters: `~ % & \ ; :  " ' , > ? ? #`
-		@param remotePath  The URI of the server on which the shared object
-						   will be stored. This URI must be identical to the
-						   URI of the NetConnection object passed to the
-						   `connect()` method.
-		@param persistence Specifies whether the attributes of the shared
-						   object's data property are persistent locally,
-						   remotely, or both. This parameter can also specify
-						   where the shared object will be stored locally.
-						   Acceptable values are as follows:
-						   * A value of `false` specifies that the shared
-						   object is not persistent on the client or server.
-						   * A value of `true` specifies that the shared
-						   object is persistent only on the server.
-						   * A full or partial local path to the shared object
-						   indicates that the shared object is persistent on
-						   the client and the server. On the client, it is
-						   stored in the specified path; on the server, it is
-						   stored in a subdirectory within the application
-						   directory.
-
-						   **Note:** If the user has chosen to never allow
-						   local storage for this domain, the object will not
-						   be saved locally, even if a local path is specified
-						   for persistence. For more information, see the
-						   class description.
-		@param secure      Determines whether access to this shared object is
-						   restricted to SWF files that are delivered over an
-						   HTTPS connection. For more information, see the
-						   description of the `secure` parameter in the
-						   `getLocal` method entry.
-		@return A reference to an object that can be shared across multiple
-				clients.
-		@throws Error Flash Player can't create or find the shared object.
-					  This might occur if nonexistent paths were specified for
-					  the `remotePath` and `persistence` parameters.
-	**/
-	public static function getRemote(name:String, remotePath:String = null, persistence:Dynamic = false, secure:Bool = false):SharedObject
-	{
-		openfl.utils._internal.Lib.notImplemented();
-
-		return null;
-	}
-	#end
-
-	#if !openfl_strict
-	/**
-		Broadcasts a message to all clients connected to a remote shared
-		object, including the client that sent the message. To process and
-		respond to the message, create a callback function attached to the
-		shared object.
-
-	**/
-	public function send(args:Array<Dynamic>):Void
-	{
-		openfl.utils._internal.Lib.notImplemented();
-	}
-	#end
 
 	/**
 		Indicates to the server that the value of a property in the shared
@@ -876,7 +726,6 @@ class SharedObject extends EventDispatcher
 
 	@:noCompletion private static function __getPath(localPath:String, name:String):String
 	{
-		#if lime
 		var path = System.applicationStorageDirectory + "/" + localPath + "/";
 
 		name = StringTools.replace(name, "//", "/");
@@ -906,9 +755,6 @@ class SharedObject extends EventDispatcher
 		}
 
 		return path + name + ".sol";
-		#else
-		return name + ".sol";
-		#end
 	}
 
 	@:noCompletion private static function __mkdir(directory:String):Void
@@ -959,46 +805,6 @@ class SharedObject extends EventDispatcher
 		#end
 	}
 
-	@:noCompletion private static function __resolveClass(name:String):Class<Dynamic>
-	{
-		if (name != null)
-		{
-			if (name == "Dynamic")
-			{
-				return null;
-			}
-
-			if (StringTools.startsWith(name, "neash."))
-			{
-				name = StringTools.replace(name, "neash.", "openfl.");
-			}
-
-			if (StringTools.startsWith(name, "native."))
-			{
-				name = StringTools.replace(name, "native.", "openfl.");
-			}
-
-			if (StringTools.startsWith(name, "flash."))
-			{
-				name = StringTools.replace(name, "flash.", "openfl.");
-			}
-
-			if (StringTools.startsWith(name, "openfl._v2."))
-			{
-				name = StringTools.replace(name, "openfl._v2.", "openfl.");
-			}
-
-			if (StringTools.startsWith(name, "openfl._legacy."))
-			{
-				name = StringTools.replace(name, "openfl._legacy.", "openfl.");
-			}
-
-			return Type.resolveClass(name);
-		}
-
-		return null;
-	}
-
 	// Event Handlers
 	@:noCompletion private static function application_onExit(_):Void
 	{
@@ -1022,6 +828,3 @@ class SharedObject extends EventDispatcher
 		}
 	}
 }
-#else
-typedef SharedObject = flash.net.SharedObject;
-#end

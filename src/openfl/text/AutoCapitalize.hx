@@ -1,14 +1,13 @@
 package openfl.text;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
-#if !openfljs
+#if sys
 /**
 	The AutoCapitalize class defines constants for the `autoCapitalize` property
 	of the StageText class.
 
 	@see `openfl.text.StageText.autoCapitalize`
 **/
-#if (haxe_ver >= 4.0) enum #else @:enum #end abstract AutoCapitalize(Null<Int>)
+enum abstract AutoCapitalize(Null<Int>)
 {
 	/**
 		Capitalize every character.
@@ -54,17 +53,4 @@ package openfl.text;
 		}
 	}
 }
-#else
-@SuppressWarnings("checkstyle:FieldDocComment") #if (haxe_ver >= 4.0) enum #else @:enum #end abstract AutoCapitalize(String) from String to String
-{
-	public var ALL = "all";
-	public var NONE = "none";
-	public var SENTENCE = "sentence";
-	public var WORD = "word";
-}
-#end
-#else
-#if air
-typedef AutoCapitalize = flash.text.AutoCapitalize;
-#end
 #end

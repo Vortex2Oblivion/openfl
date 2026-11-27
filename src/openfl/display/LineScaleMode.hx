@@ -1,12 +1,10 @@
 package openfl.display;
 
-#if !flash
-#if !openfljs
 /**
 	The LineScaleMode class provides values for the `scaleMode`
 	parameter in the `Graphics.lineStyle()` method.
 **/
-#if (haxe_ver >= 4.0) enum #else @:enum #end abstract LineScaleMode(Null<Int>)
+enum abstract LineScaleMode(Null<Int>)
 {
 	/**
 		With this setting used as the `scaleMode` parameter of the
@@ -77,27 +75,3 @@ package openfl.display;
 		}
 	}
 }
-#else
-@SuppressWarnings("checkstyle:FieldDocComment") #if (haxe_ver >= 4.0) enum #else @:enum #end abstract LineScaleMode(String) from String to String
-{
-	public var HORIZONTAL = "horizontal";
-	public var NONE = "none";
-	public var NORMAL = "normal";
-	public var VERTICAL = "vertical";
-
-	@:noCompletion private inline static function fromInt(value:Null<Int>):LineScaleMode
-	{
-		return switch (value)
-		{
-			case 0: HORIZONTAL;
-			case 1: NONE;
-			case 2: NORMAL;
-			case 3: VERTICAL;
-			default: null;
-		}
-	}
-}
-#end
-#else
-typedef LineScaleMode = flash.display.LineScaleMode;
-#end

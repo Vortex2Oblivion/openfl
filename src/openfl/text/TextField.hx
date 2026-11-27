@@ -1,13 +1,11 @@
 package openfl.text;
 
-#if !flash
 import haxe.Timer;
-import openfl.text._internal.HTMLParser;
-import openfl.text._internal.TextEngine;
-import openfl.text._internal.TextFormatRange;
-import openfl.text._internal.TextLayoutGroup;
-import openfl.text._internal.UTF8String;
-import openfl.utils._internal.Log;
+import lime.system.Clipboard;
+import lime.ui.KeyCode;
+import lime.ui.KeyModifier;
+import lime.utils.Log;
+import openfl.Lib;
 import openfl.display.DisplayObject;
 import openfl.display.Graphics;
 import openfl.display.InteractiveObject;
@@ -22,28 +20,20 @@ import openfl.events.TextEvent;
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
 import openfl.net.URLRequest;
+import openfl.text._internal.HTMLParser;
+import openfl.text._internal.TextEngine;
+import openfl.text._internal.TextFormatRange;
+import openfl.text._internal.TextLayoutGroup;
+import openfl.text._internal.UTF8String;
 import openfl.ui.Keyboard;
 import openfl.ui.MouseCursor;
-import openfl.Lib;
-#if lime
-import lime.system.Clipboard;
-import lime.ui.KeyCode;
-import lime.ui.KeyModifier;
-#end
 #if (js && html5)
 import js.html.DivElement;
 #end
 
 /**
 	The TextField class is used to create display objects for text display and
-	input. <ph outputclass="flexonly">You can use the TextField class to
-	perform low-level text rendering. However, in Flex, you typically use the
-	Label, Text, TextArea, and TextInput controls to process text. <ph
-	outputclass="flashonly">You can give a text field an instance name in the
-	Property inspector and use the methods and properties of the TextField
-	class to manipulate it with Haxe code. TextField instance names are
-	displayed in the Movie Explorer and in the Insert Target Path dialog box in
-	the Actions panel.
+	input.
 
 	To create a text field dynamically, use the `TextField()`
 	constructor.
@@ -121,12 +111,9 @@ import js.html.DivElement;
 	@see [Formatting text](https://books.openfl.org/openfl-developers-guide/using-the-textfield-class/formatting-text.html)
 	@see [Advanced text rendering](https://books.openfl.org/openfl-developers-guide/using-the-textfield-class/advanced-text-rendering.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.Graphics)
 @:access(openfl.errors.Error)
+@:access(openfl.events.Event)
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
@@ -136,18 +123,6 @@ class TextField extends InteractiveObject
 {
 	@:noCompletion private static var __defaultTextFormat:TextFormat;
 	@:noCompletion private static var __missingFontWarning:Map<String, Bool> = new Map();
-
-	#if false
-	/**
-		When set to `true` and the text field is not in focus, OpenFL
-		highlights the selection in the text field in gray. When set to
-		`false` and the text field is not in focus, OpenFL does not
-		highlight the selection in the text field.
-
-		@default false
-	**/
-	// var alwaysShowSelection : Bool;
-	#end
 
 	/**
 		The type of anti-aliasing used for this text field. Use
@@ -459,8 +434,7 @@ class TextField extends InteractiveObject
 		enter only characters in the string into the text field. The string is
 		scanned from left to right. You can specify a range by using the hyphen
 		(-) character. Only user interaction is restricted; a script can put any
-		text into the text field. <ph outputclass="flashonly">This property does
-		not synchronize with the Embed font options in the Property inspector.
+		text into the text field.
 
 		If the string begins with a caret(^) character, all characters are
 		initially accepted and succeeding characters in the string are excluded
@@ -638,18 +612,6 @@ class TextField extends InteractiveObject
 	**/
 	public var textHeight(get, never):Float;
 
-	#if false
-	/**
-		The interaction mode property, Default value is
-		TextInteractionMode.NORMAL. On mobile platforms, the normal mode
-		implies that the text can be scrolled but not selected. One can switch
-		to the selectable mode through the in-built context menu on the text
-		field. On Desktop, the normal mode implies that the text is in
-		scrollable as well as selection mode.
-	**/
-	// @:require(flash11) var textInteractionMode(default,never) : TextInteractionMode;
-	#end
-
 	/**
 		The width of the text in pixels.
 	**/
@@ -678,18 +640,6 @@ class TextField extends InteractiveObject
 	**/
 	public var type(get, set):TextFieldType;
 
-	#if false
-	/**
-		Specifies whether to copy and paste the text formatting along with the
-		text. When set to `true`, OpenFL copies and pastes formatting
-		(such as alignment, bold, and italics) when you copy and paste between
-		text fields. Both the origin and destination text fields for the copy
-		and paste procedure must have `useRichTextClipboard` set to `true`.
-		The default value is `false`.
-	**/
-	// var useRichTextClipboard : Bool;
-	#end
-
 	/**
 		A Boolean value that indicates whether the text field has word wrap. If
 		the value of `wordWrap` is `true`, the text field
@@ -697,6 +647,14 @@ class TextField extends InteractiveObject
 		have word wrap. The default value is `false`.
 	**/
 	public var wordWrap(get, set):Bool;
+
+	/**
+		The character to be displayed when displayAsPassword is set to true.
+		The default value is `*`.
+
+		The `passwordChar` property is ignored in Flash Player and AIR targets.
+	**/
+	public var passwordChar(get, set):String;
 
 	@:noCompletion private var __wordSelection:Bool;
 	@:noCompletion private var __lineSelection:Bool;
@@ -706,6 +664,7 @@ class TextField extends InteractiveObject
 	@:noCompletion private var __cursorTimer:Timer;
 	@:noCompletion private var __dirty:Bool;
 	@:noCompletion private var __displayAsPassword:Bool;
+	@:noCompletion private var __passwordChar:String;
 	@:noCompletion private var __domRender:Bool;
 	@:noCompletion private var __inputEnabled:Bool;
 	@:noCompletion private var __isHTML:Bool;
@@ -721,120 +680,6 @@ class TextField extends InteractiveObject
 	@:noCompletion private var __htmlText:UTF8String;
 	@:noCompletion private var __textEngine:TextEngine;
 	@:noCompletion private var __textFormat:TextFormat;
-	#if (js && html5)
-	@:noCompletion private var __div:DivElement;
-	@:noCompletion private var __renderedOnCanvasWhileOnDOM:Bool = false;
-	@:noCompletion private var __forceCachedBitmapUpdate:Bool = false;
-	#end
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(TextField.prototype, {
-			"antiAliasType": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_antiAliasType (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_antiAliasType (v); }")
-			},
-			"autoSize": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_autoSize (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_autoSize (v); }")
-			},
-			"background": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_background (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_background (v); }")
-			},
-			"backgroundColor": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_backgroundColor (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_backgroundColor (v); }")
-			},
-			"border": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_border (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_border (v); }")
-			},
-			"borderColor": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_borderColor (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_borderColor (v); }")
-			},
-			"bottomScrollV": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bottomScrollV (); }")},
-			"defaultTextFormat": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_defaultTextFormat (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_defaultTextFormat (v); }")
-			},
-			"displayAsPassword": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_displayAsPassword (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_displayAsPassword (v); }")
-			},
-			"embedFonts": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_embedFonts (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_embedFonts (v); }")
-			},
-			"gridFitType": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_gridFitType (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_gridFitType (v); }")
-			},
-			"htmlText": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_htmlText (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_htmlText (v); }")
-			},
-			"length": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_length (); }")},
-			"maxChars": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_maxChars (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_maxChars (v); }")
-			},
-			"maxScrollH": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_maxScrollH (); }")},
-			"maxScrollV": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_maxScrollV (); }")},
-			"mouseWheelEnabled": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_mouseWheelEnabled (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_mouseWheelEnabled (v); }")
-			},
-			"multiline": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_multiline (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_multiline (v); }")
-			},
-			"numLines": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_numLines (); }")},
-			"restrict": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_restrict (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_restrict (v); }")
-			},
-			"scrollH": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scrollH (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scrollH (v); }")
-			},
-			"scrollV": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scrollV (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scrollV (v); }")
-			},
-			"selectable": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectable (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_selectable (v); }")
-			},
-			"selectionBeginIndex": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectionBeginIndex (); }")},
-			"selectionEndIndex": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_selectionEndIndex (); }")},
-			"sharpness": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_sharpness (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_sharpness (v); }")
-			},
-			"text": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_text (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_text (v); }")
-			},
-			"textColor": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textColor (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_textColor (v); }")
-			},
-			"textHeight": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textHeight (); }")},
-			"textWidth": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_textWidth (); }")},
-			"type": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_type (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_type (v); }")
-			},
-			"wordWrap": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_wordWrap (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_wordWrap (v); }")
-			},
-		});
-	}
-	#end
 
 	/**
 		Creates a new TextField instance. After you create the TextField instance,
@@ -850,10 +695,18 @@ class TextField extends InteractiveObject
 
 		__wordSelection = false;
 		__drawableType = TEXT_FIELD;
-		__caretIndex = -1;
-		__selectionIndex = -1;
+		__caretIndex = 0;
+		__selectionIndex = 0;
 		__displayAsPassword = false;
+		__passwordChar = "*";
 		__graphics = new Graphics(this);
+		#if (js && html5)
+		// Graphics adds an implicit moveTo(0, 0) for HTML Canvas, but we need
+		// an empty command buffer for TextField or it won't render correctly.
+		// calling clear() adds moveTo(0, 0) as the first command again, so just
+		// clear the command buffer directly.
+		__graphics.__commands.clear();
+		#end
 		__textEngine = new TextEngine(this);
 		__layoutDirty = true;
 		__offsetX = 0;
@@ -1007,29 +860,6 @@ class TextField extends InteractiveObject
 		return __textEngine.lineBreaks[__textEngine.lineBreaks.length - 1] + 1;
 	}
 
-	#if false
-	/**
-		Returns a DisplayObject reference for the given `id`, for an image or
-		SWF file that has been added to an HTML-formatted text field by using
-		an `<img>` tag. The `<img>` tag is in the following format:
-
-		```html
-		<img src='filename.jpg' id='instanceName' />
-		```
-
-		@param id The `id` to match (in the `id` attribute of the `<img>`
-				  tag).
-		@return The display object corresponding to the image or SWF file with
-				the matching `id` attribute in the `<img>` tag of the text
-				field. For media loaded from an external source, this object
-				is a Loader object, and, once loaded, the media object is a
-				child of that Loader object. For media embedded in the SWF
-				file, it is the loaded object. If no `<img>` tag with the
-				matching `id` exists, the method returns `null`.
-	**/
-	// function getImageReference(id : String) : openfl.display.DisplayObject;
-	#end
-
 	/**
 		Returns the zero-based index value of the line at the point specified by
 		the `x` and `y` parameters.
@@ -1164,7 +994,11 @@ class TextField extends InteractiveObject
 	{
 		__updateLayout();
 
-		if (lineIndex < 0 || lineIndex > __textEngine.numLines - 1) return -1;
+		if (lineIndex < 0)
+		{
+			throw new RangeError();
+		}
+		if (lineIndex > __textEngine.numLines - 1) return -1;
 
 		for (group in __textEngine.layoutGroups)
 		{
@@ -1190,7 +1024,11 @@ class TextField extends InteractiveObject
 	{
 		__updateLayout();
 
-		if (lineIndex < 0 || lineIndex > __textEngine.numLines - 1) return null;
+		if (lineIndex < 0)
+		{
+			throw new RangeError();
+		}
+		if (lineIndex > __textEngine.numLines - 1) return null;
 
 		var startIndex = -1;
 		var endIndex = -1;
@@ -1311,37 +1149,6 @@ class TextField extends InteractiveObject
 		if (format == null) format = new TextFormat();
 		return format;
 	}
-
-	#if false
-	/**
-		Returns true if an embedded font is available with the specified
-		`fontName` and `fontStyle` where `Font.fontType` is
-		`openfl.text.FontType.EMBEDDED`. Starting with Flash Player 10, two
-		kinds of embedded fonts can appear in a SWF file. Normal embedded
-		fonts are only used with TextField objects. CFF embedded fonts are
-		only used with the openfl.text.engine classes. The two types are
-		distinguished by the `fontType` property of the `Font` class, as
-		returned by the `enumerateFonts()` function.
-		TextField cannot use a font of type `EMBEDDED_CFF`. If `embedFonts` is
-		set to `true` and the only font available at run time with the
-		specified name and style is of type `EMBEDDED_CFF`, Flash Player fails
-		to render the text, as if no embedded font were available with the
-		specified name and style.
-
-		If both `EMBEDDED` and `EMBEDDED_CFF` fonts are available with the
-		same name and style, the `EMBEDDED` font is selected and text renders
-		with the `EMBEDDED` font.
-
-		@param fontName  The name of the embedded font to check.
-		@param fontStyle Specifies the font style to check. Use
-						 `openfl.text.FontStyle`
-		@return `true` if a compatible embedded font is available, otherwise
-				`false`.
-		@throws ArgumentError The `fontStyle` specified is not a member of
-							  `openfl.text.FontStyle`.
-	**/
-	// @:require(flash10) static function isFontCompatible(fontName : String, fontStyle : String) : Bool;
-	#end
 
 	/**
 		Replaces the current selection with the contents of the `value`
@@ -1745,11 +1552,9 @@ class TextField extends InteractiveObject
 	{
 		if (__inputEnabled && stage != null)
 		{
-			#if lime
 			stage.window.textInputEnabled = false;
 			stage.window.onTextInput.remove(window_onTextInput);
 			stage.window.onKeyDown.remove(window_onKeyDown);
-			#end
 
 			__inputEnabled = false;
 			__stopCursorTimer();
@@ -1786,32 +1591,19 @@ class TextField extends InteractiveObject
 
 	@:noCompletion private function __enableInput():Void
 	{
-		#if lime
 		if (stage != null)
 		{
 			stage.window.textInputEnabled = true;
 
-			#if (lime >= "8.0.0")
 			// ensure that the text field is not hidden by the soft keyboard
 			var bounds = getBounds(stage);
 			var limeRect = new lime.math.Rectangle(bounds.x, bounds.y, bounds.width, bounds.height);
-			#if openfl_dpi_aware
-			var scale = stage.window.scale;
-			if (scale != 1.0)
-			{
-				limeRect.x /= scale;
-				limeRect.y /= scale;
-				limeRect.width /= scale;
-				limeRect.height /= scale;
-			}
-			#end
 			// we need to call setTextInputRect() after setting textInputEnabled
 			// to true, or SDL might ignore the rectangle and think that the
 			// input is happening at 0,0
 			// strangely, the SDL docs seem to say the opposite, "this function
 			// is intended to be called before SDL_StartTextInput"
 			stage.window.setTextInputRect(limeRect);
-			#end
 
 			if (!__inputEnabled)
 			{
@@ -1831,7 +1623,6 @@ class TextField extends InteractiveObject
 				__startCursorTimer();
 			}
 		}
-		#end
 	}
 
 	@:noCompletion private inline function __getAdvance(position):Float
@@ -2302,12 +2093,7 @@ class TextField extends InteractiveObject
 			__selectionIndex = __caretIndex;
 		}
 
-		var enableInput = #if (js && html5) (DisplayObject.__supportDOM ? __renderedOnCanvasWhileOnDOM : true) #else true #end;
-
-		if (enableInput)
-		{
-			__enableInput();
-		}
+		__enableInput();
 	}
 
 	@:noCompletion private function __stopCursorTimer():Void
@@ -2328,12 +2114,7 @@ class TextField extends InteractiveObject
 
 	@:noCompletion private function __stopTextInput():Void
 	{
-		var disableInput = #if (js && html5) (DisplayObject.__supportDOM ? __renderedOnCanvasWhileOnDOM : true) #else true #end;
-
-		if (disableInput)
-		{
-			__disableInput();
-		}
+		__disableInput();
 	}
 
 	@:noCompletion private function __updateLayout():Void
@@ -2372,6 +2153,9 @@ class TextField extends InteractiveObject
 	{
 		if (stage == null) return;
 
+		var oldScrollH = scrollH;
+		var oldScrollV = scrollV;
+
 		var bounds:Rectangle = this.getBounds(this);
 
 		if (mouseX > bounds.width - 1)
@@ -2397,7 +2181,15 @@ class TextField extends InteractiveObject
 			}
 			__mouseScrollVCounter = 0;
 		}
-		stage_onMouseMove(null);
+
+		// if the scroll position changed, then we may need to update selection.
+		// however, we shouldn't call it if the scroll position hasn't changed
+		// because that might overwrite the values of a recent call to the
+		// setSelection() method.
+		if (scrollH != oldScrollH || scrollV != oldScrollV)
+		{
+			stage_onMouseMove(null);
+		}
 	}
 
 	@:noCompletion private function __updateScrollH():Void
@@ -2416,7 +2208,7 @@ class TextField extends InteractiveObject
 
 		// margins are ignored here
 
-		if (__caretIndex == 0 || getLineOffset(getLineIndexOfChar(__caretIndex)) == __caretIndex)
+		if (__caretIndex <= 0 || getLineOffset(getLineIndexOfChar(__caretIndex)) == __caretIndex)
 		{
 			// first index in a line is always at 0 scrollH
 			tempScrollH = 0;
@@ -2538,13 +2330,6 @@ class TextField extends InteractiveObject
 
 	@:noCompletion private function __updateText(value:String):Void
 	{
-		#if (js && html5)
-		if (DisplayObject.__supportDOM && __renderedOnCanvasWhileOnDOM)
-		{
-			__forceCachedBitmapUpdate = __text != value;
-		}
-		#end
-
 		// applies maxChars and restrict on text
 
 		__textEngine.text = value;
@@ -2578,7 +2363,7 @@ class TextField extends InteractiveObject
 			}
 		}
 
-		if (!__displayAsPassword #if (js && html5) || (DisplayObject.__supportDOM && !__renderedOnCanvasWhileOnDOM) #end)
+		if (!__displayAsPassword)
 		{
 			__textEngine.text = __text;
 		}
@@ -2589,7 +2374,7 @@ class TextField extends InteractiveObject
 
 			for (i in 0...length)
 			{
-				mask += "*";
+				mask += __passwordChar;
 			}
 
 			__textEngine.text = mask;
@@ -2784,11 +2569,18 @@ class TextField extends InteractiveObject
 	@:noCompletion private override function get_height():Float
 	{
 		__updateLayout();
-		return __textEngine.height * Math.abs(scaleY);
+		return __textEngine.height * Math.abs(__scaleY);
 	}
 
 	@:noCompletion private override function set_height(value:Float):Float
 	{
+		if (value < 0.0)
+		{
+			// ignore negative values completely, and keep the current size
+			// negative values may be achieved by setting scaleY, though
+			return __textEngine.height * Math.abs(__scaleY);
+		}
+
 		if (value != __textEngine.height)
 		{
 			__setTransformDirty();
@@ -2799,16 +2591,12 @@ class TextField extends InteractiveObject
 			__textEngine.height = value;
 		}
 
-		return __textEngine.height * Math.abs(scaleY);
+		return __textEngine.height * Math.abs(__scaleY);
 	}
 
 	@:noCompletion private function get_htmlText():String
 	{
-		// #if (js && html5)
 		return __isHTML ? __htmlText : __text;
-		// #else
-		// return __text;
-		// #end
 	}
 
 	@:noCompletion private function set_htmlText(value:String):String
@@ -2840,38 +2628,7 @@ class TextField extends InteractiveObject
 
 		value = HTMLParser.parse(value, multiline, __styleSheet, __textFormat, __textEngine.textFormatRanges);
 
-		#if (js && html5)
-		// if (DisplayObject.__supportDOM)
-		// {
-		// 	// TODO: Why is this parsing text format ranges, only to ignore them?
-		// 	// Should this skip the parser entirely?
-		// 	if (__textEngine.textFormatRanges.length > 1)
-		// 	{
-		// 		__textEngine.textFormatRanges.splice(1, __textEngine.textFormatRanges.length - 1);
-		// 	}
-
-		// 	var range = __textEngine.textFormatRanges[0];
-		// 	range.format = __textFormat;
-		// 	range.start = 0;
-
-		// 	if (__renderedOnCanvasWhileOnDOM)
-		// 	{
-		// 		range.end = value.length;
-		// 		__updateText(value);
-		// 	}
-		// 	else
-		// 	{
-		// 		range.end = __htmlText.length;
-		// 		__updateText(__htmlText);
-		// 	}
-		// }
-		// else
-		{
-			__updateText(value);
-		}
-		#else
 		__updateText(value);
-		#end
 
 		return value;
 	}
@@ -2979,7 +2736,19 @@ class TextField extends InteractiveObject
 			__dirty = true;
 			__setRenderDirty();
 			__textEngine.scrollH = value;
-			dispatchEvent(new Event(Event.SCROLL));
+
+			#if openfl_pool_events
+			var scrollEvent = Event.__pool.get();
+			scrollEvent.type = Event.SCROLL;
+			#else
+			var scrollEvent = new Event(Event.SCROLL);
+			#end
+
+			dispatchEvent(scrollEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(scrollEvent);
+			#end
 		}
 
 		return __textEngine.scrollH;
@@ -3002,7 +2771,19 @@ class TextField extends InteractiveObject
 			__dirty = true;
 			__setRenderDirty();
 			__textEngine.scrollV = value;
-			dispatchEvent(new Event(Event.SCROLL));
+
+			#if openfl_pool_events
+			var scrollEvent = Event.__pool.get();
+			scrollEvent.type = Event.SCROLL;
+			#else
+			var scrollEvent = new Event(Event.SCROLL);
+			#end
+
+			dispatchEvent(scrollEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(scrollEvent);
+			#end
 		}
 
 		return __textEngine.scrollV;
@@ -3214,14 +2995,21 @@ class TextField extends InteractiveObject
 		return __textEngine.type;
 	}
 
-	override private function get_width():Float
+	@:noCompletion override private function get_width():Float
 	{
 		__updateLayout();
 		return __textEngine.width * Math.abs(__scaleX);
 	}
 
-	override private function set_width(value:Float):Float
+	@:noCompletion override private function set_width(value:Float):Float
 	{
+		if (value < 0.0)
+		{
+			// ignore negative values completely, and keep the current size
+			// negative values may be achieved by setting scaleX, though
+			return __textEngine.width * Math.abs(__scaleX);
+		}
+
 		if (value != __textEngine.width)
 		{
 			__setTransformDirty();
@@ -3250,6 +3038,23 @@ class TextField extends InteractiveObject
 		}
 
 		return __textEngine.wordWrap = value;
+	}
+
+	@:noCompletion private function get_passwordChar():String
+	{
+		return __passwordChar;
+	}
+
+	@:noCompletion private function set_passwordChar(value:String):String
+	{
+		if (value != __passwordChar)
+		{
+			__passwordChar = value;
+			__setRenderDirty();
+			__updateText(__text);
+		}
+
+		return value;
 	}
 
 	@:noCompletion private override function get_x():Float
@@ -3285,8 +3090,19 @@ class TextField extends InteractiveObject
 		{
 			__updateLayout();
 
-			var position = if (__lineSelection) __getPositionByIdentifier(mouseX + scrollH, mouseY,
-				true) else if (__wordSelection) __getPositionByIdentifier(mouseX + scrollH, mouseY, false) else __getPosition(mouseX + scrollH, mouseY);
+			var position:Int;
+			if (__lineSelection)
+			{
+				position = __getPositionByIdentifier(mouseX + scrollH, mouseY, true);
+			}
+			else if (__wordSelection)
+			{
+				position = __getPositionByIdentifier(mouseX + scrollH, mouseY, false);
+			}
+			else
+			{
+				position = __getPosition(mouseX + scrollH, mouseY);
+			}
 
 			if (position != __caretIndex)
 			{
@@ -3297,24 +3113,9 @@ class TextField extends InteractiveObject
 					__selectionIndex = __getOppositeIdentifierBound(__specialSelectionInitialIndex, __lineSelection);
 				}
 
-				var setDirty = true;
+				__dirty = true;
 
-				#if (js && html5)
-				if (DisplayObject.__supportDOM)
-				{
-					if (__renderedOnCanvasWhileOnDOM)
-					{
-						__forceCachedBitmapUpdate = true;
-					}
-					setDirty = false;
-				}
-				#end
-
-				if (setDirty)
-				{
-					__dirty = true;
-					__setRenderDirty();
-				}
+				__setRenderDirty();
 			}
 		}
 	}
@@ -3334,18 +3135,26 @@ class TextField extends InteractiveObject
 			__getWorldTransform();
 			__updateLayout();
 
-			var upPos:Int = if (__lineSelection) __getPositionByIdentifier(mouseX + scrollH, mouseY,
-				true) else if (__wordSelection) __getPositionByIdentifier(mouseX + scrollH, mouseY, false) else __getPosition(mouseX + scrollH, mouseY);
-			var leftPos:Int;
-			var rightPos:Int;
+			if (__lineSelection || __wordSelection)
+			{
+				var upPos:Int = 0;
+				if (__lineSelection)
+				{
+					upPos = __getPositionByIdentifier(mouseX + scrollH, mouseY, true);
+				}
+				else if (__wordSelection)
+				{
+					upPos = __getPositionByIdentifier(mouseX + scrollH, mouseY, false);
+				}
+				var leftPos:Int = Std.int(Math.min(__selectionIndex, upPos));
+				var rightPos:Int = Std.int(Math.max(__selectionIndex, upPos));
 
-			leftPos = Std.int(Math.min(__selectionIndex, upPos));
-			rightPos = Std.int(Math.max(__selectionIndex, upPos));
+				__selectionIndex = leftPos;
+				__caretIndex = rightPos;
+			}
 
-			__selectionIndex = leftPos;
-			__caretIndex = rightPos;
-
-			__wordSelection = __lineSelection = false;
+			__wordSelection = false;
+			__lineSelection = false;
 
 			if (__inputEnabled)
 			{
@@ -3353,13 +3162,6 @@ class TextField extends InteractiveObject
 
 				__stopCursorTimer();
 				__startCursorTimer();
-
-				#if (js && html5)
-				if (DisplayObject.__supportDOM && __renderedOnCanvasWhileOnDOM)
-				{
-					__forceCachedBitmapUpdate = true;
-				}
-				#end
 			}
 		}
 	}
@@ -3405,7 +3207,6 @@ class TextField extends InteractiveObject
 
 	@:noCompletion private function this_onKeyDown(event:KeyboardEvent):Void
 	{
-		#if (lime && !openfl_doc_gen)
 		if (selectable && type != INPUT && event.keyCode == Keyboard.C && (event.commandKey || event.ctrlKey))
 		{
 			if (__caretIndex != __selectionIndex && !displayAsPassword)
@@ -3413,7 +3214,6 @@ class TextField extends InteractiveObject
 				Clipboard.text = __text.substring(__caretIndex, __selectionIndex);
 			}
 		}
-		#end
 	}
 
 	@:noCompletion private function this_onMouseDown(event:MouseEvent):Void
@@ -3447,14 +3247,12 @@ class TextField extends InteractiveObject
 		}
 
 		__updateLayout();
+
 		// If we start word selection only when the mouse moves, we can't fully select the first word on a double click
 		// and there would be a delay before the first word is selected
 
-		if (!DisplayObject.__supportDOM)
-		{
-			__dirty = true;
-			__setRenderDirty();
-		}
+		__dirty = true;
+		__setRenderDirty();
 
 		// stage could be null if the TextField was removed from stage in an
 		// earlier listener
@@ -3475,7 +3273,6 @@ class TextField extends InteractiveObject
 		}
 	}
 
-	#if lime
 	@:noCompletion private function window_onKeyDown(key:KeyCode, modifier:KeyModifier):Void
 	{
 		inline function isModifierPressed()
@@ -3494,7 +3291,19 @@ class TextField extends InteractiveObject
 					{
 						__replaceSelectedText("\n", true);
 
-						dispatchEvent(new Event(Event.CHANGE, true));
+						#if openfl_pool_events
+						var changeEvent = Event.__pool.get();
+						changeEvent.type = Event.CHANGE;
+						changeEvent.bubbles = true;
+						#else
+						var changeEvent = new Event(Event.CHANGE, true);
+						#end
+
+						dispatchEvent(changeEvent);
+
+						#if openfl_pool_events
+						Event.__pool.release(changeEvent);
+						#end
 					}
 				}
 				else
@@ -3514,7 +3323,19 @@ class TextField extends InteractiveObject
 					replaceSelectedText("");
 					__selectionIndex = __caretIndex;
 
-					dispatchEvent(new Event(Event.CHANGE, true));
+					#if openfl_pool_events
+					var changeEvent = Event.__pool.get();
+					changeEvent.type = Event.CHANGE;
+					changeEvent.bubbles = true;
+					#else
+					var changeEvent = new Event(Event.CHANGE, true);
+					#end
+
+					dispatchEvent(changeEvent);
+
+					#if openfl_pool_events
+					Event.__pool.release(changeEvent);
+					#end
 				}
 				else
 				{
@@ -3533,7 +3354,19 @@ class TextField extends InteractiveObject
 					replaceSelectedText("");
 					__selectionIndex = __caretIndex;
 
-					dispatchEvent(new Event(Event.CHANGE, true));
+					#if openfl_pool_events
+					var changeEvent = Event.__pool.get();
+					changeEvent.type = Event.CHANGE;
+					changeEvent.bubbles = true;
+					#else
+					var changeEvent = new Event(Event.CHANGE, true);
+					#end
+
+					dispatchEvent(changeEvent);
+
+					#if openfl_pool_events
+					Event.__pool.release(changeEvent);
+					#end
 				}
 				else
 				{
@@ -3644,7 +3477,6 @@ class TextField extends InteractiveObject
 				setSelection(__selectionIndex, __caretIndex);
 
 			case C:
-				#if lime
 				if (isModifierPressed())
 				{
 					if (__caretIndex != __selectionIndex && !displayAsPassword)
@@ -3652,10 +3484,8 @@ class TextField extends InteractiveObject
 						Clipboard.text = __text.substring(__caretIndex, __selectionIndex);
 					}
 				}
-				#end
 
 			case X:
-				#if lime
 				if (isModifierPressed())
 				{
 					if (__caretIndex != __selectionIndex && !displayAsPassword)
@@ -3663,14 +3493,25 @@ class TextField extends InteractiveObject
 						Clipboard.text = __text.substring(__caretIndex, __selectionIndex);
 
 						replaceSelectedText("");
-						dispatchEvent(new Event(Event.CHANGE, true));
+
+						#if openfl_pool_events
+						var changeEvent = Event.__pool.get();
+						changeEvent.type = Event.CHANGE;
+						changeEvent.bubbles = true;
+						#else
+						var changeEvent = new Event(Event.CHANGE, true);
+						#end
+
+						dispatchEvent(changeEvent);
+
+						#if openfl_pool_events
+						Event.__pool.release(changeEvent);
+						#end
 					}
 				}
-				#end
 
 			#if !js
 			case V:
-				#if lime
 				if (#if mac modifier.metaKey #else modifier.ctrlKey && !modifier.altKey #end)
 				{
 					if (Clipboard.text != null)
@@ -3683,7 +3524,19 @@ class TextField extends InteractiveObject
 						{
 							__replaceSelectedText(Clipboard.text, true);
 
-							dispatchEvent(new Event(Event.CHANGE, true));
+							#if openfl_pool_events
+							var changeEvent = Event.__pool.get();
+							changeEvent.type = Event.CHANGE;
+							changeEvent.bubbles = true;
+							#else
+							var changeEvent = new Event(Event.CHANGE, true);
+							#end
+
+							dispatchEvent(changeEvent);
+
+							#if openfl_pool_events
+							Event.__pool.release(changeEvent);
+							#end
 						}
 					}
 				}
@@ -3692,7 +3545,6 @@ class TextField extends InteractiveObject
 					// TODO: does this need to occur?
 					__textEngine.textFormatRanges[__textEngine.textFormatRanges.length - 1].end = __text.length;
 				}
-				#end
 			#end
 
 			case A if (selectable):
@@ -3704,16 +3556,24 @@ class TextField extends InteractiveObject
 			default:
 		}
 	}
-	#end
 
 	@:noCompletion private function window_onTextInput(value:String):Void
 	{
 		__replaceSelectedText(value, true);
 
 		// TODO: Dispatch change if at max chars?
-		dispatchEvent(new Event(Event.CHANGE, true));
+		#if openfl_pool_events
+		var changeEvent = Event.__pool.get();
+		changeEvent.type = Event.CHANGE;
+		changeEvent.bubbles = true;
+		#else
+		var changeEvent = new Event(Event.CHANGE, true);
+		#end
+
+		dispatchEvent(changeEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(changeEvent);
+		#end
 	}
 }
-#else
-typedef TextField = flash.text.TextField;
-#end

@@ -1,10 +1,7 @@
 package openfl.geom;
 
-#if !flash
-import openfl.utils.ObjectPool;
-#if lime
 import lime.math.Vector2;
-#end
+import openfl.utils.ObjectPool;
 
 /**
 	The Point object represents a location in a two-dimensional coordinate
@@ -31,16 +28,11 @@ import lime.math.Vector2;
 	@see [Working with geometry](https://books.openfl.org/openfl-developers-guide/working-with-geometry/)
 	@see [Using Point objects](https://books.openfl.org/openfl-developers-guide/working-with-geometry/using-point-objects.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class Point
 {
 	@:noCompletion private static var __pool:ObjectPool<Point> = new ObjectPool<Point>(function() return new Point(), function(p) p.setTo(0, 0));
-	#if lime
+
 	@:noCompletion private static var __limeVector2:Vector2;
-	#end
 
 	/**
 		The length of the line segment from (0,0) to this point.
@@ -56,15 +48,6 @@ class Point
 		The vertical coordinate of the point. The default value is 0.
 	**/
 	public var y:Float;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperty(Point.prototype, "length", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_length (); }")
-		});
-	}
-	#end
 
 	/**
 		Creates a new point. If you pass no parameters to this method, a point is
@@ -340,7 +323,6 @@ class Point
 		return '(x=$x, y=$y)';
 	}
 
-	#if lime
 	@:noCompletion private function __toLimeVector2():Vector2
 	{
 		if (__limeVector2 == null)
@@ -349,9 +331,9 @@ class Point
 		}
 
 		__limeVector2.setTo(x, y);
+
 		return __limeVector2;
 	}
-	#end
 
 	// Getters & Setters
 	@:noCompletion private function get_length():Float
@@ -359,6 +341,3 @@ class Point
 		return Math.sqrt(x * x + y * y);
 	}
 }
-#else
-typedef Point = flash.geom.Point;
-#end

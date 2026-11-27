@@ -1,13 +1,11 @@
 package openfl.display3D.textures;
 
-#if !flash
-import haxe.io.Bytes;
 import haxe.Timer;
-import openfl.utils._internal.ArrayBufferView;
-import openfl.utils._internal.UInt8Array;
-import openfl.display3D._internal.ATFReader;
-import openfl.display._internal.SamplerState;
+import haxe.io.Bytes;
+import lime.utils.ArrayBufferView;
+import lime.utils.UInt8Array;
 import openfl.display.BitmapData;
+import openfl.display._internal.SamplerState;
 import openfl.events.Event;
 import openfl.utils.ByteArray;
 
@@ -19,10 +17,6 @@ import openfl.utils.ByteArray;
 	Texture cannot be instantiated directly. Create instances by using Context3D
 	`createTexture()` method.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display.Stage)
 @:access(openfl.events.Event)
@@ -33,21 +27,15 @@ import openfl.utils.ByteArray;
 	@:noCompletion private function new(context:Context3D, width:Int, height:Int, format:Context3DTextureFormat, optimizeForRenderToTexture:Bool,
 			streamingLevels:Int)
 	{
-		super(context);
+		super(context, format);
 
 		__width = width;
 		__height = height;
-		// __format = format;
 		__optimizeForRenderToTexture = optimizeForRenderToTexture;
 		__streamingLevels = streamingLevels;
+		__textureTarget = __context.gl.TEXTURE_2D;
 
-		var gl = __context.gl;
-
-		__textureTarget = gl.TEXTURE_2D;
-
-		__context.__bindGLTexture2D(__textureID);
-		gl.texImage2D(__textureTarget, 0, __internalFormat, __width, __height, 0, __format, gl.UNSIGNED_BYTE, null);
-		__context.__bindGLTexture2D(null);
+		uploadFromTypedArray(null);
 
 		if (optimizeForRenderToTexture) __getGLFramebuffer(true, 0, 0);
 	}
@@ -86,32 +74,7 @@ import openfl.utils.ByteArray;
 	**/
 	public function uploadCompressedTextureFromByteArray(data:ByteArray, byteArrayOffset:UInt, async:Bool = false):Void
 	{
-		if (!async)
-		{
-			__uploadCompressedTextureFromByteArray(data, byteArrayOffset);
-		}
-		else
-		{
-			Timer.delay(function()
-			{
-				__uploadCompressedTextureFromByteArray(data, byteArrayOffset);
-
-				var event:Event = null;
-
-				#if openfl_pool_events
-				event = Event.__pool.get();
-				event.type = Event.TEXTURE_READY;
-				#else
-				event = new Event(Event.TEXTURE_READY);
-				#end
-
-				dispatchEvent(event);
-
-				#if openfl_pool_events
-				Event.__pool.release(event);
-				#end
-			}, 1);
-		}
+		openfl.utils._internal.Lib.notImplemented();
 	}
 
 	/**
@@ -134,17 +97,6 @@ import openfl.utils.ByteArray;
 	**/
 	public function uploadFromBitmapData(source:BitmapData, miplevel:UInt = 0, generateMipmap:Bool = false):Void
 	{
-		#if lime
-		/* TODO
-			if (LowMemoryMode) {
-				// shrink bitmap data
-				source = source.shrinkToHalfResolution();
-				// shrink our dimensions for upload
-				width = source.width;
-				height = source.height;
-			}
-		**/
-
 		if (source == null) return;
 
 		var width = __width >> miplevel;
@@ -189,7 +141,6 @@ import openfl.utils.ByteArray;
 		#end
 
 		uploadFromTypedArray(image.data, miplevel);
-		#end
 	}
 
 	/**
@@ -218,7 +169,6 @@ import openfl.utils.ByteArray;
 	**/
 	public function uploadFromByteArray(data:ByteArray, byteArrayOffset:UInt, miplevel:UInt = 0):Void
 	{
-		#if lime
 		#if (js && !display)
 		if (byteArrayOffset == 0)
 		{
@@ -228,7 +178,6 @@ import openfl.utils.ByteArray;
 		#end
 
 		uploadFromTypedArray(new UInt8Array(data.toArrayBuffer(), byteArrayOffset), miplevel);
-		#end
 	}
 
 	/**
@@ -242,20 +191,10 @@ import openfl.utils.ByteArray;
 	**/
 	public function uploadFromTypedArray(data:ArrayBufferView, miplevel:UInt = 0):Void
 	{
-		if (data == null) return;
-
 		var gl = __context.gl;
 
-		var width = __width >> miplevel;
-		var height = __height >> miplevel;
-
-		if (width == 0 && height == 0) return;
-
-		if (width == 0) width = 1;
-		if (height == 0) height = 1;
-
 		__context.__bindGLTexture2D(__textureID);
-		gl.texImage2D(__textureTarget, miplevel, __internalFormat, width, height, 0, __format, gl.UNSIGNED_BYTE, data);
+		__uploadTexture2D(__textureTarget, __width, __height, __internalFormat, __format, data);
 		__context.__bindGLTexture2D(null);
 	}
 
@@ -295,64 +234,4 @@ import openfl.utils.ByteArray;
 
 		return false;
 	}
-
-	@:noCompletion private function __uploadCompressedTextureFromByteArray(data:ByteArray, byteArrayOffset:UInt):Void
-	{
-		var reader = new ATFReader(data, byteArrayOffset);
-		var alpha = reader.readHeader(__width, __height, false);
-
-		var context = __context;
-		var gl = context.gl;
-
-		__context.__bindGLTexture2D(__textureID);
-
-		var hasTexture = false;
-
-		#if lime
-		reader.readTextures(function(target, level, gpuFormat, width, height, blockLength, bytes:Bytes)
-		{
-			var format = alpha ? TextureBase.__compressedFormatsAlpha[gpuFormat] : TextureBase.__compressedFormats[gpuFormat];
-			if (format == 0) return;
-
-			hasTexture = true;
-			__format = format;
-			__internalFormat = format;
-
-			if (alpha && gpuFormat == 2)
-			{
-				var size = Std.int(blockLength / 2);
-
-				gl.compressedTexImage2D(__textureTarget, level, __internalFormat, width, height, 0,
-					new UInt8Array(#if js @:privateAccess bytes.b.buffer #else bytes #end, 0, size));
-
-				var alphaTexture = new Texture(__context, __width, __height, Context3DTextureFormat.COMPRESSED, __optimizeForRenderToTexture,
-					__streamingLevels);
-				alphaTexture.__format = format;
-				alphaTexture.__internalFormat = format;
-
-				__context.__bindGLTexture2D(alphaTexture.__textureID);
-				gl.compressedTexImage2D(alphaTexture.__textureTarget, level, alphaTexture.__internalFormat, width, height, 0,
-					new UInt8Array(#if js @:privateAccess bytes.b.buffer #else bytes #end, size, size));
-
-				__alphaTexture = alphaTexture;
-			}
-			else
-			{
-				gl.compressedTexImage2D(__textureTarget, level, __internalFormat, width, height, 0,
-					new UInt8Array(#if js @:privateAccess bytes.b.buffer #else bytes #end, 0, blockLength));
-			}
-		});
-
-		if (!hasTexture)
-		{
-			var data = new UInt8Array(__width * __height * 4);
-			gl.texImage2D(__textureTarget, 0, __internalFormat, __width, __height, 0, __format, gl.UNSIGNED_BYTE, data);
-		}
-		#end
-
-		__context.__bindGLTexture2D(null);
-	}
 }
-#else
-typedef Texture = flash.display3D.textures.Texture;
-#end

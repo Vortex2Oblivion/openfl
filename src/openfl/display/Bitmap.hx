@@ -1,6 +1,5 @@
 package openfl.display;
 
-#if !flash
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
 #if (js && html5)
@@ -52,10 +51,6 @@ import js.html.ImageElement;
 	@see [Choosing a display object subclass](https://books.openfl.org/openfl-developers-guide/display-programming/working-with-display-objects/choosing-a-displayobject-subclass.html)
 	@see `openfl.display.BitmapData`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.BitmapData)
 @:access(openfl.display.Graphics)
 @:access(openfl.geom.ColorTransform)
@@ -99,16 +94,6 @@ class Bitmap extends DisplayObject
 	@:noCompletion private var __bitmapData:BitmapData;
 	@:noCompletion private var __imageVersion:Int;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperty(Bitmap.prototype, "bitmapData", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bitmapData (); }"),
-			set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_bitmapData (v); }")
-		});
-	}
-	#end
-
 	/**
 		Initializes a Bitmap object to refer to the specified BitmapData object.
 
@@ -134,8 +119,16 @@ class Bitmap extends DisplayObject
 		}
 	}
 
-	@:noCompletion private override function __enterFrame(deltaTime:Float):Void	{
+	@:noCompletion private override function __enterFrame(deltaTime:Float):Void
+	{
 		if (__bitmapData != null && __bitmapData.image != null && __bitmapData.image.version != __imageVersion)
+		{
+			__setRenderDirty();
+		}
+		else if (__bitmapData != null
+			&& !__bitmapData.readable
+			&& __bitmapData.__texture != null
+			&& bitmapData.__textureVersion != __imageVersion)
 		{
 			__setRenderDirty();
 		}
@@ -253,6 +246,3 @@ class Bitmap extends DisplayObject
 		return value;
 	}
 }
-#else
-typedef Bitmap = flash.display.Bitmap;
-#end

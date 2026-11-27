@@ -3,10 +3,6 @@ package openfl.filters;
 import openfl.display.Shader;
 import openfl.utils.ByteArray;
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class BitmapFilterShader extends Shader
 {
 	@:glVertexHeader("attribute vec4 openfl_Position;
@@ -31,17 +27,6 @@ class BitmapFilterShader extends Shader
 		uniform sampler2D openfl_Texture;
 		uniform vec2 openfl_TextureSize;")
 	@:glFragmentBody("gl_FragColor = texture2D (openfl_Texture, openfl_TextureCoordv);")
-	#if emscripten
-	@:glFragmentSource("#pragma header
-
-		void main(void) {
-
-			#pragma body
-
-			gl_FragColor = gl_FragColor.bgra;
-
-		}")
-	#else
 	@:glFragmentSource("#pragma header
 
 		void main(void) {
@@ -49,7 +34,6 @@ class BitmapFilterShader extends Shader
 			#pragma body
 
 		}")
-	#end
 	public function new(code:ByteArray = null)
 	{
 		super(code);

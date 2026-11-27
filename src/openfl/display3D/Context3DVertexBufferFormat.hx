@@ -1,15 +1,9 @@
 package openfl.display3D;
 
-#if !flash
-#if !openfljs
-#if cs
-import openfl.utils._internal.NullUtils;
-#end
-
 /**
 	Defines the values to use for specifying vertex buffers.
 **/
-@SuppressWarnings("checkstyle:FieldDocComment") #if (haxe_ver >= 4.0) enum #else @:enum #end abstract Context3DVertexBufferFormat(Null<Int>)
+@SuppressWarnings("checkstyle:FieldDocComment") enum abstract Context3DVertexBufferFormat(Null<Int>)
 {
 	public var BYTES_4 = 0;
 	public var FLOAT_1 = 1;
@@ -42,31 +36,4 @@ import openfl.utils._internal.NullUtils;
 			default: null;
 		}
 	}
-
-	#if cs
-	@:noCompletion @:op(A == B) private static function equals(a:Context3DVertexBufferFormat, b:Context3DVertexBufferFormat):Bool
-	{
-		return NullUtils.valueEquals(a, b, Int);
-	}
-	#end
-
-	#if cs
-	@:noCompletion @:op(A != B) private static function notEquals(a:Context3DVertexBufferFormat, b:Context3DVertexBufferFormat):Bool
-	{
-		return !equals(a, b);
-	}
-	#end
 }
-#else
-@SuppressWarnings("checkstyle:FieldDocComment") #if (haxe_ver >= 4.0) enum #else @:enum #end abstract Context3DVertexBufferFormat(String) from String to String
-{
-	public var BYTES_4 = "bytes4";
-	public var FLOAT_1 = "float1";
-	public var FLOAT_2 = "float2";
-	public var FLOAT_3 = "float3";
-	public var FLOAT_4 = "float4";
-}
-#end
-#else
-typedef Context3DVertexBufferFormat = flash.display3D.Context3DVertexBufferFormat;
-#end

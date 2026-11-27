@@ -1,6 +1,5 @@
 package openfl.display._internal;
 
-#if !flash
 import openfl.display.Bitmap;
 import openfl.display.OpenGLRenderer;
 #if gl_stats
@@ -67,6 +66,10 @@ class Context3DBitmap
 		{
 			bitmap.__imageVersion = bitmap.__bitmapData.image.version;
 		}
+		else if (bitmap.__bitmapData != null && !bitmap.__bitmapData.readable && bitmap.__bitmapData.__texture != null)
+		{
+			bitmap.__imageVersion = bitmap.bitmapData.__textureVersion;
+		}
 
 		if (bitmap.__cacheBitmap != null && !bitmap.__isCacheBitmapRender)
 		{
@@ -112,4 +115,3 @@ class Context3DBitmap
 		}
 	}
 }
-#end

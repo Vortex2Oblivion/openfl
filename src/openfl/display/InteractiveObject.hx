@@ -1,6 +1,5 @@
 package openfl.display;
 
-#if !flash
 import openfl.errors.RangeError;
 import openfl.events.Event;
 import openfl.geom.Rectangle;
@@ -1046,15 +1045,9 @@ import openfl.geom.Rectangle;
 	@see [Basics of display programming](https://books.openfl.org/openfl-developers-guide/display-programming/basics-of-display-programming.html)
 	@see [Core display classes](https://books.openfl.org/openfl-developers-guide/display-programming/core-display-classes.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 class InteractiveObject extends DisplayObject
 {
-	// @:noCompletion @:dox(hide) public var accessibilityImplementation:openfl.accessibility.AccessibilityImplementation;
-	// @:noCompletion @:dox(hide) public var contextMenu:openfl.ui.ContextMenu;
-
 	/**
 		Specifies whether the object receives `doubleClick` events. The
 		default value is `false`, which means that by default an
@@ -1195,22 +1188,6 @@ class InteractiveObject extends DisplayObject
 	@:noCompletion private var __tabEnabled:Null<Bool>;
 	@:noCompletion private var __tabIndex:Int;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(InteractiveObject.prototype, {
-			"tabEnabled": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_tabEnabled (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_tabEnabled (v); }")
-			},
-			"tabIndex": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_tabIndex (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_tabIndex (v); }")
-			},
-		});
-	}
-	#end
-
 	/**
 		Calling the `new InteractiveObject()` constructor throws an
 		`ArgumentError` exception. You can, however, call constructors
@@ -1232,30 +1209,6 @@ class InteractiveObject extends DisplayObject
 		__tabEnabled = null;
 		__tabIndex = -1;
 	}
-
-	#if !openfl_strict
-	/**
-		Raises a virtual keyboard.
-
-		Calling this method focuses the InteractiveObject instance and raises
-		the soft keyboard, if necessary. The `needsSoftKeyboard` must
-		also be `true`. A keyboard is not raised if a hardware keyboard
-		is available, or if the client system does not support virtual
-		keyboards.
-
-		**Note:** This method is not supported in AIR applications on
-		iOS.
-
-		@return A value of `true` means that the soft keyboard request
-				was granted; `false` means that the soft keyboard was
-				not raised.
-	**/
-	public function requestSoftKeyboard():Bool
-	{
-		openfl.utils._internal.Lib.notImplemented();
-		return false;
-	}
-	#end
 
 	@:noCompletion private function __allowMouseFocus():Bool
 	{
@@ -1304,7 +1257,19 @@ class InteractiveObject extends DisplayObject
 		{
 			__tabEnabled = value;
 
-			dispatchEvent(new Event(Event.TAB_ENABLED_CHANGE, true, false));
+			#if openfl_pool_events
+			var tabEnabledChangeEvent = Event.__pool.get();
+			tabEnabledChangeEvent.type = Event.TAB_ENABLED_CHANGE;
+			tabEnabledChangeEvent.bubbles = true;
+			#else
+			var tabEnabledChangeEvent = new Event(Event.TAB_ENABLED_CHANGE, true);
+			#end
+
+			dispatchEvent(tabEnabledChangeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(tabEnabledChangeEvent);
+			#end
 		}
 
 		return __tabEnabled;
@@ -1323,12 +1288,21 @@ class InteractiveObject extends DisplayObject
 
 			__tabIndex = value;
 
-			dispatchEvent(new Event(Event.TAB_INDEX_CHANGE, true, false));
+			#if openfl_pool_events
+			var tabIndexChangeEvent = Event.__pool.get();
+			tabIndexChangeEvent.type = Event.TAB_INDEX_CHANGE;
+			tabIndexChangeEvent.bubbles = true;
+			#else
+			var tabIndexChangeEvent = new Event(Event.TAB_INDEX_CHANGE, true);
+			#end
+
+			dispatchEvent(tabIndexChangeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(tabIndexChangeEvent);
+			#end
 		}
 
 		return __tabIndex;
 	}
 }
-#else
-typedef InteractiveObject = flash.display.InteractiveObject;
-#end

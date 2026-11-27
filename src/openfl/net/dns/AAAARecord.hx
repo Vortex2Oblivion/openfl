@@ -1,6 +1,6 @@
 package openfl.net.dns;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 /**
 	The AAAARecord class represents a Domain Name System (DNS) AAAA resource
 	record containing an IPv6 address.
@@ -26,8 +26,4 @@ class AAAARecord extends ResourceRecord
 		super();
 	}
 }
-#else
-#if air
-typedef AAAARecord = flash.net.dns.AAAARecord;
-#end
 #end

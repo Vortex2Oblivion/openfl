@@ -1,17 +1,11 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
 /**
 	A NetConnection, NetStream, or SharedObject object dispatches
 	NetStatusEvent objects when a it reports its status. There is only one
 	type of status event: `NetStatusEvent.NET_STATUS`.
 
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class NetStatusEvent extends Event
 {
 	/**
@@ -123,9 +117,6 @@ class NetStatusEvent extends Event
 	**/
 	public var info:Dynamic;
 
-	// @:noCompletion private static var __pool:ObjectPool<NetStatusEvent> = new ObjectPool<NetStatusEvent>(function() return new NetStatusEvent(null),
-	// function(event) event.__init());
-
 	/**
 		Creates an Event object that contains information about `netStatus`
 		events. Event objects are passed as parameters to event listeners.
@@ -172,6 +163,3 @@ class NetStatusEvent extends Event
 		info = null;
 	}
 }
-#else
-typedef NetStatusEvent = flash.events.NetStatusEvent;
-#end

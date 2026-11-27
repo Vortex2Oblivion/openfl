@@ -1,18 +1,16 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
 import openfl.utils.ByteArray;
 import openfl.utils.Endian;
 #if (js && html5)
-import js.html.audio.AudioProcessingEvent;
 import haxe.io.Float32Array;
 import js.html.audio.AudioBuffer;
+import js.html.audio.AudioProcessingEvent;
 import openfl.errors.Error;
 #end
 #if lime_openal
-import openfl.errors.Error;
 import haxe.io.Bytes;
+import openfl.errors.Error;
 #end
 
 /**
@@ -85,10 +83,6 @@ import haxe.io.Bytes;
 	}
 	```
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class SampleDataEvent extends Event
 {
 	/**
@@ -105,7 +99,7 @@ class SampleDataEvent extends Event
 	public static inline var SAMPLE_DATA:EventType<SampleDataEvent> = "sampleData";
 
 	// using @:keep on data/position vars because Haxe removes them with
-	// dce full on some targets (at least cpp and hl), but doesn't remove the
+	// dce full on some targets (cpp), but doesn't remove the
 	// code in the constructor that sets them
 
 	/**
@@ -118,8 +112,6 @@ class SampleDataEvent extends Event
 	**/
 	@:keep public var position:Float;
 
-	// @:noCompletion private static var __pool:ObjectPool<SampleDataEvent> = new ObjectPool<SampleDataEvent>(function() return new SampleDataEvent(null),
-	// function(event) event.__init());
 	/**
 		Creates an event object that contains information about audio data
 		events. Event objects are passed as parameters to event listeners.
@@ -134,13 +126,13 @@ class SampleDataEvent extends Event
 		@param thedata     A byte array of data.
 	**/
 	#if (js && html5)
-	private var tempBuffer:Float32Array;
-	private var leftChannel:#if haxe4 js.lib.Float32Array #else js.html.Float32Array #end;
-	private var rightChannel:#if haxe4 js.lib.Float32Array #else js.html.Float32Array #end;
+	@:noCompletion private var tempBuffer:Float32Array;
+	@:noCompletion private var leftChannel:js.lib.Float32Array;
+	@:noCompletion private var rightChannel:js.lib.Float32Array;
 	#end
 	#if lime_openal
-	private var leftChannel:Int;
-	private var rightChannel:Int;
+	@:noCompletion private var leftChannel:Int;
+	@:noCompletion private var rightChannel:Int;
 	#end
 
 	public function new(type:String, bubbles:Bool = false, cancelable:Bool = false)
@@ -177,7 +169,7 @@ class SampleDataEvent extends Event
 	}
 
 	#if lime_openal
-	private function getBufferSize():Int
+	@:noCompletion private function getBufferSize():Int
 	{
 		var bufferSize:Int = Std.int(data.length / 4 / 2);
 		if (bufferSize > 0)
@@ -194,7 +186,7 @@ class SampleDataEvent extends Event
 		return bufferSize;
 	}
 
-	private function getSamples(outputBuffer:ByteArray):Void
+	@:noCompletion private function getSamples(outputBuffer:ByteArray):Void
 	{
 		var bytesLength:Int = data.length;
 		var tempFloat:Float;
@@ -215,7 +207,7 @@ class SampleDataEvent extends Event
 	#end
 
 	#if (js && html5)
-	private function getBufferSize():Int
+	@:noCompletion private function getBufferSize():Int
 	{
 		var bufferSize:Int = Std.int(data.length / 4 / 2);
 		if (bufferSize > 0)
@@ -233,7 +225,7 @@ class SampleDataEvent extends Event
 		return 0;
 	}
 
-	private function getSamples(event:js.html.audio.AudioProcessingEvent):Void
+	@:noCompletion private function getSamples(event:js.html.audio.AudioProcessingEvent):Void
 	{
 		data.position = 0;
 		tempBuffer = Float32Array.fromBytes(data);
@@ -249,6 +241,3 @@ class SampleDataEvent extends Event
 	}
 	#end
 }
-#else
-typedef SampleDataEvent = flash.events.SampleDataEvent;
-#end

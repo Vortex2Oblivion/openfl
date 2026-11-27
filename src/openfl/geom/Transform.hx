@@ -1,6 +1,5 @@
 package openfl.geom;
 
-#if !flash
 import openfl.display.DisplayObject;
 
 /**
@@ -57,10 +56,6 @@ import openfl.display.DisplayObject;
 	projection center changes. For more control over the perspective
 	transformation, create a perspective projection Matrix3D object.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.DisplayObject)
 @:access(openfl.geom.ColorTransform)
 class Transform
@@ -127,8 +122,6 @@ class Transform
 	**/
 	public var matrix3D(get, set):Matrix3D;
 
-	// @:noCompletion @:dox(hide) @:require(flash10) public var perspectiveProjection:PerspectiveProjection;
-
 	/**
 		A Rectangle object that defines the bounding rectangle of the display
 		object on the stage.
@@ -140,30 +133,6 @@ class Transform
 	@:noCompletion private var __hasMatrix:Bool;
 	@:noCompletion private var __hasMatrix3D:Bool;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Transform.prototype, {
-			"colorTransform": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_colorTransform (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_colorTransform (v); }")
-			},
-			"concatenatedMatrix": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_concatenatedMatrix (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_concatenatedMatrix (v); }")
-			},
-			"matrix": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_matrix (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_matrix (v); }")
-			},
-			"matrix3D": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_matrix3D (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_matrix3D (v); }")
-			},
-		});
-	}
-	#end
-
 	public function new(displayObject:DisplayObject)
 	{
 		__colorTransform = new ColorTransform();
@@ -174,28 +143,6 @@ class Transform
 		__hasMatrix = true;
 	}
 
-	#if false
-	/**
-		Returns a Matrix3D object, which can transform the space of a
-		specified display object in relation to the current display object's
-		space. You can use the `getRelativeMatrix3D()` method to move one
-		three-dimensional display object relative to another three-dimensional
-		display object.
-
-		@param relativeTo The display object relative to which the
-						  transformation occurs. To get a Matrix3D object
-						  relative to the stage, set the parameter to the
-						  `root` or `stage` object. To get the world-relative
-						  matrix of the display object, set the parameter to a
-						  display object that has a perspective transformation
-						  applied to it.
-		@return A Matrix3D object that can be used to transform the space from
-				the `relativeTo` display object to the current display object
-				space.
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash10) public function getRelativeMatrix3D (relativeTo:DisplayObject):Matrix3D;
-	// @:noCompletion @:dox(hide) @:require(flash10) public function getRelativeMatrix3DToOutput (relativeTo:DisplayObject, output:Matrix3D):Matrix3D;
-	#end
 	// Get & Set Methods
 	@:noCompletion private function get_colorTransform():ColorTransform
 	{
@@ -358,6 +305,3 @@ class Transform
 		}
 	}
 }
-#else
-typedef Transform = flash.geom.Transform;
-#end

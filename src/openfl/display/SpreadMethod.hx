@@ -1,7 +1,5 @@
 package openfl.display;
 
-#if !flash
-#if !openfljs
 /**
 	The SpreadMethod class provides values for the `spreadMethod`
 	parameter in the `beginGradientFill()` and
@@ -10,7 +8,7 @@ package openfl.display;
 	The following example shows the same gradient fill using various spread
 	methods:
 **/
-#if (haxe_ver >= 4.0) enum #else @:enum #end abstract SpreadMethod(Null<Int>)
+enum abstract SpreadMethod(Null<Int>)
 {
 	/**
 		Specifies that the gradient use the _pad_ spread method.
@@ -59,25 +57,3 @@ package openfl.display;
 		}
 	}
 }
-#else
-@SuppressWarnings("checkstyle:FieldDocComment") #if (haxe_ver >= 4.0) enum #else @:enum #end abstract SpreadMethod(String) from String to String
-{
-	public var PAD = "pad";
-	public var REFLECT = "reflect";
-	public var REPEAT = "repeat";
-
-	@:noCompletion private inline static function fromInt(value:Null<Int>):SpreadMethod
-	{
-		return switch (value)
-		{
-			case 0: PAD;
-			case 1: REFLECT;
-			case 2: REPEAT;
-			default: null;
-		}
-	}
-}
-#end
-#else
-typedef SpreadMethod = flash.display.SpreadMethod;
-#end

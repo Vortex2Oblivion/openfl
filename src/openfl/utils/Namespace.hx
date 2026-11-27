@@ -1,6 +1,5 @@
 package openfl.utils;
 
-#if !flash
 /**
 	The Namespace class contains methods and properties for defining and working
 	with namespaces. There are three scenarios for using namespaces:
@@ -19,10 +18,6 @@ package openfl.utils;
 	properties and methods by passing the namespace to other classes, methods or
 	functions.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class Namespace
 {
 	/**
@@ -37,20 +32,6 @@ class Namespace
 
 	@:noCompletion private var __prefix:String;
 	@:noCompletion private var __uri:String;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped global.Object.defineProperties(QName.prototype, {
-			"uri": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_uri (); }")
-			},
-			"prefix": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_prefix (); }")
-			}
-		});
-	}
-	#end
 
 	/**
 		Creates a Namespace object. The values assigned to the uri and prefix
@@ -146,6 +127,3 @@ class Namespace
 		return __prefix;
 	}
 }
-#else
-typedef Namespace = flash.utils.Namespace;
-#end

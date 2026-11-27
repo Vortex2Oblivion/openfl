@@ -1,26 +1,24 @@
 package openfl.display._internal;
 
-#if !flash
-import openfl.display3D._internal.GLBuffer;
-import openfl.utils._internal.Float32Array;
-import openfl.display3D.Context3DMipFilter;
-import openfl.display3D.Context3DTextureFilter;
-import openfl.display3D.Context3DWrapMode;
+import lime.graphics.opengl.GLBuffer;
+import lime.utils.Float32Array;
 import openfl.display.BitmapData;
 import openfl.display.GraphicsShader;
 import openfl.display.ShaderInput;
 import openfl.display.ShaderParameter;
+import openfl.display3D.Context3DBlendTarget;
+import openfl.display3D.Context3DMipFilter;
+import openfl.display3D.Context3DTextureFilter;
+import openfl.display3D.Context3DWrapMode;
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.Shader)
 @SuppressWarnings("checkstyle:FieldDocComment")
 class ShaderBuffer
 {
 	public var inputCount:Int;
 	public var inputRefs:Array<ShaderInput<BitmapData>>;
+	// Should this become an array?
+	public var blendTarget:Context3DBlendTarget;
 	public var inputFilter:Array<Context3DTextureFilter>;
 	public var inputMipFilter:Array<Context3DMipFilter>;
 	public var inputs:Array<BitmapData>;
@@ -34,7 +32,7 @@ class ShaderBuffer
 	public var overrideFloatValues:Array<Array<Float>>;
 	public var overrideIntCount:Int;
 	public var overrideIntNames:Array<String>;
-	@SuppressWarnings("checkstyle:Dynamic") public var overrideIntValues:Array<Array<Dynamic>>;
+	public var overrideIntValues:Array<Array<Dynamic>>;
 	// public var overrideNames:Array<String>;
 	// public var overrideValues:Array<Array<Dynamic>>;
 	public var paramBoolCount:Int;
@@ -106,7 +104,6 @@ class ShaderBuffer
 
 	public function update(shader:GraphicsShader):Void
 	{
-		#if lime
 		inputCount = 0;
 		// overrideCount = 0;
 		overrideIntCount = 0;
@@ -122,6 +119,9 @@ class ShaderBuffer
 		if (shader == null) return;
 
 		shader.__init();
+
+		var blendInput = shader.__bitmap != null ? shader.__bitmap : shader.__texture;
+		blendTarget = blendInput != null ? blendInput.blendTarget : null;
 
 		inputCount = shader.__inputBitmapData.length;
 		var input:ShaderInput<BitmapData>;
@@ -257,7 +257,5 @@ class ShaderBuffer
 		}
 
 		this.shader = shader;
-		#end
 	}
 }
-#end

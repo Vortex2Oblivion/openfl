@@ -1,6 +1,6 @@
 package openfl.desktop;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.errors.IllegalOperationError;
 import openfl.filesystem.File;
 
@@ -31,7 +31,7 @@ class Updater
 	**/
 	public static var isSupported(get, never):Bool;
 
-	private static function get_isSupported():Bool
+	@:noCompletion private static function get_isSupported():Bool
 	{
 		return false;
 	}
@@ -93,8 +93,4 @@ class Updater
 		throw new IllegalOperationError("Not supported");
 	}
 }
-#else
-#if air
-typedef Updater = flash.desktop.Updater;
-#end
 #end

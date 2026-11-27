@@ -1,6 +1,5 @@
 package openfl.events;
 
-#if !flash
 import openfl.display.InteractiveObject;
 import openfl.geom.Point;
 #if openfl_pool_events
@@ -21,10 +20,6 @@ import openfl.utils.ObjectPool;
 
 	@see [Capturing mouse input](https://books.openfl.org/openfl-developers-guide/mouse-input/capturing-mouse-input.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class MouseEvent extends Event
 {
 	/**
@@ -49,33 +44,6 @@ class MouseEvent extends Event
 		| `target` | The InteractiveObject instance under the pointing device. The `target` is not always the object in the display list that registered the event listener. Use the `currentTarget` property to access the object in the display list that is currently processing the event. |
 	**/
 	public static inline var CLICK:EventType<MouseEvent> = "click";
-
-	#if false
-	/**
-		The `MouseEvent.CONTEXT_MENU` constant defines the value of the `type`
-		property of a `contextMenu` event object.
-		This event has the following properties:
-
-		| Property | Value |
-		| --- | --- |
-		| `altKey` | `true` if the Alt key is active (Windows). |
-		| `bubbles` | `true` |
-		| `buttonDown` | `true` if the right mouse button is pressed; `false` otherwise. |
-		| `cancelable` | `false`; the default behavior cannot be canceled. |
-		| `commandKey` | `true` on the Mac if the Command key is active; `false` if it is inactive. Always `false` on Windows. |
-		| `controlKey` | `true` if the Ctrl or Control key is active; `false` if it is inactive. |
-		| `ctrlKey` | `true` on Windows or Linux if the Ctrl key is active. `true` on Mac if either the Ctrl key or the Command key is active. Otherwise, `false`. |
-		| `currentTarget` | The object that is actively processing the Event object with an event listener. |
-		| `localX` | The horizontal coordinate at which the event occurred relative to the containing sprite. |
-		| `localY` | The vertical coordinate at which the event occurred relative to the containing sprite. |
-		| `shiftKey` | `true` if the Shift key is active; `false` if it is inactive. |
-		| `clickCount` | Count of the number of mouse clicks to indicate whether the event is part of a multi-click sequence. |
-		| `stageX` | The horizontal coordinate at which the event occurred in global stage coordinates. |
-		| `stageY` | The vertical coordinate at which the event occurred in global stage coordinates. |
-		| `target` | The InteractiveObject instance under the pointing device. The `target` is not always the object in the display list that registered the event listener. Use the `currentTarget` property to access the object in the display list that is currently processing the event. |
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash11_2) public static var CONTEXT_MENU:String;
-	#end
 
 	/**
 		Defines the value of the `type` property of a `doubleClick` event
@@ -314,7 +282,9 @@ class MouseEvent extends Event
 		| `controlKey` | `true` if the Ctrl or Control key is active; `false` if it is inactive. |
 		| `ctrlKey` | `true` on Windows or Linux if the Ctrl key is active. `true` on Mac if either the Ctrl key or the Command key is active. Otherwise, `false`. |
 		| `currentTarget` | The object that is actively processing the Event object with an event listener. |
-		| `delta` | The number of lines that that each notch on the mouse wheel represents. |
+		| `delta` | The number of lines that that each notch on the mouse wheel represents. **It is preferenced to use the `deltaY` property as this one is used for compatiblity!** |
+		| `deltaX` | The number of characters on the x axis that that each notch on the mouse wheel represents. |
+		| `deltaY` | The number of lines on the y axis that that each notch on the mouse wheel represents. |
 		| `localX` | The horizontal coordinate at which the event occurred relative to the containing sprite. |
 		| `localY` | The vertical coordinate at which the event occurred relative to the containing sprite. |
 		| `shiftKey` | `true` if the Shift key is active; `false` if it is inactive. |
@@ -506,6 +476,8 @@ class MouseEvent extends Event
 	public var ctrlKey:Bool;
 
 	/**
+		**It is preferenced to use the `deltaY` property as this one is used for compatiblity!**
+
 		Indicates how many lines should be scrolled for each unit the user rotates
 		the mouse wheel. A positive delta value indicates an upward scroll; a
 		negative value indicates a downward scroll. Typical values are 1 to 3, but
@@ -513,7 +485,28 @@ class MouseEvent extends Event
 		device and operating system and is usually configurable by the user. This
 		property applies only to the `MouseEvent.mouseWheel` event.
 	**/
-	public var delta:Int;
+	public var delta(get, never):Int;
+
+	/**
+		Indicates how many characters should be scrolled for each unit the user swipes
+		the mouse wheel on the x axis (not supported everywhere). A positive delta value
+		indicates an right scroll; a negative value indicates a left scroll. Typical
+		values are 1 to 3 (can go up to 10+ on some laptops), but faster rotation may
+		produce larger values. This setting depends on the device and operating system
+		and is usually configurable by the user. This property applies onlyto the
+		`MouseEvent.mouseWheel` event.
+	**/
+	public var deltaX:Float;
+
+	/**
+		Indicates how many lines should be scrolled for each unit the user rotates
+		the mouse wheel. A positive delta value indicates an upward scroll; a
+		negative value indicates a downward scroll. Typical values are 1 to 3
+		(can go up to 10+ on some laptops), but faster rotation may produce larger values.
+		This setting depends on the device and operating system and is usually configurable
+		by the user. This property applies only to the `MouseEvent.mouseWheel` event.
+	**/
+	public var deltaY:Float;
 
 	/**
 		If `true`, the `relatedObject` property is set to `null` for reasons related to
@@ -537,9 +530,6 @@ class MouseEvent extends Event
 		containing sprite.
 	**/
 	public var localY:Float;
-
-	// @:noCompletion @:dox(hide) @:require(flash11_2) public var movementX:Float;
-	// @:noCompletion @:dox(hide) @:require(flash11_2) public var movementY:Float;
 
 	/**
 		A reference to a display list object that is related to the event. For
@@ -640,8 +630,8 @@ class MouseEvent extends Event
 							 `MouseEvent.mouseWheel` event.
 	**/
 	public function new(type:String, bubbles:Bool = true, cancelable:Bool = false, localX:Float = 0, localY:Float = 0, relatedObject:InteractiveObject = null,
-			ctrlKey:Bool = false, altKey:Bool = false, shiftKey:Bool = false, buttonDown:Bool = false, delta:Int = 0, commandKey:Bool = false,
-			controlKey:Bool = false, clickCount:Int = 0)
+			ctrlKey:Bool = false, altKey:Bool = false, shiftKey:Bool = false, buttonDown:Bool = false, deltaX:Float = 0, deltaY:Float = 0,
+			commandKey:Bool = false, controlKey:Bool = false, clickCount:Int = 0)
 	{
 		super(type, bubbles, cancelable);
 
@@ -650,7 +640,8 @@ class MouseEvent extends Event
 		this.ctrlKey = ctrlKey;
 		this.bubbles = bubbles;
 		this.relatedObject = relatedObject;
-		this.delta = delta;
+		this.deltaX = deltaX;
+		this.deltaY = deltaY;
 		this.localX = localX;
 		this.localY = localY;
 		this.buttonDown = buttonDown;
@@ -667,8 +658,8 @@ class MouseEvent extends Event
 
 	public override function clone():MouseEvent
 	{
-		var event = new MouseEvent(type, bubbles, cancelable, localX, localY, relatedObject, ctrlKey, altKey, shiftKey, buttonDown, delta, commandKey,
-			controlKey, clickCount);
+		var event = new MouseEvent(type, bubbles, cancelable, localX, localY, relatedObject, ctrlKey, altKey, shiftKey, buttonDown, deltaX, deltaY,
+			commandKey, controlKey, clickCount);
 		event.target = target;
 		event.currentTarget = currentTarget;
 		event.eventPhase = eventPhase;
@@ -688,7 +679,8 @@ class MouseEvent extends Event
 			"altKey",
 			"shiftKey",
 			"buttonDown",
-			"delta"
+			"deltaX",
+			"deltaY"
 		]);
 	}
 
@@ -706,9 +698,9 @@ class MouseEvent extends Event
 	}
 
 	@:noCompletion private static function __create(type:String, button:Int, clickCount:Int, stageX:Float, stageY:Float, local:Point,
-			target:InteractiveObject, delta:Int = 0):MouseEvent
+			target:InteractiveObject, deltaX:Float = 0, deltaY:Float = 0):MouseEvent
 	{
-		var event = new MouseEvent(type, true, false, local.x, local.y, null, __ctrlKey, __altKey, __shiftKey, __buttonDown, delta, __commandKey,
+		var event = new MouseEvent(type, true, false, local.x, local.y, null, __ctrlKey, __altKey, __shiftKey, __buttonDown, deltaX, deltaY, __commandKey,
 			__controlKey, clickCount);
 		event.stageX = stageX;
 		event.stageY = stageY;
@@ -725,7 +717,8 @@ class MouseEvent extends Event
 		altKey = false;
 		ctrlKey = false;
 		relatedObject = null;
-		delta = 0;
+		deltaX = 0;
+		deltaY = 0;
 		localX = 0;
 		localY = 0;
 		buttonDown = false;
@@ -739,7 +732,10 @@ class MouseEvent extends Event
 
 		__updateAfterEventFlag = false;
 	}
+
+	// Get & Set Methods
+	@:noCompletion private function get_delta():Int
+	{
+		return Std.int(deltaY);
+	}
 }
-#else
-typedef MouseEvent = flash.events.MouseEvent;
-#end

@@ -1,16 +1,13 @@
 package openfl.filters;
 
-#if !flash
+import lime._internal.graphics.ImageDataUtil;
 import openfl.display.BitmapData;
 import openfl.display.DisplayObjectRenderer;
 import openfl.display.Shader;
 import openfl.geom.ColorTransform;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
-#if lime
-import lime._internal.graphics.ImageDataUtil; // TODO
 
-#end
 /**
 	The DropShadowFilter class lets you add a drop shadow to display objects.
 	The shadow algorithm is based on the same box filter that the blur filter
@@ -57,10 +54,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	@see `openfl.display.DisplayObject.filters`
 	@see `openfl.display.BitmapData.applyFilter`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.filters.GlowFilter)
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Point)
@@ -167,58 +160,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	@:noCompletion private var __strength:Float;
 	@:noCompletion private var __verticalPasses:Int;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(DropShadowFilter.prototype, {
-			"alpha": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_alpha (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_alpha (v); }")
-			},
-			"angle": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_angle (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_angle (v); }")
-			},
-			"blurX": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_blurX (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_blurX (v); }")
-			},
-			"blurY": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_blurY (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_blurY (v); }")
-			},
-			"color": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_color (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_color (v); }")
-			},
-			"distance": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_distance (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_distance (v); }")
-			},
-			"hideObject": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_hideObject (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_hideObject (v); }")
-			},
-			"inner": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_inner (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_inner (v); }")
-			},
-			"knockout": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_knockout (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_knockout (v); }")
-			},
-			"quality": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_quality (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_quality (v); }")
-			},
-			"strength": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_strength (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_strength (v); }")
-			},
-		});
-	}
-	#end
-
 	/**
 		Creates a new DropShadowFilter instance with the specified parameters.
 
@@ -294,7 +235,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	{
 		// TODO: Support knockout, inner
 
-		#if lime
 		var r = (__color >> 16) & 0xFF;
 		var g = (__color >> 8) & 0xFF;
 		var b = __color & 0xFF;
@@ -306,7 +246,7 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 		finalImage.colorTransform(finalImage.rect, new ColorTransform(0, 0, 0, __alpha, r, g, b, 0).__toLimeColorMatrix());
 
 		if (finalImage == bitmapData.image) return bitmapData;
-		#end
+
 		return sourceBitmapData;
 	}
 
@@ -340,8 +280,9 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 			shader.uColor.value[0] = ((color >> 16) & 0xFF) / 255;
 			shader.uColor.value[1] = ((color >> 8) & 0xFF) / 255;
 			shader.uColor.value[2] = (color & 0xFF) / 255;
-			shader.uColor.value[3] = alpha;
-			shader.uStrength.value[0] = blurPass == (numBlurPasses - 1) ? __strength : 1.0;
+			var finalBlurPass = blurPass == (numBlurPasses - 1);
+			shader.uColor.value[3] = finalBlurPass ? alpha : 1.0;
+			shader.uStrength.value[0] = finalBlurPass ? __strength : 1.0;
 			return shader;
 		}
 		if (__inner)
@@ -553,10 +494,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class HideShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -584,6 +521,3 @@ private class HideShader extends BitmapFilterShader
 		#end
 	}
 }
-#else
-typedef DropShadowFilter = flash.filters.DropShadowFilter;
-#end

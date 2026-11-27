@@ -1,6 +1,6 @@
 package openfl.events;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.events.Event;
 import openfl.filesystem.File;
 
@@ -56,8 +56,4 @@ class FileListEvent extends Event
 		return new FileListEvent(type, files, bubbles, cancelable);
 	}
 }
-#else
-#if air
-typedef FileListEvent = flash.events.FileListEvent
-#end
 #end

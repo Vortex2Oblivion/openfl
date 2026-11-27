@@ -1,9 +1,6 @@
 package openfl.ui;
 
-#if !flash
-#if lime
 import lime.ui.KeyCode;
-#end
 
 /**
 	The Keyboard class is used to build an interface that can be controlled by
@@ -15,10 +12,6 @@ import lime.ui.KeyCode;
 	@see [Capturing keyboard input](https://books.openfl.org/openfl-developers-guide/keyboard-input/capturing-keyboard-input.html)
 	@see `openfl.events.KeyboardEvent`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:final class Keyboard
 {
 	/**
@@ -569,7 +562,6 @@ import lime.ui.KeyCode;
 		return false;
 	}
 
-	#if lime
 	@:noCompletion private static inline function __convertKeyCode(key:KeyCode):Int
 	{
 		return switch (key)
@@ -812,7 +804,6 @@ import lime.ui.KeyCode;
 			default: cast key;
 		}
 	}
-	#end
 
 	@:noCompletion private static function __getCharCode(key:Int, shift:Bool = false, capsLock:Bool = false):Int
 	{
@@ -953,7 +944,6 @@ import lime.ui.KeyCode;
 		return 0;
 	}
 
-	#if lime
 	@:noCompletion private static inline function __getKeyLocation(key:KeyCode):KeyLocation
 	{
 		return switch (key)
@@ -967,8 +957,4 @@ import lime.ui.KeyCode;
 			default: KeyLocation.STANDARD;
 		}
 	}
-	#end
 }
-#else
-typedef Keyboard = flash.ui.Keyboard;
-#end

@@ -1,15 +1,15 @@
 package openfl.net;
 
-#if (!flash && !html5)
+#if !html5
 import haxe.io.Error;
 import openfl.Lib;
 import openfl.errors.ArgumentError;
+import openfl.errors.Error as OFLError;
 import openfl.errors.IOError;
 import openfl.errors.RangeError;
-import openfl.errors.Error as OFLError;
 import openfl.events.Event;
-import openfl.events.EventType;
 import openfl.events.EventDispatcher;
+import openfl.events.EventType;
 import openfl.events.ServerSocketConnectEvent;
 import openfl.net.Socket as OFLSocket;
 import openfl.utils.ByteArray;
@@ -60,10 +60,7 @@ import sys.net.Socket;
 	@event close    Dispatched when the operating system closes this socket.
 	@event connect  Dispatched when a remote socket seeks to connect to this server socket.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 @:access(openfl.net.Socket)
 class ServerSocket extends EventDispatcher
 {
@@ -228,12 +225,7 @@ class ServerSocket extends EventDispatcher
 		{
 			// Setting haxe tcp backlog to 0 doesn't seem to force the maximum limit as it does in
 			// AIR so instead we set it to maximum integer which should clamp it to the maximum limit.
-			#if neko
-			// neko throws std@socket_listen if this value is too large
-			backlog = 0x3FFFFFFF;
-			#else
 			backlog = 0x7FFFFFFF;
-			#end
 		}
 
 		__serverSocket.listen(backlog);
@@ -275,7 +267,19 @@ class ServerSocket extends EventDispatcher
 		catch (e:Error)
 		{
 			close();
-			dispatchEvent(new Event(Event.CLOSE));
+
+			#if openfl_pool_events
+			var closeEvent = Event.__pool.get();
+			closeEvent.type = Event.CLOSE;
+			#else
+			var closeEvent = new Event(Event.CLOSE);
+			#end
+
+			dispatchEvent(closeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(closeEvent);
+			#end
 		}
 		catch (e:Dynamic)
 		{
@@ -310,7 +314,7 @@ class ServerSocket extends EventDispatcher
 		}
 	}
 
-	private function get_isSupported():Bool
+	@:noCompletion private function get_isSupported():Bool
 	{
 		#if html5
 		return false;
@@ -319,8 +323,4 @@ class ServerSocket extends EventDispatcher
 		#end
 	}
 }
-#else
-#if air
-typedef ServerSocket = flash.net.ServerSocket;
-#end
 #end

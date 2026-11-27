@@ -1,18 +1,15 @@
 package openfl.filters;
 
-#if !flash
-import openfl.display.BitmapDataChannel;
-import openfl.geom.Rectangle;
-import openfl.geom.Point;
-import openfl.display.BitmapData;
-import openfl.display.DisplayObjectRenderer;
-import openfl.display.Shader;
-#if lime
 import lime._internal.graphics.ImageCanvasUtil;
 import lime._internal.graphics.ImageDataUtil;
 import lime.math.Vector2;
 import lime.math.Vector4;
-#end
+import openfl.display.BitmapData;
+import openfl.display.BitmapDataChannel;
+import openfl.display.DisplayObjectRenderer;
+import openfl.display.Shader;
+import openfl.geom.Point;
+import openfl.geom.Rectangle;
 
 /**
 	The DisplacementMapFilter class uses the pixel values from the specified
@@ -58,17 +55,13 @@ import lime.math.Vector4;
 	@see `openfl.display.DisplayObject.filters`
 	@see `openfl.display.BitmapData.applyFilter`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.geom.Point)
 @:access(openfl.geom.Rectangle)
 @:final class DisplacementMapFilter extends BitmapFilter
 {
 	@:noCompletion private static var __displacementMapShader:DisplacementMapShader = new DisplacementMapShader();
-	private static var __matrixData:Array<Float> = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-	private static var __offset:Array<Float> = [0.5, 0.5, 0.0, 0.0];
+	@:noCompletion private static var __matrixData:Array<Float> = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+	@:noCompletion private static var __offset:Array<Float> = [0.5, 0.5, 0.0, 0.0];
 
 	/**
 		Specifies the alpha transparency value to use for out-of-bounds
@@ -222,7 +215,6 @@ import lime.math.Vector4;
 
 	@:noCompletion private override function __applyFilter(bitmapData:BitmapData, sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point):BitmapData
 	{
-		#if lime
 		__updateMapMatrix();
 
 		#if (js && html5)
@@ -237,7 +229,6 @@ import lime.math.Vector4;
 
 			new Vector4(__matrixData[0], __matrixData[4], __matrixData[8], __matrixData[12]),
 			new Vector4(__matrixData[1], __matrixData[5], __matrixData[9], __matrixData[13]), __smooth);
-		#end
 
 		return bitmapData;
 	}
@@ -389,10 +380,6 @@ import lime.math.Vector4;
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class DisplacementMapShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -445,6 +432,3 @@ private class DisplacementMapShader extends BitmapFilterShader
 		super();
 	}
 }
-#else
-typedef DisplacementMapFilter = flash.filters.DisplacementMapFilter;
-#end

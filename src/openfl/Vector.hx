@@ -1,7 +1,6 @@
 package openfl;
 
-#if (!flash || display)
-#if (!openfljs || !js)
+#if !js
 import haxe.Constraints.Function;
 
 /**
@@ -16,37 +15,35 @@ import haxe.Constraints.Function;
 	setting and retrieving element values. These include `push()`, `pop()`, `shift()`,
 	`unshift()`, and others. The properties and methods of a Vector object are
 	similar — in most cases identical — to the properties and methods of an Array. In
-	most cases where you would use an Array in which all the elements have the same
-	data type, a Vector instance is preferable. However, Vector instances are dense
-	arrays, meaning it must have a value (or `null`) in each index. Array instances
-	don't have this same restriction.
+	some cases where you would use an Array in which all the elements have the same
+	data type, a Vector instance may be preferable.
 
 	The Vector's base type is specified using postfix type parameter syntax. Type
-	parameter syntax is a sequence consisting of a dot (`.`), left angle bracket (`<`),
+	parameter syntax is a sequence consisting of a left angle bracket (`<`),
 	class name, then a right angle bracket (`>`), as shown in this example:
 
 	In the first line of the example, the variable `v` is declared as a
-	Vector.<String> instance. In other words, it represents a Vector (an array) that
+	`Vector<String>` instance. In other words, it represents a Vector (an array) that
 	can only hold String instances and from which only String instances can be
 	retrieved. The second line constructs an instance of the same Vector type (that is,
 	a Vector whose elements are all String objects) and assigns it to `v`.
 
-	```as3
-	var v:Vector.<String>;
-	v = new Vector.<String>();
+	```haxe
+	var v:Vector<String>;
+	v = new Vector<String>();
 	```
 
-	A variable declared with the Vector.<T> data type can only store a Vector instance
+	A variable declared with the Vector<T> data type can only store a Vector instance
 	that is constructed with the same base type T. For example, a Vector that's
-	constructed by calling `new Vector.<String>()` can't be assigned to a variable that's
-	declared with the Vector.<int> data type. The base types must match exactly. For
+	constructed by calling `new Vector<String>()` can't be assigned to a variable that's
+	declared with the Vector<Int> data type. The base types must match exactly. For
 	example, the following code doesn't compile because the object's base type isn't
 	the same as the variable's declared base type (even though Sprite is a subclass of
 	DisplayObject):
 
 	```haxe
 	// This code doesn't compile even though Sprite is a DisplayObject subclass
-	var v:Vector.<DisplayObject> = new Vector.<Sprite>();
+	var v:Vector<DisplayObject> = new Vector<Sprite>();
 	```
 
 	To convert a Vector with base type T to a Vector of a superclass of T, use the
@@ -68,8 +65,12 @@ import haxe.Constraints.Function;
 	As a result of its restrictions, a Vector has three primary benefits over an Array
 	instance whose elements are all instances of a single class:
 
-	* Performance: array element access and iteration are much faster when using a
-	Vector instance than they are when using an Array.
+	* Performance: array element access and iteration are much faster on the
+	Flash and AIR targets when using a Vector instance than they are when using
+	an Array. On other targets, Vectors are usually a bit slower. Vectors are
+	mainly provided in OpenFL for backwards compatibility with ActionScript 3.0
+	code ported to Haxe because Haxe Arrays have a type parameter by default. If
+	not targeting Flash or AIR, prefer Array over Vector.
 	* Type safety: in strict mode the compiler can identify data type errors. Examples
 	of data type errors include assigning a value of the incorrect data type to a
 	Vector or expecting the wrong data type when reading a value from a Vector. Note,
@@ -79,9 +80,7 @@ import haxe.Constraints.Function;
 	* Reliability: runtime range checking (or fixed-length checking) increases
 	reliability significantly over Arrays.
 **/
-#if !flash
 @:multiType(T)
-#end
 abstract Vector<T>(IVector<T>)
 {
 	/**
@@ -118,45 +117,39 @@ abstract Vector<T>(IVector<T>)
 	/**
 		Creates a Vector with the specified base type.
 
-		When calling the `Vector.<T>()` constructor, specify the base type using
+		When calling the `Vector<T>()` constructor, specify the base type using
 		type parameter syntax. Type parameter syntax is a sequence consisting of a
-		dot (`.`), left angle bracket (`<`), class name, then a right angle bracket (`>`),
+		left angle bracket (`<`), class name, then a right angle bracket (`>`),
 		as shown in this example:
 
-		```as3
-		var v:Vector.<String> = new Vector.<String>();
+		```haxe
+		var v:Vector<String> = new Vector<String>();
 		```
 
-		To create a Vector instance from an Array or another Vector (such as one with a
-		different base type), use the `Vector()` global function.
+		To create a Vector instance from an Array, use the `Vector.ofArray()`
+		static function.
 
-		To create a pre-populated Vector instance, use the following syntax instead of
-		using the parameters specified below:
+		```haxe
+		var array:Array<String> = ["a", "b", "c"];
+		var v:Vector<String> = Vector.ofArray(array);
+		```
 
-		```as3
-		// var v:Vector.<T> = new <T>[E0, ..., En-1 ,];
+		To create a pre-populated Vector instance from a set of values, use the
+		`Vector.ofValues()` static function.
+
+		```haxe
+		// var v:Vector<T> = Vector.ofValues(E0, E1, ..., En-1, En);
 		// For example:
-		var v:Vector.<int> = new <int>[0,1,2,];
+		var v:Vector<String> = Vector.ofValues("a", "b", "c");
 		```
 
-		The following information applies to this syntax:
+		The following information applies to these static methods:
 
-		* It is supported in Flash Professional CS5 and later, Flash Builder 4 and later,
-		and Flex 4 and later.
-		* The trailing comma is optional.
-		* Empty items in the array are not supported; a statement such as
-		`var v:Vector.<int> = new <int>[0,,2,]` throws a compiler error.
-		* You can't specify a default length for the Vector instance. Instead, the length
-		is the same as the number of elements in the initialization list.
-		* You can't specify whether the Vector instance has a fixed length. Instead, use
-		the fixed property.
-		* Data loss or errors can occur if items passed as values don't match the
-		specified type. For example:
-
-		```as3
-		var v:Vector.<int> = new <int>[4.2]; // compiler error when running in strict mode
-		trace(v[0]); //returns 4 when not running in strict mode
-		```
+		* You can't specify a default length for the Vector instance. Instead,
+		the length is the same as the number of elements in the initialization
+		list.
+		* You can't specify whether the Vector instance has a fixed length.
+		Instead, set the fixed property.
 
 		@param	length	The initial length (number of elements) of the Vector. If this
 		parameter is greater than zero, the specified number of Vector elements are
@@ -165,14 +158,7 @@ abstract Vector<T>(IVector<T>)
 		@param	fixed	Whether the Vector's length is fixed (`true`) or can be changed
 		(`false`). This value can also be set using the fixed property.
 	**/
-	#if !flash
 	public function new(length:Null<Int> = 0, fixed:Null<Bool> = false, array:Array<T> = null):Void;
-	#else
-	public function new(length:Null<Int> = 0, fixed:Null<Bool> = false, array:Array<T> = null):Void
-	{
-		this = null;
-	}
-	#end
 
 	/**
 		Concatenates the Vectors specified in the parameters list with the elements in
@@ -367,10 +353,41 @@ abstract Vector<T>(IVector<T>)
 		the Vector.
 		@throws	RangeError	If this method is called while `fixed` is `true`.
 	**/
+	#if !doc_gen
+	#if (haxe_ver >= 4.3)
+	overload extern public inline function push(value:T):Int
+	{
+		return this.push(value);
+	}
+
+	overload extern public inline function push(args:haxe.Rest<T>):Int
+	{
+		var ret:Int = this.length;
+		for (value in args)
+		{
+			ret = this.push(value);
+		}
+		return ret;
+	}
+	#else
+	// 4.2 considers T and ...T ambiguous
+	public inline function push(args:haxe.Rest<T>):Int
+	{
+		var ret:Int = this.length;
+		for (value in args)
+		{
+			ret = this.push(value);
+		}
+		return ret;
+	}
+	#end
+	#else
+	// dummy method (I dont know why but I was having issues with Haxe3 Compilation while
 	public inline function push(value:T):Int
 	{
 		return this.push(value);
 	}
+	#end
 
 	/**
 		Remove a single element from the Vector. This method modifies the Vector without
@@ -488,8 +505,8 @@ abstract Vector<T>(IVector<T>)
 		* a function that takes two arguments of the base type (T) of the Vector and
 		returns a Number:
 
-			```as3
-			function compare(x:T, y:T):Number {}
+			```haxe
+			function compare(x:T, y:T):Int {}
 			```
 
 			The logic of the function is that, given two elements `x` and `y`, the function
@@ -546,9 +563,8 @@ abstract Vector<T>(IVector<T>)
 		@throws	RangeError	If the startIndex and deleteCount arguments specify an index to be deleted that's outside the Vector's bounds.
 		@throws	RangeError	If this method is called while fixed is true and the splice() operation changes the length of the Vector.
 	**/
-	public inline function splice(startIndex:Int, deleteCount:Int #if (haxe_ver >= 4.2), ...items #end):Vector<T>
+	public inline function splice(startIndex:Int, deleteCount:Int, ...items):Vector<T>
 	{
-		#if (haxe_ver >= 4.2)
 		@:privateAccess this.__tempIndex = startIndex;
 
 		for (item in items)
@@ -557,9 +573,6 @@ abstract Vector<T>(IVector<T>)
 			@:privateAccess this.__tempIndex++;
 		}
 		return cast this.splice(@:privateAccess this.__tempIndex, deleteCount);
-		#else
-		return cast this.splice(startIndex, deleteCount);
-		#end
 	}
 
 	/**
@@ -592,10 +605,43 @@ abstract Vector<T>(IVector<T>)
 		Vector.
 		@throws	RangeError	If this method is called while fixed is true.
 	**/
+	#if !doc_gen
+	#if (haxe_ver >= 4.3)
+	overload extern public inline function unshift(value:T):Void
+	{
+		this.unshift(value);
+	}
+
+	overload extern public inline function unshift(args:haxe.Rest<T>):Void
+	{
+		// TODO: We're supposed to return a value here, but we dont.
+		// var ret:Int = this.length;
+		for (value in args)
+		{
+			// ret =
+			this.unshift(value);
+		}
+		// return ret;
+	}
+	#else
+	public inline function unshift(args:haxe.Rest<T>):Void
+	{
+		// TODO: We're supposed to return a value here, but we dont.
+		// var ret:Int = this.length;
+		for (value in args)
+		{
+			// ret =
+			this.unshift(value);
+		}
+		// return ret;
+	}
+	#end
+	#else
 	public inline function unshift(value:T):Void
 	{
 		this.unshift(value);
 	}
+	#end
 
 	/**
 		Creates a new Vector object using the values from an Array object
@@ -615,6 +661,23 @@ abstract Vector<T>(IVector<T>)
 	}
 
 	/**
+		Creates a new Vector object populated with the specified parameters
+		@param	values	Objects of the specified type
+		@return	A new Vector object
+	**/
+	public inline static function ofValues<T>(...values:T):Vector<T>
+	{
+		var vector:Vector<T> = new Vector<T>();
+
+		for (i in 0...values.length)
+		{
+			vector[i] = cast values[i];
+		}
+
+		return vector;
+	}
+
+	/**
 		Attempts to cast a Vector to another Vector object of a similar type
 		@param	vec	A Vector object to cast
 		@return	The casted Vector object
@@ -624,37 +687,32 @@ abstract Vector<T>(IVector<T>)
 		return cast vec;
 	}
 
-	#if !flash
-	@:to #if (!js && !flash) inline #end private static function toBoolVector<T:Bool>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):BoolVector
+	@:to #if !js inline #end private static function toBoolVector<T:Bool>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):BoolVector
 	{
 		return new BoolVector(length, fixed, cast array);
 	}
 
-	@:to #if (!js && !flash) inline #end private static function toIntVector<T:Int>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):IntVector
+	@:to #if !js inline #end private static function toIntVector<T:Int>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):IntVector
 	{
 		return new IntVector(length, fixed, cast array);
 	}
 
-	@:to #if (!js && !flash) inline #end private static function toFloatVector<T:Float>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):FloatVector
+	@:to #if !js inline #end private static function toFloatVector<T:Float>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):FloatVector
 	{
 		return new FloatVector(length, fixed, cast array, true);
 	}
 
-	#if !cs
-	@:to #if (!js && !flash) inline #end private static function toFunctionVector<T:Function>(t:IVector<T>, length:Int, fixed:Bool,
-			array:Array<T>):FunctionVector
+	@:to #if !js inline #end private static function toFunctionVector<T:Function>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):FunctionVector
 	{
 		return new FunctionVector(length, fixed, cast array);
 	}
-	#end
 
-	@:to #if (!js && !flash) inline #end private static function toObjectVector<T:{}>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):ObjectVector<T>
+	@:to #if !js inline #end private static function toObjectVector<T:{}>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):ObjectVector<T>
 	{
 		return new ObjectVector<T>(length, fixed, cast array, true);
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic") @:to #if (!js && !flash) inline #end private static function toNullVector<T:Null<Dynamic>>(t:IVector<T>,
-			length:Int, fixed:Bool, array:Array<T>):ObjectVector<T>
+	@:to #if !js inline #end private static function toNullVector<T:Null<Dynamic>>(t:IVector<T>, length:Int, fixed:Bool, array:Array<T>):ObjectVector<T>
 	{
 		return new ObjectVector<T>(length, fixed, cast array, true);
 	}
@@ -674,18 +732,15 @@ abstract Vector<T>(IVector<T>)
 		return cast vector;
 	}
 
-	#if !cs
 	@:from private static inline function fromFunctionVector<T:Function>(vector:FunctionVector):Vector<T>
 	{
 		return cast vector;
 	}
-	#end
 
 	@:from private static inline function fromObjectVector<T>(vector:ObjectVector<T>):Vector<T>
 	{
 		return cast vector;
 	}
-	#end
 
 	// Getters & Setters
 	@:noCompletion private inline function get_fixed():Bool
@@ -709,11 +764,6 @@ abstract Vector<T>(IVector<T>)
 	}
 }
 
-#if !flash
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:dox(hide) private class BoolVector implements IVector<Bool>
 {
@@ -800,7 +850,7 @@ abstract Vector<T>(IVector<T>)
 		}
 	}
 
-	public function iterator():Iterator<Bool>
+	public inline function iterator():Iterator<Bool>
 	{
 		return cast __array.iterator();
 	}
@@ -903,7 +953,6 @@ abstract Vector<T>(IVector<T>)
 		return new BoolVector(0, false, __array.splice(pos, len));
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
 	@:noCompletion @:keep private function toJSON():Dynamic
 	{
 		return __array;
@@ -959,10 +1008,6 @@ abstract Vector<T>(IVector<T>)
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:dox(hide) private class FloatVector implements IVector<Float>
 {
@@ -972,7 +1017,6 @@ abstract Vector<T>(IVector<T>)
 	@:noCompletion private var __array:Array<Float>;
 	@:noCompletion private var __tempIndex:Int;
 
-	@SuppressWarnings("checkstyle:Dynamic")
 	public function new(length:Int = 0, fixed:Bool = false, array:Array<Dynamic> = null, forceCopy:Bool = false):Void
 	{
 		if (forceCopy)
@@ -1052,7 +1096,7 @@ abstract Vector<T>(IVector<T>)
 		}
 	}
 
-	public function iterator():Iterator<Float>
+	public inline function iterator():Iterator<Float>
 	{
 		return cast __array.iterator();
 	}
@@ -1155,7 +1199,6 @@ abstract Vector<T>(IVector<T>)
 		return new FloatVector(0, false, __array.splice(pos, len));
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
 	@:noCompletion @:keep private function toJSON():Dynamic
 	{
 		return __array;
@@ -1185,14 +1228,7 @@ abstract Vector<T>(IVector<T>)
 		if (value != __array.length && !fixed)
 		{
 			#if cpp
-			if (value > __array.length)
-			{
-				cpp.NativeArray.setSize(__array, value);
-			}
-			else
-			{
-				__array.splice(value, __array.length);
-			}
+			cpp.NativeArray.setSize(__array, value);
 			#else
 			var currentLength = __array.length;
 			if (value < 0) value = 0;
@@ -1218,11 +1254,6 @@ abstract Vector<T>(IVector<T>)
 	}
 }
 
-#if !cs
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:dox(hide) private class FunctionVector implements IVector<Function>
 {
@@ -1309,7 +1340,7 @@ abstract Vector<T>(IVector<T>)
 		}
 	}
 
-	public function iterator():Iterator<Function>
+	public inline function iterator():Iterator<Function>
 	{
 		return cast __array.iterator();
 	}
@@ -1412,7 +1443,6 @@ abstract Vector<T>(IVector<T>)
 		return new FunctionVector(0, false, __array.splice(pos, len));
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
 	@:noCompletion @:keep private function toJSON():Dynamic
 	{
 		return __array;
@@ -1467,12 +1497,7 @@ abstract Vector<T>(IVector<T>)
 		return __array.length;
 	}
 }
-#end
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:dox(hide) private class IntVector implements IVector<Int>
 {
@@ -1552,7 +1577,7 @@ abstract Vector<T>(IVector<T>)
 		}
 	}
 
-	public function iterator():Iterator<Int>
+	public inline function iterator():Iterator<Int>
 	{
 		return cast __array.iterator();
 	}
@@ -1655,7 +1680,6 @@ abstract Vector<T>(IVector<T>)
 		return new IntVector(0, false, __array.splice(pos, len));
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
 	@:noCompletion @:keep private function toJSON():Dynamic
 	{
 		return __array;
@@ -1711,10 +1735,6 @@ abstract Vector<T>(IVector<T>)
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:dox(hide) private class ObjectVector<T> implements IVector<T>
 {
@@ -1724,7 +1744,6 @@ abstract Vector<T>(IVector<T>)
 	@:noCompletion private var __array:Array<T>;
 	@:noCompletion private var __tempIndex:Int;
 
-	@SuppressWarnings("checkstyle:Dynamic")
 	public function new(length:Int = 0, fixed:Bool = false, array:Array<Dynamic> = null, forceCopy:Bool = false):Void
 	{
 		if (forceCopy)
@@ -1747,7 +1766,6 @@ abstract Vector<T>(IVector<T>)
 		this.fixed = fixed;
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
 	public function concat(a:IVector<T> = null):IVector<T>
 	{
 		if (a == null)
@@ -1805,7 +1823,7 @@ abstract Vector<T>(IVector<T>)
 		}
 	}
 
-	public function iterator():Iterator<T>
+	public inline function iterator():Iterator<T>
 	{
 		return cast __array.iterator();
 	}
@@ -1908,7 +1926,6 @@ abstract Vector<T>(IVector<T>)
 		return new ObjectVector(0, false, __array.splice(pos, len));
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
 	@:noCompletion @:keep private function toJSON():Dynamic
 	{
 		return __array;
@@ -1963,7 +1980,6 @@ abstract Vector<T>(IVector<T>)
 		return __array.length;
 	}
 }
-#end
 
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:noCompletion @:dox(hide) private interface IVector<T>
@@ -2021,7 +2037,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 		// a bare Array object is passed in
 
 		// return cast this.concat (cast a);
-		return VectorData.ofArray(untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.concat.call")(this, a));
+		return VectorData.ofArray(untyped js.Syntax.code("Array.prototype.concat.call")(this, a));
 	}
 
 	public inline function copy():Vector<T>
@@ -2032,7 +2048,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 
 	public function filter(callback:T->Bool):Vector<T>
 	{
-		return VectorData.ofArray(untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.filter.call")(this, callback));
+		return VectorData.ofArray(untyped js.Syntax.code("Array.prototype.filter.call")(this, callback));
 	}
 
 	@:arrayAccess public inline function get(index:Int):T
@@ -2044,7 +2060,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	public inline function indexOf(x:T, ?from:Int = 0):Int
 	{
 		// return this.indexOf (x, from);
-		return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.indexOf.call")(this, x, from);
+		return untyped js.Syntax.code("Array.prototype.indexOf.call")(this, x, from);
 	}
 
 	public function insertAt(index:Int, element:T):Void
@@ -2052,7 +2068,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 		// this.insertAt (index, element);
 		if (!this.fixed || index < this.length)
 		{
-			untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.splice.call")(this, index, 0, element);
+			untyped js.Syntax.code("Array.prototype.splice.call")(this, index, 0, element);
 		}
 	}
 
@@ -2065,7 +2081,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	public inline function join(sep:String = ","):String
 	{
 		// return this.join (sep);
-		return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.join.call")(this, sep);
+		return untyped js.Syntax.code("Array.prototype.join.call")(this, sep);
 	}
 
 	public function lastIndexOf(x:T, ?from:Int):Int
@@ -2073,11 +2089,11 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 		// return this.lastIndexOf (x, from);
 		if (from == null)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.lastIndexOf.call")(this, x);
+			return untyped js.Syntax.code("Array.prototype.lastIndexOf.call")(this, x);
 		}
 		else
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.lastIndexOf.call")(this, x, from);
+			return untyped js.Syntax.code("Array.prototype.lastIndexOf.call")(this, x, from);
 		}
 	}
 
@@ -2086,7 +2102,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 		// return this.pop ();
 		if (!fixed)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.pop.call")(this);
+			return untyped js.Syntax.code("Array.prototype.pop.call")(this);
 		}
 		else
 		{
@@ -2099,11 +2115,11 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 		// return this.push (x);
 		if (!fixed)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.push.call")(this, x);
+			return untyped js.Syntax.code("Array.prototype.push.call")(this, x);
 		}
 		else
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("this").length;
+			return untyped js.Syntax.code("this").length;
 		}
 	}
 
@@ -2112,7 +2128,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 		// return this.removeAt (index);
 		if (!this.fixed || index < this.length)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.splice.call")(this, index, 1)[0];
+			return untyped js.Syntax.code("Array.prototype.splice.call")(this, index, 1)[0];
 		}
 
 		return null;
@@ -2121,7 +2137,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	public inline function reverse():Vector<T>
 	{
 		// return cast this.reverse ();
-		return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.reverse.call")(this);
+		return untyped js.Syntax.code("Array.prototype.reverse.call")(this);
 	}
 
 	@:arrayAccess public function set(index:Int, value:T):T
@@ -2142,7 +2158,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 		// return this.shift ();
 		if (!this.fixed)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.shift.call")(this);
+			return untyped js.Syntax.code("Array.prototype.shift.call")(this);
 		}
 		else
 		{
@@ -2153,19 +2169,19 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	public inline function slice(startIndex:Int = 0, endIndex:Null<Int> = 16777215):Vector<T>
 	{
 		// return cast this.slice (pos, end);
-		return VectorData.ofArray(untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.slice.call")(this, startIndex, endIndex));
+		return VectorData.ofArray(untyped js.Syntax.code("Array.prototype.slice.call")(this, startIndex, endIndex));
 	}
 
 	public inline function sort(f:T->T->Int):Void
 	{
 		// this.sort (f);
-		untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.sort.call")(this, f);
+		untyped js.Syntax.code("Array.prototype.sort.call")(this, f);
 	}
 
 	public inline function splice(pos:Int, len:Int):Vector<T>
 	{
 		// return cast this.splice (pos, len);
-		return VectorData.ofArray(untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.splice.call")(this, pos, len));
+		return VectorData.ofArray(untyped js.Syntax.code("Array.prototype.splice.call")(this, pos, len));
 	}
 
 	public inline function toString():String
@@ -2178,13 +2194,18 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 		// this.unshift (x);
 		if (!this.fixed)
 		{
-			untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.unshift.call")(this, x);
+			untyped js.Syntax.code("Array.prototype.unshift.call")(this, x);
 		}
 	}
 
 	public inline static function ofArray<T>(a:Array<T>):Vector<T>
 	{
 		return cast VectorData.ofArray(a);
+	}
+
+	public inline static function ofValues<T>(...values:T):Vector<T>
+	{
+		return cast VectorData.ofArray(values);
 	}
 
 	public inline static function convert<T, U>(v:VectorData<T>):VectorData<U>
@@ -2224,7 +2245,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 
 	@:noCompletion private static function __init__()
 	{
-		untyped #if haxe4 js.Syntax.code #else __js__ #end ("var prefix = (typeof openfl_VectorData !== 'undefined');
+		untyped js.Syntax.code("var prefix = (typeof openfl_VectorData !== 'undefined');
 		var ref = (prefix ? openfl_VectorData : VectorData);
 		var p = ref.prototype;
 		var construct = p.construct;
@@ -2247,10 +2268,13 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 			unshift: { value: p.unshift },
 			get_length: { value: p.get_length },
 			set_length: { value: p.set_length },
+			fixed: { writable: true },
 		}
 		var _VectorData = function (length, fixed, array) {
 			if (array == null) array = [];
-			return Object.defineProperties (construct (array, length, fixed), _VectorDataDescriptor);
+			var result = Object.defineProperties (array, _VectorDataDescriptor);
+			construct (result, length, fixed);
+			return result;
 		}
 		_VectorDataDescriptor.constructor.value = _VectorData;
 		_VectorData.__name__ = ref.__name__;
@@ -2272,7 +2296,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 		{
 			// for (i in 0...length) {
 
-			// 	untyped #if haxe4 js.Syntax.code #else __js__ #end ("this")[i] = untyped #if haxe4 js.Syntax.code #else __js__ #end ("null");
+			// 	untyped js.Syntax.code("this")[i] = untyped js.Syntax.code("null");
 
 			// }
 
@@ -2286,7 +2310,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 
 	public function concat(?a:Vector<T>):VectorData<T>
 	{
-		return VectorData.ofArray(untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.concat.call (this, a)"));
+		return VectorData.ofArray(untyped js.Syntax.code("Array.prototype.concat.call (this, a)"));
 	}
 
 	public function copy():VectorData<T>
@@ -2296,12 +2320,12 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 
 	public function filter(callback:T->Bool):Vector<T>
 	{
-		return VectorData.ofArray(untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.filter.call (this, callback)"));
+		return VectorData.ofArray(untyped js.Syntax.code("Array.prototype.filter.call (this, callback)"));
 	}
 
 	public function get(index:Int):T
 	{
-		return untyped #if haxe4 js.Syntax.code #else __js__ #end ("this")[index];
+		return untyped js.Syntax.code("this")[index];
 	}
 
 	public function indexOf(x:T, ?from:Int = 0):Int
@@ -2311,9 +2335,9 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 
 	public function insertAt(index:Int, element:T):Void
 	{
-		if (!fixed || index < untyped #if haxe4 js.Syntax.code #else __js__ #end ("this").length)
+		if (!fixed || index < untyped js.Syntax.code("this").length)
 		{
-			untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.splice.call (this, index, 0, element)");
+			untyped js.Syntax.code("Array.prototype.splice.call (this, index, 0, element)");
 		}
 	}
 
@@ -2331,23 +2355,33 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	{
 		if (from == null)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.lastIndexOf.call (this, x)");
+			return untyped js.Syntax.code("Array.prototype.lastIndexOf.call (this, x)");
 		}
 		else
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.lastIndexOf.call (this, x, from)");
+			return untyped js.Syntax.code("Array.prototype.lastIndexOf.call (this, x, from)");
 		}
 	}
 
-	public static function ofArray<T>(a:Array<Dynamic>):VectorData<T>
+	public static function ofArray<T>(a:Array<T>):VectorData<T>
 	{
 		if (a == null) return null;
 
 		var data = new VectorData<T>();
 		for (i in 0...a.length)
 		{
-			// data[i] = untyped #if haxe4 js.Syntax.code #else __js__ #end ("a[i] === a[i] ? a[i] : null");
+			// data[i] = untyped js.Syntax.code("a[i] === a[i] ? a[i] : null");
 			data[i] = a[i];
+		}
+		return data;
+	}
+
+	public static function ofValues<T>(...values:T):VectorData<T>
+	{
+		var data = new VectorData<T>();
+		for (i in 0...values.length)
+		{
+			data[i] = values[i];
 		}
 		return data;
 	}
@@ -2356,7 +2390,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	{
 		if (!fixed)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.pop.call (this)");
+			return untyped js.Syntax.code("Array.prototype.pop.call (this)");
 		}
 		else
 		{
@@ -2368,19 +2402,19 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	{
 		if (!fixed)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.push.call (this, x)");
+			return untyped js.Syntax.code("Array.prototype.push.call (this, x)");
 		}
 		else
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("this").length;
+			return untyped js.Syntax.code("this").length;
 		}
 	}
 
 	public function removeAt(index:Int):T
 	{
-		if (!fixed || index < untyped #if haxe4 js.Syntax.code #else __js__ #end ("this").length)
+		if (!fixed || index < untyped js.Syntax.code("this").length)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.splice.call (this, index, 1)")[0];
+			return untyped js.Syntax.code("Array.prototype.splice.call (this, index, 1)")[0];
 		}
 
 		return null;
@@ -2393,9 +2427,9 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 
 	public function set(index:Int, value:T):T
 	{
-		if (!fixed || index < untyped #if haxe4 js.Syntax.code #else __js__ #end ("this").length)
+		if (!fixed || index < untyped js.Syntax.code("this").length)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("this")[index] = value;
+			return untyped js.Syntax.code("this")[index] = value;
 		}
 		else
 		{
@@ -2407,7 +2441,7 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	{
 		if (!fixed)
 		{
-			return untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.shift.call (this)");
+			return untyped js.Syntax.code("Array.prototype.shift.call (this)");
 		}
 		else
 		{
@@ -2418,14 +2452,14 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	public function slice(startIndex:Int = 0, endIndex:Null<Int> = null):VectorData<T>
 	{
 		if (endIndex == null) endIndex = 16777215;
-		return VectorData.ofArray(untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.slice.call (this, startIndex, endIndex)"));
+		return VectorData.ofArray(untyped js.Syntax.code("Array.prototype.slice.call (this, startIndex, endIndex)"));
 	}
 
 	public function sort(f:T->T->Int):Void {}
 
 	public function splice(pos:Int, len:Int):VectorData<T>
 	{
-		return VectorData.ofArray(untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.splice.call (this, pos, len)"));
+		return VectorData.ofArray(untyped js.Syntax.code("Array.prototype.splice.call (this, pos, len)"));
 	}
 
 	public function toString():String
@@ -2437,82 +2471,26 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	{
 		if (!fixed)
 		{
-			untyped #if haxe4 js.Syntax.code #else __js__ #end ("Array.prototype.unshift.call (this, x)");
+			untyped js.Syntax.code("Array.prototype.unshift.call (this, x)");
 		}
 	}
 
 	// Getters & Setters
 	@:noCompletion private function get_length():Int
 	{
-		return untyped #if haxe4 js.Syntax.code #else __js__ #end ("this").length;
+		return untyped js.Syntax.code("this").length;
 	}
 
 	@:noCompletion private function set_length(value:Int):Int
 	{
 		if (!fixed)
 		{
-			untyped #if haxe4 js.Syntax.code #else __js__ #end ("this").length = value;
-
-			// var current = untyped #if haxe4 js.Syntax.code #else __js__ #end ("this").length;
-
-			// if (value < current) {
-
-			// 	untyped #if haxe4 js.Syntax.code #else __js__ #end ("this.length = value");
-
-			// } else {
-
-			// 	for (i in current...value) {
-
-			// 		untyped #if haxe4 js.Syntax.code #else __js__ #end ("this")[i] = untyped #if haxe4 js.Syntax.code #else __js__ #end ("null");
-
-			// 	}
-
-			// }
+			untyped js.Syntax.code("this").length = value;
 		}
 
 		return value;
 	}
 }
-
-// @:native("Array")
-// extern class VectorData<T> implements ArrayAccess<T> {
-// 	@:native("length") private var __length:Int;
-// 	public function new ();
-// 	// private static function __from (arrayLike:Dynamic, ?mapFn:Dynamic, ?thisArg:Dynamic):VectorData<Dynamic>;
-// 	// private static function __isArray (obj:Dynamic):Bool;
-// 	// private static function __of (?element0:Dynamic, ?element1:Dynamic, ?element2:Dynamic, ?element3:Dynamic):VectorData<Dynamic>;
-// 	@:native("concat") private function __concat (?value0:Dynamic, ?value1:Dynamic, ?value2:Dynamic, ?value3:Dynamic):VectorData<Dynamic>;
-// 	// private function __copyWithin (target:Int, ?start:Int, ?end:Int):VectorData<Dynamic>;
-// 	// private function __entries ():Iterator<Dynamic>;
-// 	// private function __every (callback:Dynamic, ?thisArg:Dynamic):Bool;
-// 	// private function __fill (value:T, ?start:Int, ?end:Int):VectorData<Dynamic>;
-// 	// private function __filter (callback:Dynamic, ?thisArg:Dynamic):VectorData<Dynamic>;
-// 	// private function __find (callback:Dynamic, ?thisArg:Dynamic):Null<T>;
-// 	// private function __findIndex (callback:Dynamic, ?thisArg:Dynamic):Int;
-// 	// private function __forEach (callback:Dynamic, ?thisArg:Dynamic):Void;
-// 	// private function __includes (searchElement:T, ?fromIndex:Int):Bool;
-// 	public function indexOf (searchElement:T, ?fromIndex:Int):Int;
-// 	public function join (?seperator:String):String;
-// 	// @:native("keys") private function __keys ():Iterator<Dynamic>;
-// 	public function lastIndexOf (searchElement:T, ?fromIndex:Int):Int;
-// 	// private function __map (callback:Dynamic, ?thisArg:Dynamic):VectorData<Dynamic>;
-// 	public function pop ():Null<T>;
-// 	//@:native("push") private function __push (element0:T, ?element1:T, ?element2:T, ?element3:T):Int;
-// 	public function push (x:T):Int;
-// 	// private function __reduce (callback:Dynamic, ?initialValue:Dynamic):Dynamic;
-// 	// private function __reduceRight (callback:Dynamic, ?initialValue:Dynamic):Dynamic;
-// 	// @:native("reverse") private function __reverse ():VectorData<Dynamic>;
-// 	public function shift ():Null<T>;
-// 	// @:native("slice") private function __slice (?begin:Int, ?end:Int):VectorData<Dynamic>;
-// 	// private function __some (callback:Dynamic, ?thisArg:Dynamic):Bool;
-// 	// @:native("sort") private function __sort (compareFunction:Dynamic):VectorData<Dynamic>;
-// 	@:native("splice") private function __splice (start:Int, ?deleteCount:Int, ?item0:T, ?item1:T, ?item2:T, ?item3:T):VectorData<Dynamic>;
-// 	// private function __toLocaleString (?locales:String, ?options:Dynamic):String;
-// 	public function toString ():String;
-// 	// @:native("unshift") private function __unshift (element0:T, ?element1:T, ?element2:T, ?element3:T):Int;
-// 	public function unshift (x:T):Void;
-// 	@:native("values") private function __values ():Iterator<T>;
-// }
 
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:dox(hide) private class VectorIterator<T>
@@ -2520,27 +2498,40 @@ abstract Vector<T>(VectorData<T>) from VectorData<T>
 	@:noCompletion private var index:Int;
 	@:noCompletion private var vector:Vector<T>;
 
+<<<<<<< HEAD
 	#if !hl inline #end
 	public function new(vector:Vector<T>)
+=======
+	public inline function new(vector:Vector<T>)
+>>>>>>> shader-blends
 	{
 		this.vector = vector;
 		index = -1;
 	}
 
+<<<<<<< HEAD
 	#if !hl inline #end
 	public function hasNext():Bool
+=======
+	public inline function hasNext():Bool
+>>>>>>> shader-blends
 	{
 		return index < vector.length - 1;
 	}
 
+<<<<<<< HEAD
 	#if !hl inline #end
 	public function next():T
+=======
+	public inline function next():T
+>>>>>>> shader-blends
 	{
 		index++;
 		return vector[index];
 	}
 }
 #end
+<<<<<<< HEAD
 #else
 @SuppressWarnings("checkstyle:FieldDocComment")
 abstract Vector<T>(VectorData<T>)
@@ -2791,3 +2782,5 @@ abstract Vector<T>(VectorData<T>)
 
 private typedef VectorData<T> = flash.Vector<T>;
 #end
+=======
+>>>>>>> shader-blends

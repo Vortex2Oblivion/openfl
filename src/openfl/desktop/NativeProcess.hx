@@ -1,6 +1,6 @@
 package openfl.desktop;
 
-#if (haxe4 && !flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import haxe.Json;
 import haxe.Serializer;
 import haxe.io.Bytes;
@@ -17,12 +17,6 @@ import openfl.events.IOErrorEvent;
 import openfl.events.NativeProcessExitEvent;
 import openfl.events.ProgressEvent;
 import openfl.net.ObjectEncoding;
-import openfl.utils._internal.format.amf.AMFReader;
-import openfl.utils._internal.format.amf.AMFTools;
-import openfl.utils._internal.format.amf.AMFWriter;
-import openfl.utils._internal.format.amf3.AMF3Reader;
-import openfl.utils._internal.format.amf3.AMF3Tools;
-import openfl.utils._internal.format.amf3.AMF3Writer;
 import openfl.utils.ByteArray;
 import openfl.utils.Endian;
 import openfl.utils.IDataInput;
@@ -48,9 +42,6 @@ import sys.thread.Thread;
 	communication is supported.
 **/
 @:access(openfl.utils.ByteArrayData)
-#if !openfl_debug
-@:fileXml('tags="haxe,release"') @:noDebug
-#end
 class NativeProcess extends EventDispatcher
 {
 	/**
@@ -288,7 +279,24 @@ class NativeProcess extends EventDispatcher
 			standardOutputMutex.acquire();
 			if (pendingStdoutBytes > 0)
 			{
-				dispatchEvent(new ProgressEvent(ProgressEvent.STANDARD_OUTPUT_DATA, false, false, pendingStdoutBytes));
+				@:privateAccess
+				{
+					#if openfl_pool_events
+					var stdOutDataEvent = ProgressEvent.__pool.get();
+					stdOutDataEvent.type = ProgressEvent.STANDARD_OUTPUT_DATA;
+					stdOutDataEvent.bytesLoaded = pendingStdoutBytes;
+					stdOutDataEvent.bytesTotal = 0;
+					#else
+					var stdOutDataEvent = new ProgressEvent(ProgressEvent.STANDARD_OUTPUT_DATA, false, false, pendingStdoutBytes, 0);
+					#end
+
+					dispatchEvent(stdOutDataEvent);
+
+					#if openfl_pool_events
+					ProgressEvent.__pool.release(stdOutDataEvent);
+					#end
+				}
+
 				pendingStdoutBytes = 0;
 			}
 			standardOutputMutex.release();
@@ -296,7 +304,24 @@ class NativeProcess extends EventDispatcher
 			standardErrorMutex.acquire();
 			if (pendingStderrBytes > 0)
 			{
-				dispatchEvent(new ProgressEvent(ProgressEvent.STANDARD_ERROR_DATA, false, false, pendingStderrBytes));
+				@:privateAccess
+				{
+					#if openfl_pool_events
+					var stdErrDataEvent = ProgressEvent.__pool.get();
+					stdErrDataEvent.type = ProgressEvent.STANDARD_ERROR_DATA;
+					stdErrDataEvent.bytesLoaded = pendingStderrBytes;
+					stdErrDataEvent.bytesTotal = 0;
+					#else
+					var stdErrDataEvent = new ProgressEvent(ProgressEvent.STANDARD_ERROR_DATA, false, false, pendingStderrBytes, 0);
+					#end
+
+					dispatchEvent(stdErrDataEvent);
+
+					#if openfl_pool_events
+					ProgressEvent.__pool.release(stdErrDataEvent);
+					#end
+				}
+
 				pendingStderrBytes = 0;
 			}
 			standardErrorMutex.release();
@@ -423,9 +448,6 @@ class NativeProcess extends EventDispatcher
 				standardOutputMutex.acquire();
 				stdoutDone = true;
 				standardOutputMutex.release();
-				#if hl
-				createStderrThread();
-				#end
 			});
 		}
 		function createExitThread():Void
@@ -470,12 +492,7 @@ class NativeProcess extends EventDispatcher
 			});
 		}
 		createStdoutThread();
-		#if !hl
-		// for some reason, reading both stdout and stderr on HashLink causes
-		// a freeze. as a workaround, we'll wait until stdout throws EOF before
-		// we try to read stderr.
 		createStderrThread();
-		#end
 		createExitThread();
 	}
 }
@@ -490,7 +507,7 @@ private class InboundPipe implements IDataInput
 
 	public var bytesAvailable(get, never):Int;
 
-	private function get_bytesAvailable():Int
+	@:noCompletion private function get_bytesAvailable():Int
 	{
 		if (input == null)
 		{
@@ -504,7 +521,7 @@ private class InboundPipe implements IDataInput
 
 	public var endian(get, set):Endian;
 
-	private function get_endian():Endian
+	@:noCompletion private function get_endian():Endian
 	{
 		if (input == null)
 		{
@@ -516,7 +533,7 @@ private class InboundPipe implements IDataInput
 		return result;
 	}
 
-	private function set_endian(value:Endian):Endian
+	@:noCompletion private function set_endian(value:Endian):Endian
 	{
 		if (input == null)
 		{
@@ -706,7 +723,7 @@ private class OutboundPipe implements IDataOutput
 
 	public var endian(get, set):Endian;
 
-	private function get_endian():Endian
+	@:noCompletion private function get_endian():Endian
 	{
 		if (output == null)
 		{
@@ -715,7 +732,7 @@ private class OutboundPipe implements IDataOutput
 		return output.bigEndian ? BIG_ENDIAN : LITTLE_ENDIAN;
 	}
 
-	private function set_endian(value:Endian):Endian
+	@:noCompletion private function set_endian(value:Endian):Endian
 	{
 		if (output == null)
 		{
@@ -831,22 +848,6 @@ private class OutboundPipe implements IDataOutput
 		}
 		switch (objectEncoding)
 		{
-			case AMF0:
-				var value = AMFTools.encode(object);
-				var output:BytesOutput = new BytesOutput();
-				var writer = new AMFWriter(output);
-				writer.write(value);
-				var bytes:Bytes = output.getBytes();
-				output.writeBytes(bytes, 0, bytes.length);
-
-			case AMF3:
-				var value = AMF3Tools.encode(object);
-				var output = new BytesOutput();
-				var writer = new AMF3Writer(output);
-				writer.write(value);
-				var bytes:Bytes = output.getBytes();
-				output.writeBytes(bytes, 0, bytes.length);
-
 			case HXSF:
 				var value = Serializer.run(object);
 				writeUTF(value);
@@ -860,8 +861,4 @@ private class OutboundPipe implements IDataOutput
 		}
 	}
 }
-#elseif flash
-#if air
-typedef NativeProcess = flash.desktop.NativeProcess;
-#end
 #end

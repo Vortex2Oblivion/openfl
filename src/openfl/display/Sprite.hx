@@ -1,10 +1,9 @@
 package openfl.display;
 
-#if !flash
+import lime.utils.Log;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
 import openfl.ui.MouseCursor;
-import openfl.utils._internal.Log;
 import openfl.utils.AssetLibrary;
 
 /**
@@ -28,10 +27,6 @@ import openfl.utils.AssetLibrary;
 	@see [Working with display objects](https://books.openfl.org/openfl-developers-guide/display-programming/working-with-display-objects/)
 	@see [Choosing a display object subclass](https://books.openfl.org/openfl-developers-guide/display-programming/working-with-display-objects/choosing-a-displayobject-subclass.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.Graphics)
 @:access(openfl.display.Stage)
 @:access(openfl.geom.Matrix)
@@ -103,15 +98,6 @@ class Sprite extends DisplayObjectContainer
 	**/
 	public var hitArea:Sprite;
 
-	#if false
-	/**
-		Controls sound within this sprite.
-		**Note:** This property does not affect HTML content in an HTMLControl
-		object (in Adobe AIR).
-	**/
-	// @:noCompletion @:dox(hide) public var soundTransform:SoundTransform;
-	#end
-
 	/**
 		A Boolean value that indicates whether the pointing hand (hand cursor)
 		appears when the pointer rolls over a sprite in which the
@@ -137,19 +123,6 @@ class Sprite extends DisplayObjectContainer
 	@:noCompletion private var __buttonMode:Bool;
 	@:noCompletion private var __pendingBindClassName:String;
 	@:noCompletion private var __pendingBindLibrary:AssetLibrary;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Sprite.prototype, {
-			"buttonMode": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_buttonMode (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_buttonMode (v); }")
-			},
-			"graphics": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_graphics (); }")},
-		});
-	}
-	#end
 
 	/**
 		Creates a new Sprite instance. After you create the Sprite instance, call
@@ -222,32 +195,6 @@ class Sprite extends DisplayObjectContainer
 		}
 	}
 
-	#if false
-	/**
-		Lets the user drag the specified sprite on a touch-enabled device. The
-		sprite remains draggable until explicitly stopped through a call to
-		the `Sprite.stopTouchDrag()` method, or until another sprite is made
-		draggable. Only one sprite is draggable at a time.
-		Three-dimensional display objects follow the pointer and
-		`Sprite.startTouchDrag()` moves the object within the
-		three-dimensional plane defined by the display object. Or, if the
-		display object is a two-dimensional object and the child of a
-		three-dimensional object, the two-dimensional object moves within the
-		three dimensional plane defined by the three-dimensional parent
-		object.
-
-		@param touchPointID An integer to assign to the touch point.
-		@param lockCenter   Specifies whether the draggable sprite is locked
-							to the center of the pointer position (`true`), or
-							locked to the point where the user first clicked
-							the sprite (`false`).
-		@param bounds       Value relative to the coordinates of the Sprite's
-							parent that specify a constraint rectangle for the
-							Sprite.
-	**/
-	// @:noCompletion @:dox(hide) public function startTouchDrag (touchPointID:Int, lockCenter:Bool = false, bounds:Rectangle = null):Void;
-	#end
-
 	/**
 		Ends the `startDrag()` method. A sprite that was made draggable
 		with the `startDrag()` method remains draggable until a
@@ -272,19 +219,6 @@ class Sprite extends DisplayObjectContainer
 		super.__setStageReference(stage);
 	}
 
-	#if false
-	/**
-		Ends the `startTouchDrag()` method, for use with touch-enabled
-		devices. A sprite that was made draggable with the `startTouchDrag()`
-		method remains draggable until a `stopTouchDrag()` method is added, or
-		until another sprite becomes draggable. Only one sprite is draggable
-		at a time.
-
-		@param touchPointID The integer assigned to the touch point in the
-							`startTouchDrag` method.
-	**/
-	// @:noCompletion @:dox(hide) public function stopTouchDrag (touchPointID:Int):Void;
-	#end
 	@:noCompletion private function __bind(library:AssetLibrary, className:String):Void
 	{
 		if (__worldTransform == null) // super() has not been called
@@ -405,6 +339,3 @@ class Sprite extends DisplayObjectContainer
 		return __buttonMode = value;
 	}
 }
-#else
-typedef Sprite = flash.display.Sprite;
-#end

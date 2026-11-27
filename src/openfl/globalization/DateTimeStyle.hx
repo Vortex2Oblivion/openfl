@@ -1,6 +1,5 @@
 package openfl.globalization;
 
-#if !flash
 /**
 	Enumerates constants that determine a locale-specific date and time
 	formatting pattern. These constants are used when constructing a
@@ -12,8 +11,7 @@ package openfl.globalization;
 	as the `timeStyle` and `dateStyle` property as a side effect of calling the
 	`DateTimeFormatter.setDateTimePattern()` method.
 **/
-#if !openfljs
-#if (haxe_ver >= 4.0) enum #else @:enum #end abstract DateTimeStyle(Null<Int>)
+enum abstract DateTimeStyle(Null<Int>)
 {
 	/**
 		Specifies that a custom pattern string is used to specify the date or
@@ -77,29 +75,3 @@ package openfl.globalization;
 		}
 	}
 }
-#else
-@SuppressWarnings("checkstyle:FieldDocComment") #if (haxe_ver >= 4.0) enum #else @:enum #end abstract DateTimeStyle(String) from String to String
-{
-	public var CUSTOM = "custom";
-	public var LONG = "long";
-	public var MEDIUM = "medium";
-	public var NONE = "none";
-	public var SHORT = "short";
-
-	@:noCompletion private inline static function fromInt(value:Null<Int>):DateTimeStyle
-	{
-		return switch (value)
-		{
-			case 0: CUSTOM;
-			case 1: LONG;
-			case 2: MEDIUM;
-			case 3: NONE;
-			case 4: SHORT;
-			default: null;
-		}
-	}
-}
-#end
-#else
-typedef DateTimeStyle = flash.globalization.DateTimeStyle;
-#end

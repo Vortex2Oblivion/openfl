@@ -1,9 +1,7 @@
 package openfl.desktop;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
-#if lime
+#if sys
 import lime.system.System;
-#end
 import openfl.display.NativeWindow;
 import openfl.events.EventDispatcher;
 import openfl.utils._internal.Lib;
@@ -149,18 +147,6 @@ class NativeApplication extends EventDispatcher
 		return false;
 	}
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped global.Object.defineProperty(NativeApplication, "nativeApplication", {
-			get: function()
-			{
-				return NativeApplication.get_nativeApplication();
-			}
-		});
-	}
-	#end
-
 	@:noCompletion private var __activeWindow:NativeWindow;
 
 	/**
@@ -286,7 +272,7 @@ class NativeApplication extends EventDispatcher
 	**/
 	public var startAtLogin(default, default):Bool;
 
-	private function new()
+	@:noCompletion private function new()
 	{
 		super();
 	}
@@ -311,9 +297,7 @@ class NativeApplication extends EventDispatcher
 	**/
 	public function exit(code:Int = 0):Void
 	{
-		#if lime
 		System.exit(code);
-		#end
 	}
 
 	/**
@@ -358,8 +342,4 @@ class NativeApplication extends EventDispatcher
 	**/
 	public function setAsDefaultApplication(extension:String):Void {}
 }
-#else
-#if air
-typedef NativeApplication = flash.desktop.NativeApplication;
-#end
 #end

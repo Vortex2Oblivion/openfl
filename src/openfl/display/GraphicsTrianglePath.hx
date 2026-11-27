@@ -1,8 +1,7 @@
 package openfl.display;
 
-#if !flash
-import openfl.display._internal.GraphicsDataType;
 import openfl.Vector;
+import openfl.display._internal.GraphicsDataType;
 
 /**
 	Defines an ordered set of triangles that can be rendered using either
@@ -15,10 +14,6 @@ import openfl.Vector;
 
 	@see [Using graphics data classes](https://books.openfl.org/openfl-developers-guide/using-the-drawing-api/advanced-use-of-the-drawing-api/using-graphics-data-classes.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:final class GraphicsTrianglePath implements IGraphicsData implements IGraphicsPath
 {
 	/**
@@ -88,6 +83,3 @@ import openfl.Vector;
 		__graphicsDataType = TRIANGLE_PATH;
 	}
 }
-#else
-typedef GraphicsTrianglePath = flash.display.GraphicsTrianglePath;
-#end

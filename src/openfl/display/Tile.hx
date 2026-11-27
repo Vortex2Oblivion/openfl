@@ -21,10 +21,6 @@ import openfl.geom.Rectangle;
 	Tile objects cannot be rendered on their own. In order to display a Tile object,
 	it should be contained within a Tilemap instance.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
@@ -55,7 +51,7 @@ class Tile
 	/**
 		An additional field for custom user-data
 	**/
-	@SuppressWarnings("checkstyle:Dynamic") public var data:Dynamic;
+	public var data:Dynamic;
 
 	/**
 		Indicates the height of the tile, in pixels. The height is
@@ -207,82 +203,6 @@ class Tile
 	@:noCompletion private var __shader:Shader;
 	@:noCompletion private var __tileset:Tileset;
 	@:noCompletion private var __visible:Bool;
-	#if flash
-	@:noCompletion private var __tempMatrix = new Matrix();
-	@:noCompletion private var __tempRectangle = new Rectangle();
-	#end
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Tile.prototype, {
-			"alpha": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_alpha (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_alpha (v); }")
-			},
-			"blendMode": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_blendMode (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_blendMode (v); }")
-			},
-			"colorTransform": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_colorTransform (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_colorTransform (v); }")
-			},
-			"id": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_id (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_id (v); }")
-			},
-			"matrix": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_matrix (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_matrix (v); }")
-			},
-			"originX": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_originX (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_originX (v); }")
-			},
-			"originY": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_originY (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_originY (v); }")
-			},
-			"rect": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_rect (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_rect (v); }")
-			},
-			"rotation": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_rotation (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_rotation (v); }")
-			},
-			"scaleX": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scaleX (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scaleX (v); }")
-			},
-			"scaleY": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scaleY (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scaleY (v); }")
-			},
-			"shader": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_shader (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_shader (v); }")
-			},
-			"tileset": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_tileset (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_tileset (v); }")
-			},
-			"visible": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_visible (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_visible (v); }")
-			},
-			"x": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_x (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_x (v); }")
-			},
-			"y": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_y (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_y (v); }")
-			},
-		});
-	}
-	#end
 
 	public function new(id:Int = 0, x:Float = 0, y:Float = 0, scaleX:Float = 1, scaleY:Float = 1, rotation:Float = 0, originX:Float = 0, originY:Float = 0)
 	{
@@ -325,13 +245,7 @@ class Tile
 
 		if (__colorTransform != null)
 		{
-			#if flash
-			tile.__colorTransform = new ColorTransform(__colorTransform.redMultiplier, __colorTransform.greenMultiplier, __colorTransform.blueMultiplier,
-				__colorTransform.alphaMultiplier, __colorTransform.redOffset, __colorTransform.greenOffset, __colorTransform.blueOffset,
-				__colorTransform.alphaOffset);
-			#else
 			tile.__colorTransform = __colorTransform.__clone();
-			#end
 		}
 
 		return tile;
@@ -352,21 +266,19 @@ class Tile
 		__findTileRect(result);
 
 		// Copied from DisplayObject. Create the translation matrix.
-		var matrix = #if flash __tempMatrix #else Matrix.__pool.get() #end;
+		var matrix = Matrix.__pool.get();
 
 		if (targetCoordinateSpace != null && targetCoordinateSpace != this)
 		{
 			matrix.copyFrom(__getWorldTransform()); // ? Is this correct?
-			var targetMatrix = #if flash new Matrix() #else Matrix.__pool.get() #end;
+			var targetMatrix = Matrix.__pool.get();
 
 			targetMatrix.copyFrom(targetCoordinateSpace.__getWorldTransform());
 			targetMatrix.invert();
 
 			matrix.concat(targetMatrix);
 
-			#if !flash
 			Matrix.__pool.release(targetMatrix);
-			#end
 		}
 		else
 		{
@@ -375,53 +287,14 @@ class Tile
 
 		__getBounds(result, matrix);
 
-		#if !flash
 		Matrix.__pool.release(matrix);
-		#end
 
 		return result;
 	}
 
 	@:noCompletion private function __getBounds(result:Rectangle, matrix:Matrix):Void
 	{
-		#if flash
-		function __transform(rect:Rectangle, m:Matrix):Void
-		{
-			var tx0 = m.a * rect.x + m.c * rect.y;
-			var tx1 = tx0;
-			var ty0 = m.b * rect.x + m.d * rect.y;
-			var ty1 = ty0;
-
-			var tx = m.a * (rect.x + rect.width) + m.c * rect.y;
-			var ty = m.b * (rect.x + rect.width) + m.d * rect.y;
-
-			if (tx < tx0) tx0 = tx;
-			if (ty < ty0) ty0 = ty;
-			if (tx > tx1) tx1 = tx;
-			if (ty > ty1) ty1 = ty;
-
-			tx = m.a * (rect.x + rect.width) + m.c * (rect.y + rect.height);
-			ty = m.b * (rect.x + rect.width) + m.d * (rect.y + rect.height);
-
-			if (tx < tx0) tx0 = tx;
-			if (ty < ty0) ty0 = ty;
-			if (tx > tx1) tx1 = tx;
-			if (ty > ty1) ty1 = ty;
-
-			tx = m.a * rect.x + m.c * (rect.y + rect.height);
-			ty = m.b * rect.x + m.d * (rect.y + rect.height);
-
-			if (tx < tx0) tx0 = tx;
-			if (ty < ty0) ty0 = ty;
-			if (tx > tx1) tx1 = tx;
-			if (ty > ty1) ty1 = ty;
-
-			rect.setTo(tx0 + m.tx, ty0 + m.ty, tx1 - tx0, ty1 - ty0);
-		}
-		__transform(result, matrix);
-		#else
 		result.__transform(result, matrix);
-		#end
 	}
 
 	/**
@@ -524,7 +397,6 @@ class Tile
 
 	@:noCompletion private function __setRenderDirty():Void
 	{
-		#if !flash
 		if (!__dirty)
 		{
 			__dirty = true;
@@ -534,7 +406,6 @@ class Tile
 				parent.__setRenderDirty();
 			}
 		}
-		#end
 	}
 
 	// Get & Set Methods
@@ -588,30 +459,26 @@ class Tile
 
 	@:keep @:noCompletion private function get_height():Float
 	{
-		var result:Rectangle = #if flash __tempRectangle #else Rectangle.__pool.get() #end;
+		var result:Rectangle = Rectangle.__pool.get();
 
 		__findTileRect(result);
 
 		__getBounds(result, matrix);
 		var h = result.height;
-		#if !flash
 		Rectangle.__pool.release(result);
-		#end
 		return h;
 	}
 
 	@:keep @:noCompletion private function set_height(value:Float):Float
 	{
-		var result:Rectangle = #if flash __tempRectangle #else Rectangle.__pool.get() #end;
+		var result:Rectangle = Rectangle.__pool.get();
 
 		__findTileRect(result);
 		if (result.height != 0)
 		{
 			scaleY = value / result.height;
 		}
-		#if !flash
 		Rectangle.__pool.release(result);
-		#end
 		return value;
 	}
 
@@ -883,30 +750,26 @@ class Tile
 	@:keep @:noCompletion private function get_width():Float
 	{
 		// TODO how does pooling work with flash target?
-		var result:Rectangle = #if flash new Rectangle() #else Rectangle.__pool.get() #end;
+		var result:Rectangle = Rectangle.__pool.get();
 
 		__findTileRect(result);
 
 		__getBounds(result, matrix);
 		var w = result.width;
-		#if !flash
 		Rectangle.__pool.release(result);
-		#end
 		return w;
 	}
 
 	@:keep @:noCompletion private function set_width(value:Float):Float
 	{
-		var result:Rectangle = #if flash __tempRectangle #else Rectangle.__pool.get() #end;
+		var result:Rectangle = Rectangle.__pool.get();
 
 		__findTileRect(result);
 		if (result.width != 0)
 		{
 			scaleX = value / result.width;
 		}
-		#if !flash
 		Rectangle.__pool.release(result);
-		#end
 		return value;
 	}
 

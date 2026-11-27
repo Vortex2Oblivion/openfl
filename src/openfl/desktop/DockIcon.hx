@@ -1,6 +1,6 @@
 package openfl.desktop;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.errors.IllegalOperationError;
 
 /**
@@ -43,16 +43,6 @@ class DockIcon extends InteractiveIcon
 		super();
 	}
 
-	#if false
-	/**
-		The system-supplied menu of this dock icon.
-
-		Any items in the menu are displayed above the standard items. The
-		standard items cannot be modified or removed.
-	**/
-	// public var menu:NativeMenu;
-	#end
-
 	/**
 		Notifies the user that an event has occurred that may require attention.
 
@@ -67,8 +57,4 @@ class DockIcon extends InteractiveIcon
 		throw new IllegalOperationError("Not supported");
 	}
 }
-#else
-#if air
-typedef DockIcon = flash.desktop.DockIcon;
-#end
 #end

@@ -1,8 +1,8 @@
 package openfl.net.dns;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
-import openfl.events.EventDispatcher;
+#if sys
 import openfl.errors.IllegalOperationError;
+import openfl.events.EventDispatcher;
 
 /**
 	The DNSResolver class lets you lookup Domain Name System (DNS) resource records.
@@ -43,7 +43,7 @@ class DNSResolver extends EventDispatcher
 	**/
 	public static var isSupported(get, never):Bool;
 
-	private static function get_isSupported():Bool
+	@:noCompletion private static function get_isSupported():Bool
 	{
 		return false;
 	}
@@ -83,8 +83,4 @@ class DNSResolver extends EventDispatcher
 	**/
 	public function lookup(host:String, recordType:Class<ResourceRecord>):Void {}
 }
-#else
-#if air
-typedef DNSResolver = flash.net.dns.DNSResolver;
-#end
 #end

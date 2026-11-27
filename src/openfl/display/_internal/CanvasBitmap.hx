@@ -1,12 +1,9 @@
 package openfl.display._internal;
 
-#if !flash
+import lime._internal.graphics.ImageCanvasUtil;
 import openfl.display.Bitmap;
 import openfl.display.CanvasRenderer;
-#if lime
-import lime._internal.graphics.ImageCanvasUtil; // TODO
 
-#end
 @:access(openfl.display.Bitmap)
 @:access(openfl.display.BitmapData)
 @SuppressWarnings("checkstyle:FieldDocComment")
@@ -85,4 +82,3 @@ class CanvasBitmap
 		renderer.context.rect(0, 0, bitmap.width, bitmap.height);
 	}
 }
-#end

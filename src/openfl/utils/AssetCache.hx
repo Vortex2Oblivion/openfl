@@ -1,11 +1,9 @@
 package openfl.utils;
 
+import lime.utils.Assets as LimeAssets;
 import openfl.display.BitmapData;
 import openfl.media.Sound;
 import openfl.text.Font;
-#if lime
-import lime.utils.Assets as LimeAssets;
-#end
 
 /**
 	The AssetCache class is the default cache implementation used
@@ -13,10 +11,6 @@ import lime.utils.Assets as LimeAssets;
 	of the application unless removed explicitly, or using Assets
 	`unloadLibrary`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class AssetCache implements IAssetCache
 {
 	/**
@@ -40,16 +34,6 @@ class AssetCache implements IAssetCache
 	@:noCompletion @:dox(hide) public var sound:Map<String, Sound>;
 
 	@:noCompletion private var __enabled:Bool = true;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped global.Object.defineProperty(AssetCache.prototype, "enabled", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_enabled (); }"),
-			set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_enabled (v); }")
-		});
-	}
-	#end
 
 	/**
 		Creates a new AssetCache instance.
@@ -193,9 +177,8 @@ class AssetCache implements IAssetCache
 	**/
 	public function removeBitmapData(id:String):Bool
 	{
-		#if lime
 		LimeAssets.cache.image.remove(id);
-		#end
+
 		return bitmapData.remove(id);
 	}
 
@@ -207,9 +190,8 @@ class AssetCache implements IAssetCache
 	**/
 	public function removeFont(id:String):Bool
 	{
-		#if lime
 		LimeAssets.cache.font.remove(id);
-		#end
+
 		return font.remove(id);
 	}
 
@@ -221,9 +203,8 @@ class AssetCache implements IAssetCache
 	**/
 	public function removeSound(id:String):Bool
 	{
-		#if lime
 		LimeAssets.cache.audio.remove(id);
-		#end
+
 		return sound.remove(id);
 	}
 

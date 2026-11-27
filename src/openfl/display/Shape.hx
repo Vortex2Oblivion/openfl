@@ -1,6 +1,5 @@
 package openfl.display;
 
-#if !flash
 /**
 	This class is used to create lightweight shapes using the OpenFL
 	drawing application program interface (API). The Shape class includes a
@@ -15,10 +14,6 @@ package openfl.display;
 	However, a Sprite object supports user input events, while a Shape object
 	does not.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.Graphics)
 class Shape extends DisplayObject
 {
@@ -27,15 +22,6 @@ class Shape extends DisplayObject
 		drawing commands can occur.
 	**/
 	public var graphics(get, never):Graphics;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperty(Shape.prototype, "graphics", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_graphics (); }")
-		});
-	}
-	#end
 
 	/**
 		Creates a new Shape object.
@@ -58,6 +44,3 @@ class Shape extends DisplayObject
 		return __graphics;
 	}
 }
-#else
-typedef Shape = flash.display.Shape;
-#end

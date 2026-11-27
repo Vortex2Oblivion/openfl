@@ -1,12 +1,9 @@
 package openfl.system;
 
-#if !flash
 import haxe.macro.Compiler;
-import openfl.utils._internal.Lib;
-#if lime
 import lime.system.Locale;
 import lime.system.System;
-#end
+import openfl.utils._internal.Lib;
 #if linux
 import sys.io.Process;
 #end
@@ -43,44 +40,43 @@ import sys.io.Process;
 	`GET` or `POST` HTTP method. The following example shows a server string
 	for a computer that has MP3 support and 1600 x 1200 pixel resolution and
 	that is running Windows XP with an input method editor (IME) installed:
-	<pre
-	xml:space="preserve">A=t&SA=t&SV=t&EV=t&MP3=t&AE=t&VE=t&ACC=f&PR=t&SP=t&
+
+	<pre xml:space="preserve">A=t&SA=t&SV=t&EV=t&MP3=t&AE=t&VE=t&ACC=f&PR=t&SP=t&
 	SB=f&DEB=t&V=WIN%209%2C0%2C0%2C0&M=Adobe%20Windows&
 	R=1600x1200&DP=72&COL=color&AR=1.0&OS=Windows%20XP&
 	L=en&PT=External&AVD=f&LFD=f&WD=f&IME=t</pre>
-	The following table lists the properties of the Capabilities class and
-	corresponding server strings: <adobetable><tgroup
-	<row><entry align="left">Capabilities class
-	property</entry><entry align="left">Server
-	string |
-		|`avHardwareDisable` | `AVD` |
-		|`hasAccessibility` | `ACC` |
-		|`hasAudio` | `A` |
-		|`hasAudioEncoder` | `AE` |
-		|`hasEmbeddedVideo` | `EV` |
-		|`hasIME` | `IME` |
-		|`hasMP3` | `MP3` |
-		|`hasPrinting` | `PR` |
-		|`hasScreenBroadcast` | `SB` |
-		|`hasScreenPlayback` | `SP` |
-		|`hasStreamingAudio` | `SA` |
-		|`hasStreamingVideo` | `SV` |
-		|`hasTLS` | `TLS` |
-		|`hasVideoEncoder` | `VE` |
-		|`isDebugger` | `DEB` |
-		|`language` | `L` |
-		|`localFileReadDisable` | `LFD` |
-		|`manufacturer` | `M` |
-		|`maxLevelIDC` | `ML` |
-		|`os` | `OS` |
-		|`pixelAspectRatio` | `AR` |
-		|`playerType` | `PT` |
-		|`screenColor` | `COL` |
-		|`screenDPI` | `DP` |
-		|`screenResolutionX` | `R` |
-		|`screenResolutionY` | `R` |
-		|`version` | `V` |
 
+	The following table lists the properties of the Capabilities class and
+	corresponding server strings:
+
+	| Capabilities class property | Server string |
+	|`avHardwareDisable` | `AVD` |
+	|`hasAccessibility` | `ACC` |
+	|`hasAudio` | `A` |
+	|`hasAudioEncoder` | `AE` |
+	|`hasEmbeddedVideo` | `EV` |
+	|`hasIME` | `IME` |
+	|`hasMP3` | `MP3` |
+	|`hasPrinting` | `PR` |
+	|`hasScreenBroadcast` | `SB` |
+	|`hasScreenPlayback` | `SP` |
+	|`hasStreamingAudio` | `SA` |
+	|`hasStreamingVideo` | `SV` |
+	|`hasTLS` | `TLS` |
+	|`hasVideoEncoder` | `VE` |
+	|`isDebugger` | `DEB` |
+	|`language` | `L` |
+	|`localFileReadDisable` | `LFD` |
+	|`manufacturer` | `M` |
+	|`maxLevelIDC` | `ML` |
+	|`os` | `OS` |
+	|`pixelAspectRatio` | `AR` |
+	|`playerType` | `PT` |
+	|`screenColor` | `COL` |
+	|`screenDPI` | `DP` |
+	|`screenResolutionX` | `R` |
+	|`screenResolutionY` | `R` |
+	|`version` | `V` |
 
 	There is also a `WD` server string that specifies whether windowless mode
 	is disabled. Windowless mode can be disabled in Flash Player due to
@@ -89,10 +85,6 @@ import sys.io.Process;
 
 	All properties of the Capabilities class are read-only.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:final class Capabilities
 {
 	/**
@@ -293,9 +285,9 @@ import sys.io.Process;
 
 	/**
 		Specifies the manufacturer of the running version of OpenFL, in the
-		format "_ManufacturerName_ _OSName_". The value for `_ManufacturerName_`
+		format _`"ManufacturerName OSName"`_. The value for _`ManufacturerName`_
 		is typically "OpenFL". When targeting Adobe Flash Player or AIR, the
-		value for `_ManufacturerName_` is "Adobe". The value for `_OSName_`
+		value for _`ManufacturerName`_ is "Adobe". The value for _`OSName`_
 		could be `"Windows"`, `"Macintosh"`, `"Linux"`, or another operating
 		system name. The server string is `M`.
 
@@ -377,13 +369,16 @@ import sys.io.Process;
 		* `"Desktop"` for the Adobe AIR runtime (except for SWF
 		content loaded by an HTML page, which has
 		`Capabilities.playerType` set to `"PlugIn"`)
-		* `"External"` for the external Flash Player<ph
-		outputclass="flashonly"> or in test mode
+		* `"External"` for the external Flash Player or in test mode
 		* `"PlugIn"` for the Flash Player browser plug-in (and for
 		SWF content loaded by an HTML page in an AIR application)
 		* `"StandAlone"` for the stand-alone Flash Player
 
 		The server string is `PT`.
+
+		_OpenFL target support:_ On native targets that are considered Haxe
+		`sys` targets, returns `"Desktop"`. On the HTML5 target, returns
+		`"PlugIn"`. On all other targets, returns `"StandAlone"`.
 	**/
 	public static var playerType(default, null) = #if web "PlugIn" #elseif sys "Desktop" #else "StandAlone" #end;
 
@@ -423,10 +418,11 @@ import sys.io.Process;
 		A URL-encoded string that specifies values for each Capabilities property.
 
 		The following example shows a URL-encoded string:
-		`A=t&SA=t&SV=t&EV=t&MP3=t&AE=t&VE=t&ACC=f&PR=t&SP=t&
+
+		<pre xml:space="preserve">A=t&SA=t&SV=t&EV=t&MP3=t&AE=t&VE=t&ACC=f&PR=t&SP=t&
 		SB=f&DEB=t&V=WIN%208%2C5%2C0%2C208&M=Adobe%20Windows&
 		R=1600x1200&DP=72&COL=color&AR=1.0&OS=Windows%20XP&
-		L=en&PT=External&AVD=f&LFD=f&WD=f`
+		L=en&PT=External&AVD=f&LFD=f&WD=f</pre>
 	**/
 	public static var serverString(default, null) = ""; // TODO
 
@@ -452,12 +448,15 @@ import sys.io.Process;
 		Specifies the Flash Player or Adobe<sup>®</sup> AIR<sup>®</sup> platform
 		and version information. The format of the version number is: _platform
 		majorVersion,minorVersion,buildNumber,internalBuildNumber_. Possible
-		values for _platform_ are `"WIN"`, ` `"MAC"`,
+		values for _platform_ are `"WIN"`, `"MAC"`,
 		`"LNX"`, and `"AND"`. Here are some examples of
-		version information: `WIN 9,0,0,0 // Flash
-		Player 9 for Windows MAC 7,0,25,0 // Flash Player 7 for Macintosh LNX
-		9,0,115,0 // Flash Player 9 for Linux AND 10,2,150,0 // Flash Player 10
-		for Android`
+		version information:
+
+		| Version String | Description |
+		| `WIN 9,0,0,0` | Flash Player 9 for Windows |
+		| `MAC 7,0,25,0` | Flash Player 7 for Macintosh |
+		| `LNX 9,0,115,0` | Flash Player 9 for Linux |
+		| `AND 10,2,150,0` | Flash Player 10 for Android |
 
 		Do _not_ use `Capabilities.version` to determine a
 		capability based on the operating system if a more specific capability
@@ -472,68 +471,6 @@ import sys.io.Process;
 	public static var version(get, never):String;
 
 	@:noCompletion private static var __standardDensities:Array<Int> = [120, 160, 240, 320, 480, 640, 800, 960];
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Capabilities, {
-			"cpuArchitecture": {
-				get: function()
-				{
-					return Capabilities.get_cpuArchitecture();
-				}
-			},
-			"language": {
-				get: function()
-				{
-					return Capabilities.get_language();
-				}
-			},
-			"manufacturer": {
-				get: function()
-				{
-					return Capabilities.get_manufacturer();
-				}
-			},
-			"os": {
-				get: function()
-				{
-					return Capabilities.get_os();
-				}
-			},
-			"pixelAspectRatio": {
-				get: function()
-				{
-					return Capabilities.get_pixelAspectRatio();
-				}
-			},
-			"screenDPI": {
-				get: function()
-				{
-					return Capabilities.get_screenDPI();
-				}
-			},
-			"screenResolutionX": {
-				get: function()
-				{
-					return Capabilities.get_screenResolutionX();
-				}
-			},
-			"screenResolutionY": {
-				get: function()
-				{
-					return Capabilities.get_screenResolutionY();
-				}
-			},
-			"version": {
-				get: function()
-				{
-					return Capabilities.get_version();
-				}
-			}
-		});
-	}
-	#end
 
 	/**
 		Specifies whether the system supports multichannel audio of a specific
@@ -591,8 +528,9 @@ import sys.io.Process;
 
 	@:noCompletion private static function get_language():String
 	{
-		#if lime
-		var language = Locale.currentLocale.language;
+		var locales = System.getPreferredLocales();
+
+		var language = locales[0].language;
 
 		if (language != null)
 		{
@@ -604,11 +542,11 @@ import sys.io.Process;
 					return language;
 
 				case "zh":
-					var region = Locale.currentLocale.region;
+					var region = locales[0].country;
 
 					if (region != null)
 					{
-						switch (region.toUpperCase())
+						switch (region)
 						{
 							case "TW", "HANT":
 								return "zh-TW";
@@ -623,29 +561,19 @@ import sys.io.Process;
 					return "xu";
 			}
 		}
-		#end
 
 		return "en";
 	}
 
 	@:noCompletion private static inline function get_manufacturer():String
 	{
-		#if mac
-		return "OpenFL Macintosh";
-		#elseif linux
-		return "OpenFL Linux";
-		#elseif lime
 		var name = System.platformName;
 		return "OpenFL" + (name != null ? " " + name : "");
-		#else
-		return null;
-		#end
 	}
 
 	@:noCompletion private static inline function get_os():String
 	{
-		#if lime
-		#if (ios || tvos)
+		#if ios
 		return System.deviceModel;
 		#elseif mac
 		return "Mac OS " + System.platformVersion;
@@ -665,9 +593,6 @@ import sys.io.Process;
 		var label = System.platformLabel;
 		return label != null ? label : "";
 		#end
-		#else
-		return null;
-		#end
 	}
 
 	@:noCompletion private static function get_pixelAspectRatio():Float
@@ -677,7 +602,6 @@ import sys.io.Process;
 
 	@:noCompletion private static function get_screenDPI():Float
 	{
-		#if lime
 		var window = Lib.application != null ? Lib.application.window : null;
 		var screenDPI:Float;
 
@@ -720,14 +644,10 @@ import sys.io.Process;
 		#end
 
 		return screenDPI;
-		#else
-		return 72;
-		#end
 	}
 
 	@:noCompletion private static function get_screenResolutionX():Float
 	{
-		#if lime
 		var stage = Lib.current.stage;
 		var resolutionX = 0;
 
@@ -749,14 +669,10 @@ import sys.io.Process;
 		}
 
 		return stage.stageWidth;
-		#else
-		return 0;
-		#end
 	}
 
 	@:noCompletion private static function get_screenResolutionY():Float
 	{
-		#if lime
 		var stage = Lib.current.stage;
 		var resolutionY = 0;
 
@@ -778,9 +694,6 @@ import sys.io.Process;
 		}
 
 		return stage.stageHeight;
-		#else
-		return 0;
-		#end
 	}
 
 	@:noCompletion private static function get_version():String
@@ -793,8 +706,6 @@ import sys.io.Process;
 		var value = "LNX";
 		#elseif ios
 		var value = "IOS";
-		#elseif tvos
-		var value = "TVO";
 		#elseif android
 		var value = "AND";
 		#elseif blackberry
@@ -815,6 +726,3 @@ import sys.io.Process;
 		return value;
 	}
 }
-#else
-typedef Capabilities = flash.system.Capabilities;
-#end

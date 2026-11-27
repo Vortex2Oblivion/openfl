@@ -2,10 +2,6 @@ package openfl.display;
 
 import openfl.utils.ByteArray;
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class DisplayObjectShader extends Shader
 {
 	@:glVertexHeader("attribute float openfl_Alpha;
@@ -81,17 +77,6 @@ class DisplayObjectShader extends Shader
 			gl_FragColor = color * openfl_Alphav;
 
 		}")
-	#if emscripten
-	@:glFragmentSource("#pragma header
-
-		void main(void) {
-
-			#pragma body
-
-			gl_FragColor = gl_FragColor.bgra;
-
-		}")
-	#else
 	@:glFragmentSource("#pragma header
 
 		void main(void) {
@@ -99,7 +84,6 @@ class DisplayObjectShader extends Shader
 			#pragma body
 
 		}")
-	#end
 	public function new(code:ByteArray = null)
 	{
 		super(code);

@@ -1,11 +1,10 @@
 package openfl.display3D;
 
-#if !flash
-import openfl.display3D._internal.GLBuffer;
-import openfl.utils._internal.ArrayBufferView;
-import openfl.utils._internal.Float32Array;
-import openfl.utils.ByteArray;
+import lime.graphics.opengl.GLBuffer;
+import lime.utils.ArrayBufferView;
+import lime.utils.Float32Array;
 import openfl.Vector;
+import openfl.utils.ByteArray;
 
 /**
 	The VertexBuffer3D class represents a set of vertex data uploaded to a rendering context.
@@ -43,16 +42,11 @@ import openfl.Vector;
 	To free the render context resources associated with a vertex buffer, call the object's
 	`dispose()` method.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display.Stage)
 class VertexBuffer3D
 {
 	@:noCompletion private var __context:Context3D;
-	@:noCompletion private var __data:Vector<Float>;
 	@:noCompletion private var __id:GLBuffer;
 	@:noCompletion private var __memoryUsage:Int = -1;
 	@:noCompletion private var __numVertices:Int;
@@ -106,12 +100,10 @@ class VertexBuffer3D
 	**/
 	public function uploadFromByteArray(data:ByteArray, byteArrayOffset:Int, startVertex:Int, numVertices:Int):Void
 	{
-		#if lime
 		var offset = byteArrayOffset + startVertex * __stride;
 		var length = numVertices * __vertexSize;
 
 		uploadFromTypedArray(new Float32Array(data, offset, length));
-		#end
 	}
 
 	/**
@@ -128,12 +120,24 @@ class VertexBuffer3D
 		if (data == null) return;
 		var gl = __context.gl;
 
+		if (byteLength < 0 || byteLength > data.byteLength) byteLength = data.byteLength;
+
 		__context.__bindGLArrayBuffer(__id);
-		if (__memoryUsage == data.byteLength)
-			gl.bufferSubData(gl.ARRAY_BUFFER, 0, data);
+
+		if (__memoryUsage >= data.byteLength)
+		{
+			#if (js && html5)
+			var bytesPerElement:Int = untyped data.BYTES_PER_ELEMENT;
+			gl.bufferSubData(gl.ARRAY_BUFFER, 0, data, 0, bytesPerElement > 0 ? Std.int(byteLength / bytesPerElement) : byteLength);
+			#else
+			gl.bufferSubData(gl.ARRAY_BUFFER, 0, data, 0, byteLength);
+			#end
+		}
 		else
+		{
 			gl.bufferData(gl.ARRAY_BUFFER, data, __usage);
-		__memoryUsage = data.byteLength;
+			__memoryUsage = data.byteLength;
+		}
 	}
 
 	/**
@@ -155,7 +159,6 @@ class VertexBuffer3D
 	**/
 	public function uploadFromVector(data:Vector<Float>, startVertex:Int, numVertices:Int):Void
 	{
-		#if lime
 		if (data == null) return;
 		var gl = __context.gl;
 
@@ -183,9 +186,53 @@ class VertexBuffer3D
 		}
 
 		uploadFromTypedArray(__tempFloat32Array);
-		#end
+	}
+
+	/**
+		Uploads the data for a set of points to the rendering context from an array.
+
+		@param	data	an array of 32-bit values. A single vertex is comprised of a
+		number of values stored sequentially in the array. The number of values in a
+		vertex is specified at buffer creation using the data32PerVertex parameter to the
+		Context3D `createVertexBuffer3D()` method. The length of the array must be the
+		number of values per vertex times the number of vertexes.
+		@param	startVertex	The index of the first vertex to be loaded. A value for
+		`startVertex` not equal to zero may be used to load a sub-region of the vertex data.
+		@param	numVertices	The number of vertices represented by data.
+		@throws	TypeError	Null Pointer Error: when `data` is `null`.
+		@throws	RangeError	Bad Input Size: when number of elements in data is less than
+		`numVertices * data32PerVertex` given in Context3D `createVertexBuffer()`, or
+		when `startVertex + numVertices` is greater than `numVertices` given in Context3D
+		`createVertexBuffer()`.
+	**/
+	public function uploadFromArray(data:Array<Float>, startVertex:Int, numVertices:Int):Void
+	{
+		if (data == null) return;
+		var gl = __context.gl;
+
+		// TODO: Optimize more
+
+		var start = startVertex * __vertexSize;
+		var count = numVertices * __vertexSize;
+		var length = start + count;
+
+		var existingFloat32Array = __tempFloat32Array;
+
+		if (__tempFloat32Array == null || __tempFloat32Array.length < count)
+		{
+			__tempFloat32Array = new Float32Array(count);
+
+			if (existingFloat32Array != null)
+			{
+				__tempFloat32Array.set(existingFloat32Array);
+			}
+		}
+
+		for (i in start...length)
+		{
+			__tempFloat32Array[i - start] = data[i];
+		}
+
+		uploadFromTypedArray(__tempFloat32Array);
 	}
 }
-#else
-typedef VertexBuffer3D = flash.display3D.VertexBuffer3D;
-#end

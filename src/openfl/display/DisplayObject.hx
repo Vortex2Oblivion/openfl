@@ -1,9 +1,8 @@
 package openfl.display;
 
-#if !flash
+import lime.graphics.cairo.Cairo;
+import openfl.Vector;
 import openfl.display._internal.IBitmapDrawableType;
-import openfl.utils.ObjectPool;
-import openfl.utils._internal.Lib;
 import openfl.errors.TypeError;
 import openfl.events.Event;
 import openfl.events.EventDispatcher;
@@ -19,14 +18,12 @@ import openfl.geom.Point;
 import openfl.geom.Rectangle;
 import openfl.geom.Transform;
 import openfl.ui.MouseCursor;
-import openfl.Vector;
-#if lime
-import lime.graphics.cairo.Cairo;
-#end
+import openfl.utils.ObjectPool;
+import openfl.utils._internal.Lib;
 #if (js && html5)
+import js.html.CSSStyleDeclaration;
 import js.html.CanvasElement;
 import js.html.CanvasRenderingContext2D;
-import js.html.CSSStyleDeclaration;
 #end
 
 /**
@@ -175,10 +172,6 @@ import js.html.CSSStyleDeclaration;
 	@see [Animating objects](https://books.openfl.org/openfl-developers-guide/display-programming/animating-objects.html)
 	@see [Loading display content dynamically](https://books.openfl.org/openfl-developers-guide/display-programming/loading-display-content-dynamically/)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(lime.graphics.Image)
 @:access(lime.graphics.ImageBuffer)
 @:access(openfl.display3D._internal.Context3DState)
@@ -196,9 +189,9 @@ import js.html.CSSStyleDeclaration;
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
 @:access(openfl.geom.Transform)
-class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (openfl_dynamic && haxe_ver < "4.0.0") implements Dynamic<DisplayObject> #end
+class DisplayObject extends EventDispatcher implements IBitmapDrawable
 {
-	#if (openfl_enable_experimental_update_queue && !dom)
+	#if openfl_enable_experimental_update_queue
 	@:noCompletion private static var updateQueue:Array<DisplayObject> = [];
 	#end
 
@@ -206,23 +199,8 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion private static var __initStage:Stage;
 	@:noCompletion private static var __instanceCount:Int = 0;
 
-	@:noCompletion
-	private static #if !js inline #end var __supportDOM:Bool #if !js = false #end;
-
 	@:noCompletion private static var __tempStack:ObjectPool<Vector<DisplayObject>> = new ObjectPool<Vector<DisplayObject>>(function() return
 		new Vector<DisplayObject>(), function(stack) stack.length = 0);
-
-	#if false
-	/**
-		The current accessibility options for this display object. If you modify the `accessibilityProperties`
-		property or any of the fields within `accessibilityProperties`, you must call the
-		`Accessibility.updateProperties()` method to make your changes take effect.
-
-		**Note:** For an object created in the Flash authoring environment, the value of `accessibilityProperties`
-		is prepopulated with any information you entered in the Accessibility panel for that object.
-	**/
-	// @:noCompletion @:dox(hide) public var accessibilityProperties:openfl.accessibility.AccessibilityProperties;
-	#end
 
 	/**
 		Indicates the alpha transparency value of the object specified. Valid
@@ -280,32 +258,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		@see [Applying blending modes](https://books.openfl.org/openfl-developers-guide/display-programming/manipulating-display-objects/applying-blending-modes.html)
 	**/
 	public var blendMode(get, set):BlendMode;
-
-	#if false
-	/**
-		Sets a shader that is used for blending the foreground and background. When the `blendMode` property is set
-		to `BlendMode.SHADER`, the specified Shader is used to create the blend mode output for the display object.
-
-		Setting the `blendShader` property of a display object to a Shader instance automatically sets the display
-		object's `blendMode` property to `BlendMode.SHADER`. If the `blendShader` property is set (which sets the
-		`blendMode` property to `BlendMode.SHADER`), then the value of the `blendMode` property is changed, the
-		blend mode can be reset to use the blend shader simply by setting the `blendMode` property to
-		`BlendMode.SHADER`. The `blendShader` property does not need to be set again except to change the shader
-		that's used for the blend mode.
-
-		The Shader assigned to the `blendShader` property must specify at least two `image4` inputs. The inputs do
-		not need to be specified in code using the associated ShaderInput objects' input properties. The background
-		display object is automatically used as the first input (the input with index 0). The foreground display
-		object is used as the second input (the input with index 1). A shader used as a blend shader can specify more
-		than two inputs. In that case, any additional input must be specified by setting its ShaderInput instance's
-		`input` property.
-
-		When you assign a Shader instance to this property the shader is copied internally. The blend operation uses
-		that internal copy, not a reference to the original shader. Any changes made to the shader, such as changing
-		a parameter value, input, or bytecode, are not applied to the copied shader that's used for the blend mode.
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash10) public var blendShader(null, default):Shader;
-	#end
 
 	/**
 		All vector data for a display object that has a cached bitmap is drawn
@@ -480,7 +432,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 							  and the shader specifies an image input that isn't
 							  provided.
 		@throws ArgumentError When `filters` includes a ShaderFilter, a
-							  ByteArray or Vector.<Number> instance as a shader
+							  ByteArray or Vector<Float> instance as a shader
 							  input, and the `width` and
 							  `height` properties aren't specified for
 							  the ShaderInput object, or the specified values
@@ -553,6 +505,20 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		@see [Masking display objects](https://books.openfl.org/openfl-developers-guide/display-programming/manipulating-display-objects/masking-display-objects.html)
 	**/
 	public var mask(get, set):DisplayObject;
+
+	/**
+		Obtains the meta data object of the DisplayObject instance if meta data
+		was stored alongside the the instance of this DisplayObject in the SWF
+		file through a PlaceObject4 tag.
+	**/
+	public var metaData(get, set):Dynamic;
+
+	// normal masks cannot be shared by multiple display objects, but swfs may
+	// define clipping layers, which involve depth checks where multiple display
+	// objects are allowed to be masked.
+	@:noCompletion private var clippingLayer(get, set):DisplayObject;
+
+	@:noCompletion private var __hasClippingLayer:Bool = false;
 
 	/**
 		Indicates the x coordinate of the mouse or user input device position, in
@@ -680,33 +646,29 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	**/
 	@:keep public var rotation(get, set):Float;
 
-	#if false
 	/**
 		Indicates the x-axis rotation of the DisplayObject instance, in degrees, from its original orientation
 		relative to the 3D parent container. Values from 0 to 180 represent clockwise rotation; values from 0 to
 		-180 represent counterclockwise rotation. Values outside this range are added to or subtracted from 360 to
 		obtain a value within the range.
 	**/
-	// @:noCompletion @:dox(hide) @:require(flash10) public var rotationX:Float;
-	#end
-	#if false
+	@:keep public var rotationX(get, set):Float;
+
 	/**
 		Indicates the y-axis rotation of the DisplayObject instance, in degrees, from its original orientation
 		relative to the 3D parent container. Values from 0 to 180 represent clockwise rotation; values from 0 to
 		-180 represent counterclockwise rotation. Values outside this range are added to or subtracted from 360 to
 		obtain a value within the range.
 	**/
-	// @:noCompletion @:dox(hide) @:require(flash10) public var rotationY:Float;
-	#end
-	#if false
+	@:keep public var rotationY(get, set):Float;
+
 	/**
 		Indicates the z-axis rotation of the DisplayObject instance, in degrees, from its original orientation
 		relative to the 3D parent container. Values from 0 to 180 represent clockwise rotation; values from 0 to
 		-180 represent counterclockwise rotation. Values outside this range are added to or subtracted from 360 to
 		obtain a value within the range.
 	**/
-	// @:noCompletion @:dox(hide) @:require(flash10) public var rotationZ:Float;
-	#end
+	@:keep public var rotationZ(get, set):Float;
 
 	/**
 		The current scaling grid that is in effect. If set to `null`,
@@ -797,7 +759,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	**/
 	@:keep public var scaleY(get, set):Float;
 
-	#if false
 	/**
 		Indicates the depth scale (percentage) of an object as applied from the registration point of the object.
 		The default registration point is (0,0). 1.0 is 100% scale.
@@ -805,8 +766,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		Scaling the local coordinate system changes the `x`, `y` and `z` property values, which are defined in whole
 		pixels.
 	**/
-	// @:noCompletion @:dox(hide) @:require(flash10) public var scaleZ:Float;
-	#end
+	@:keep public var scaleZ(get, set):Float;
 
 	/**
 		The scroll rectangle bounds of the display object. The display object is
@@ -835,8 +795,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	public var scrollRect(get, set):Rectangle;
 
 	/**
-		**BETA**
-
 		Applies a custom Shader object to use when rendering this display object (or its children) when using
 		hardware rendering. This occurs as a single-pass render on this object only, if visible. In order to
 		apply a post-process effect to multiple display objects at once, enable `cacheAsBitmap` or use the
@@ -860,10 +818,10 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 	/**
 		An object with properties pertaining to a display object's matrix, color
-		transform, and pixel bounds. The specific properties  -  matrix,
+		transform, and pixel bounds. The specific properties — matrix,
 		colorTransform, and three read-only properties
 		(`concatenatedMatrix`, `concatenatedColorTransform`,
-		and `pixelBounds`)  -  are described in the entry for the
+		and `pixelBounds`) — are described in the entry for the
 		Transform class.
 
 		Each of the transform object's properties is itself an object. This
@@ -947,20 +905,20 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	**/
 	@:keep public var y(get, set):Float;
 
-	// @:noCompletion @:dox(hide) @:require(flash10) var z:Float;
 	@:noCompletion private var __alpha:Float;
 	@:noCompletion private var __blendMode:BlendMode;
 	@:noCompletion private var __cacheAsBitmap:Bool;
 	@:noCompletion private var __cacheAsBitmapMatrix:Matrix;
 	@:noCompletion private var __cacheBitmap:Bitmap;
 	@:noCompletion private var __cacheBitmapBackground:Null<Int>;
+	@:noCompletion private var __cacheBitmapBounds:Rectangle;
 	@:noCompletion private var __cacheBitmapColorTransform:ColorTransform;
 	@:noCompletion private var __cacheBitmapData:BitmapData;
 	@:noCompletion private var __cacheBitmapData2:BitmapData;
 	@:noCompletion private var __cacheBitmapData3:BitmapData;
 	@:noCompletion private var __cacheBitmapMatrix:Matrix;
 	@:noCompletion private var __cacheBitmapRenderer:DisplayObjectRenderer;
-	@SuppressWarnings("checkstyle:Dynamic") @:noCompletion private var __cairo:#if lime Cairo #else Dynamic #end;
+	@:noCompletion private var __cairo:Cairo;
 	@:noCompletion private var __children:Array<DisplayObject>;
 	@:noCompletion private var __customRenderClear:Bool;
 	@:noCompletion private var __customRenderEvent:RenderEvent;
@@ -973,6 +931,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion private var __loaderInfo:LoaderInfo;
 	@:noCompletion private var __mask:DisplayObject;
 	@:noCompletion private var __maskTarget:DisplayObject;
+	@:noCompletion private var __metaData:Dynamic;
 	@:noCompletion private var __name:String;
 	@:noCompletion private var __objectTransform:Transform;
 	@:noCompletion private var __renderable:Bool;
@@ -983,10 +942,13 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion private var __renderTransformChanged:Bool;
 	@:noCompletion private var __rotation:Float;
 	@:noCompletion private var __rotationCosine:Float;
+	@:noCompletion private var __rotationX:Float;
+	@:noCompletion private var __rotationY:Float;
 	@:noCompletion private var __rotationSine:Float;
 	@:noCompletion private var __scale9Grid:Rectangle;
 	@:noCompletion private var __scaleX:Float;
 	@:noCompletion private var __scaleY:Float;
+	@:noCompletion private var __scaleZ:Float;
 	@:noCompletion private var __scrollRect:Rectangle;
 	@:noCompletion private var __shader:Shader;
 	@:noCompletion private var __tempPoint:Point;
@@ -1012,98 +974,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 	@:noCompletion private var __style:CSSStyleDeclaration;
 	#end
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(DisplayObject.prototype, {
-			"alpha": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_alpha (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_alpha (v); }")
-			},
-			"blendMode": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_blendMode (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_blendMode (v); }")
-			},
-			"cacheAsBitmap": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_cacheAsBitmap (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_cacheAsBitmap (v); }")
-			},
-			"cacheAsBitmapMatrix": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_cacheAsBitmapMatrix (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_cacheAsBitmapMatrix (v); }")
-			},
-			"filters": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_filters (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_filters (v); }")
-			},
-			"height": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_height (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_height (v); }")
-			},
-			"loaderInfo": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_loaderInfo (); }")
-			},
-			"mask": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_mask (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_mask (v); }")
-			},
-			"mouseX": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_mouseX (); }")
-			},
-			"mouseY": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_mouseY (); }")
-			},
-			"name": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_name (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_name (v); }")
-			},
-			"root": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_root (); }")
-			},
-			"rotation": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_rotation (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_rotation (v); }")
-			},
-			"scaleX": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scaleX (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scaleX (v); }")
-			},
-			"scaleY": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scaleY (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scaleY (v); }")
-			},
-			"scrollRect": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_scrollRect (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_scrollRect (v); }")
-			},
-			"shader": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_shader (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_shader (v); }")
-			},
-			"transform": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_transform (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_transform (v); }")
-			},
-			"visible": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_visible (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_visible (v); }")
-			},
-			"width": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_width (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_width (v); }")
-			},
-			"x": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_x (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_x (v); }")
-			},
-			"y": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_y (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_y (v); }")
-			},
-		});
-	}
-	#end
-
 	@:noCompletion private function new()
 	{
 		super();
@@ -1119,8 +989,11 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		__rotation = 0;
 		__rotationSine = 0;
 		__rotationCosine = 1;
+		__rotationX = 0;
+		__rotationY = 0;
 		__scaleX = 1;
 		__scaleY = 1;
+		__scaleZ = 1;
 
 		__worldAlpha = 1;
 		__worldBlendMode = NORMAL;
@@ -1139,7 +1012,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		}
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
 	public override function addEventListener<T>(type:EventType<T>, listener:T->Void, useCapture:Bool = false, priority:Int = 0,
 			useWeakReference:Bool = false):Void
 	{
@@ -1158,7 +1030,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 					dispatchers.push(this);
 				}
 
-			case RenderEvent.CLEAR_DOM, RenderEvent.RENDER_CAIRO, RenderEvent.RENDER_CANVAS, RenderEvent.RENDER_DOM, RenderEvent.RENDER_OPENGL:
+			case RenderEvent.RENDER_CAIRO, RenderEvent.RENDER_CANVAS, RenderEvent.RENDER_OPENGL:
 				if (__customRenderEvent == null)
 				{
 					__customRenderEvent = new RenderEvent(null);
@@ -1293,8 +1165,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		return __globalToLocal(pos, new Point());
 	}
 
-	// @:noCompletion @:dox(hide) @:require(flash10) public function globalToLocal3D (point:Point):Vector3D;
-
 	/**
 		Evaluates the bounding box of the display object to see if it overlaps or
 		intersects with the bounding box of the `obj` display object.
@@ -1381,9 +1251,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		return __getRenderTransform().transformPoint(point);
 	}
 
-	// @:noCompletion @:dox(hide) @:require(flash10) public function local3DToGlobal (point3d:Vector3D):Point;
-
-	@SuppressWarnings("checkstyle:Dynamic")
 	public override function removeEventListener<T>(type:EventType<T>, listener:T->Void, useCapture:Bool = false):Void
 	{
 		super.removeEventListener(type, listener, useCapture);
@@ -1399,11 +1266,9 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 					}
 				}
 
-			case RenderEvent.CLEAR_DOM, RenderEvent.RENDER_CAIRO, RenderEvent.RENDER_CANVAS, RenderEvent.RENDER_DOM, RenderEvent.RENDER_OPENGL:
-				if (!hasEventListener(RenderEvent.CLEAR_DOM)
-					&& !hasEventListener(RenderEvent.RENDER_CAIRO)
+			case RenderEvent.RENDER_CAIRO, RenderEvent.RENDER_CANVAS, RenderEvent.RENDER_OPENGL:
+				if (!hasEventListener(RenderEvent.RENDER_CAIRO)
 					&& !hasEventListener(RenderEvent.RENDER_CANVAS)
-					&& !hasEventListener(RenderEvent.RENDER_DOM)
 					&& !hasEventListener(RenderEvent.RENDER_OPENGL))
 				{
 					__customRenderEvent = null;
@@ -1458,6 +1323,20 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			__cacheBitmapData.dispose();
 			__cacheBitmapData = null;
 		}
+
+		if (__cacheBitmapData2 != null)
+		{
+			__cacheBitmapData2.dispose();
+			__cacheBitmapData2 = null;
+		}
+
+		if (__cacheBitmapData3 != null)
+		{
+			__cacheBitmapData3.dispose();
+			__cacheBitmapData3 = null;
+		}
+
+		__cacheBitmapBounds = null;
 	}
 
 	@:noCompletion private function __dispatch(event:Event):Bool
@@ -1735,7 +1614,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		}
 	}
 
-	#if (openfl_enable_experimental_update_queue && !dom)
+	#if openfl_enable_experimental_update_queue
 	@:noCompletion private var _updateQueueFlag:Bool = false;
 
 	@:noCompletion inline private function __setUpdateQueueFlag(add:Bool = true):Void
@@ -1763,7 +1642,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			__renderDirty = true;
 			__setParentRenderDirty();
 		}
-		#if (openfl_enable_experimental_update_queue && !dom)
+		#if openfl_enable_experimental_update_queue
 		__setUpdateQueueFlag();
 		#end
 	}
@@ -1782,7 +1661,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			__setWorldTransformInvalid();
 			__setParentRenderDirty();
 		}
-		#if (openfl_enable_experimental_update_queue && !dom)
+		#if openfl_enable_experimental_update_queue
 		__setUpdateQueueFlag();
 		#end
 	}
@@ -1801,7 +1680,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		__renderable = (__visible && __scaleX != 0 && __scaleY != 0 && !__isMask && (renderParent == null || !renderParent.__isMask));
 		__updateTransforms();
 
-		#if (openfl_enable_experimental_update_queue && !dom)
+		#if openfl_enable_experimental_update_queue
 		transformOnly = false;
 		#end
 
@@ -1815,28 +1694,8 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 
 		if (!transformOnly)
 		{
-			if (__supportDOM)
-			{
-				__renderTransformChanged = !__renderTransform.equals(__renderTransformCache);
-
-				if (__renderTransformCache == null)
-				{
-					__renderTransformCache = __renderTransform.clone();
-				}
-				else
-				{
-					__renderTransformCache.copyFrom(__renderTransform);
-				}
-			}
-
 			if (renderParent != null)
 			{
-				if (__supportDOM)
-				{
-					var worldVisible = (renderParent.__worldVisible && __visible);
-					__worldVisibleChanged = (__worldVisible != worldVisible);
-					__worldVisible = worldVisible;
-				}
 				var worldAlpha = alpha * renderParent.__worldAlpha;
 				__worldAlphaChanged = (__worldAlpha != worldAlpha);
 				__worldAlpha = worldAlpha;
@@ -1883,11 +1742,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			{
 				__worldAlpha = alpha;
 
-				if (__supportDOM)
-				{
-					__worldVisibleChanged = (__worldVisible != __visible);
-					__worldVisible = __visible;
-				}
 				__worldAlphaChanged = (__worldAlpha != alpha);
 
 				if (__objectTransform != null)
@@ -1956,6 +1810,39 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		{
 			__renderTransform.__translateTransformed(-__scrollRect.x, -__scrollRect.y);
 		}
+	}
+
+	@:noCompletion private function __setMask(value:DisplayObject):Void
+	{
+		if (value != __mask)
+		{
+			__setTransformDirty();
+			__setRenderDirty();
+		}
+
+		if (__mask != null)
+		{
+			__mask.__isMask = false;
+			__mask.__maskTarget = null;
+			__mask.__setTransformDirty();
+			__mask.__setRenderDirty();
+		}
+
+		if (value != null)
+		{
+			value.__isMask = true;
+			value.__maskTarget = this;
+			value.__setWorldTransformInvalid();
+		}
+
+		if (__cacheBitmap != null && __cacheBitmap.clippingLayer != value)
+		{
+			// the cache bitmap should not take ownership of the mask, so take
+			// advantage of the fact that clipping layers can be shared
+			__cacheBitmap.clippingLayer = value;
+		}
+
+		__mask = value;
 	}
 
 	// Get & Set Methods
@@ -2114,33 +2001,35 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 			value.__maskTarget.mask = null;
 		}
 
-		if (value != __mask)
-		{
-			__setTransformDirty();
-			__setRenderDirty();
-		}
+		__setMask(value);
 
-		if (__mask != null)
-		{
-			__mask.__isMask = false;
-			__mask.__maskTarget = null;
-			__mask.__setTransformDirty();
-			__mask.__setRenderDirty();
-		}
+		return __mask;
+	}
 
-		if (value != null)
-		{
-			value.__isMask = true;
-			value.__maskTarget = this;
-			value.__setWorldTransformInvalid();
-		}
+	@:noCompletion private function get_metaData():Dynamic
+	{
+		return __metaData;
+	}
 
-		if (__cacheBitmap != null && __cacheBitmap.mask != value)
-		{
-			__cacheBitmap.mask = value;
-		}
+	@:noCompletion private function set_metaData(value:Dynamic):Dynamic
+	{
+		return __metaData = value;
+	}
 
-		return __mask = value;
+	@:noCompletion private function get_clippingLayer():DisplayObject
+	{
+		if (!__hasClippingLayer)
+		{
+			return null;
+		}
+		return __mask;
+	}
+
+	@:noCompletion private function set_clippingLayer(value:DisplayObject):DisplayObject
+	{
+		__hasClippingLayer = value != null;
+		__setMask(value);
+		return __mask;
 	}
 
 	@:noCompletion private function get_mouseX():Float
@@ -2184,34 +2073,87 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		return __rotation;
 	}
 
+	@:noCompletion private function __normalizeRotation(value:Float):Float
+	{
+		value = value % 360.0;
+		if (value > 180.0)
+		{
+			value -= 360.0;
+		}
+		else if (value < -180.0)
+		{
+			value += 360.0;
+		}
+		return value;
+	}
+
+	@:noCompletion private function __updateTransformRotationScale():Void
+	{
+		var scaleX = __scaleX * Math.cos(__rotationY * (Math.PI / 180));
+		var scaleY = __scaleY * Math.cos(__rotationX * (Math.PI / 180));
+
+		__transform.a = __rotationCosine * scaleX;
+		__transform.b = __rotationSine * scaleX;
+		__transform.c = -__rotationSine * scaleY;
+		__transform.d = __rotationCosine * scaleY;
+		__setTransformDirty();
+	}
+
 	@:keep @:noCompletion private function set_rotation(value:Float):Float
 	{
+		value = __normalizeRotation(value);
 		if (value != __rotation)
 		{
-			value = value % 360.0;
-			if (value > 180.0)
-			{
-				value -= 360.0;
-			}
-			else if (value < -180.0)
-			{
-				value += 360.0;
-			}
-
 			__rotation = value;
 			var radians = __rotation * (Math.PI / 180);
 			__rotationSine = Math.sin(radians);
 			__rotationCosine = Math.cos(radians);
-
-			__transform.a = __rotationCosine * __scaleX;
-			__transform.b = __rotationSine * __scaleX;
-			__transform.c = -__rotationSine * __scaleY;
-			__transform.d = __rotationCosine * __scaleY;
-
-			__setTransformDirty();
+			__updateTransformRotationScale();
 		}
 
 		return value;
+	}
+
+	@:keep @:noCompletion private function get_rotationX():Float
+	{
+		return __rotationX;
+	}
+
+	@:keep @:noCompletion private function set_rotationX(value:Float):Float
+	{
+		value = __normalizeRotation(value);
+		if (value != __rotationX)
+		{
+			__rotationX = value;
+			__updateTransformRotationScale();
+		}
+		return value;
+	}
+
+	@:keep @:noCompletion private function get_rotationY():Float
+	{
+		return __rotationY;
+	}
+
+	@:keep @:noCompletion private function set_rotationY(value:Float):Float
+	{
+		value = __normalizeRotation(value);
+		if (value != __rotationY)
+		{
+			__rotationY = value;
+			__updateTransformRotationScale();
+		}
+		return value;
+	}
+
+	@:keep @:noCompletion private function get_rotationZ():Float
+	{
+		return __rotation;
+	}
+
+	@:keep @:noCompletion private function set_rotationZ(value:Float):Float
+	{
+		return set_rotation(value);
 	}
 
 	@:noCompletion private function get_scale9Grid():Rectangle
@@ -2254,25 +2196,7 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		if (value != __scaleX)
 		{
 			__scaleX = value;
-
-			if (__transform.b == 0)
-			{
-				if (value != __transform.a) __setTransformDirty();
-				__transform.a = value;
-			}
-			else
-			{
-				var a = __rotationCosine * value;
-				var b = __rotationSine * value;
-
-				if (__transform.a != a || __transform.b != b)
-				{
-					__setTransformDirty();
-				}
-
-				__transform.a = a;
-				__transform.b = b;
-			}
+			__updateTransformRotationScale();
 		}
 
 		return value;
@@ -2288,28 +2212,20 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		if (value != __scaleY)
 		{
 			__scaleY = value;
-
-			if (__transform.c == 0)
-			{
-				if (value != __transform.d) __setTransformDirty();
-				__transform.d = value;
-			}
-			else
-			{
-				var c = -__rotationSine * value;
-				var d = __rotationCosine * value;
-
-				if (__transform.d != d || __transform.c != c)
-				{
-					__setTransformDirty();
-				}
-
-				__transform.c = c;
-				__transform.d = d;
-			}
+			__updateTransformRotationScale();
 		}
 
 		return value;
+	}
+
+	@:keep @:noCompletion private function get_scaleZ():Float
+	{
+		return __scaleZ;
+	}
+
+	@:keep @:noCompletion private function set_scaleZ(value:Float):Float
+	{
+		return __scaleZ = value;
 	}
 
 	@:noCompletion private function get_scrollRect():Rectangle
@@ -2346,11 +2262,6 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		}
 
 		__setTransformDirty();
-
-		if (__supportDOM)
-		{
-			__setRenderDirty();
-		}
 
 		return __scrollRect;
 	}
@@ -2478,6 +2389,3 @@ class DisplayObject extends EventDispatcher implements IBitmapDrawable #if (open
 		return __transform.ty = value;
 	}
 }
-#else
-typedef DisplayObject = flash.display.DisplayObject;
-#end

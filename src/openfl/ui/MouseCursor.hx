@@ -1,15 +1,12 @@
 package openfl.ui;
 
-#if !flash
-#if lime
 import lime.ui.MouseCursor as LimeMouseCursor;
-#end
 
 /**
 	The MouseCursor class is an enumeration of constant values used in setting
 	the `cursor` property of the Mouse class.
 **/
-#if (haxe_ver >= 4.0) enum #else @:enum #end abstract MouseCursor(String) from String to String
+enum abstract MouseCursor(String) from String to String
 {
 	/**
 		Used to specify that the arrow cursor should be used.
@@ -47,7 +44,6 @@ import lime.ui.MouseCursor as LimeMouseCursor;
 	@:noCompletion private var __WAIT = "wait";
 	@:noCompletion private var __WAIT_ARROW = "waitarrow";
 
-	#if lime
 	@:from private static function fromLimeCursor(cursor:LimeMouseCursor):MouseCursor
 	{
 		return switch (cursor)
@@ -89,8 +85,4 @@ import lime.ui.MouseCursor as LimeMouseCursor;
 			default: LimeMouseCursor.DEFAULT;
 		}
 	}
-	#end
 }
-#else
-typedef MouseCursor = flash.ui.MouseCursor;
-#end

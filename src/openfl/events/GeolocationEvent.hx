@@ -1,6 +1,6 @@
 package openfl.events;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 /**
 	A Geolocation object dispatches GeolocationEvent objects when it receives
 	updates from the location sensor installed on the device.
@@ -9,10 +9,6 @@ package openfl.events;
 
 	@see `openfl.sensors.Geolocation`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class GeolocationEvent extends Event
 {
 	/**
@@ -98,8 +94,4 @@ class GeolocationEvent extends Event
 		return new GeolocationEvent(type, bubbles, cancelable, latitude, longitude, altitude, horizontalAccuracy, verticalAccuracy, speed, heading, timestamp);
 	}
 }
-#else
-#if air
-typedef GeolocationEvent = flash.events.GeolocationEvent;
-#end
 #end

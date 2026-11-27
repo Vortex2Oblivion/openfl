@@ -1,6 +1,6 @@
 package openfl.net;
 
-#if (!flash && !html5)
+#if !html5
 import haxe.io.Bytes;
 import haxe.io.Error;
 import openfl.errors.ArgumentError;
@@ -9,8 +9,8 @@ import openfl.errors.IllegalOperationError;
 import openfl.errors.RangeError;
 import openfl.events.DatagramSocketDataEvent;
 import openfl.events.Event;
-import openfl.events.EventType;
 import openfl.events.EventDispatcher;
+import openfl.events.EventType;
 #if !js
 import openfl.utils.ByteArray;
 import sys.net.Address;
@@ -55,10 +55,7 @@ import sys.net.UdpSocket;
 
 	@event data Dispatched when this socket receives a packet of data.
  */
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 class DatagramSocket extends EventDispatcher
 {
 	/**
@@ -154,7 +151,7 @@ class DatagramSocket extends EventDispatcher
 			__udpSocket.bind(new Host(localAddress), localPort);
 
 			var host = __udpSocket.host();
-			//TODO: Reduce GC pressure here? Do we need to do this for other Socket API?
+			// TODO: Reduce GC pressure here? Do we need to do this for other Socket API?
 			this.localAddress = localAddress == "0.0.0.0" ? representativeHost() : localAddress;
 			this.localPort = host.port;
 
@@ -165,7 +162,18 @@ class DatagramSocket extends EventDispatcher
 			switch (e)
 			{
 				case "Bind failed":
-					dispatchEvent(new Event(Event.CLOSE));
+					#if openfl_pool_events
+					var closeEvent = Event.__pool.get();
+					closeEvent.type = Event.CLOSE;
+					#else
+					var closeEvent = new Event(Event.CLOSE);
+					#end
+
+					dispatchEvent(closeEvent);
+
+					#if openfl_pool_events
+					Event.__pool.release(closeEvent);
+					#end
 				case "Unresolved host":
 					throw new ArgumentError("One of the parameters is invalid");
 				default:
@@ -194,7 +202,18 @@ class DatagramSocket extends EventDispatcher
 		bound = false;
 		Lib.current.removeEventListener(Event.ENTER_FRAME, __onFrameUpdate);
 
-		dispatchEvent(new Event(Event.CLOSE));
+		#if openfl_pool_events
+		var closeEvent = Event.__pool.get();
+		closeEvent.type = Event.CLOSE;
+		#else
+		var closeEvent = new Event(Event.CLOSE);
+		#end
+
+		dispatchEvent(closeEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(closeEvent);
+		#end
 	}
 
 	/**
@@ -402,33 +421,11 @@ class DatagramSocket extends EventDispatcher
 
 	@:noCompletion private function get_connected():Bool
 	{
-		#if neko
-		try
-		{
-			__udpSocket.peer();
-			return true;
-		}
-		catch (e:Dynamic)
-		{
-			return false;
-		}
-		#else
 		return (__udpSocket.peer() != null);
-		#end
 	}
 
 	@:noCompletion private function get_remoteAddress():String
 	{
-		#if neko
-		try
-		{
-			return __udpSocket.peer().host.host;
-		}
-		catch (e:Dynamic)
-		{
-			return null;
-		}
-		#else
 		var host = __udpSocket.peer();
 
 		if (host == null)
@@ -436,7 +433,6 @@ class DatagramSocket extends EventDispatcher
 			return "";
 		}
 		return host.host.host;
-		#end
 	}
 
 	@:noCompletion private function get_remotePort():Int
@@ -449,8 +445,4 @@ class DatagramSocket extends EventDispatcher
 	}
 	#end
 }
-#else
-#if air
-typedef DatagramSocket = flash.net.DatagramSocket;
-#end
 #end

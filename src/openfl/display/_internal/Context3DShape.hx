@@ -1,18 +1,13 @@
 package openfl.display._internal;
 
-#if !flash
 import openfl.display.DisplayObject;
 import openfl.display.OpenGLRenderer;
+import openfl.geom.Matrix;
 #if gl_stats
 import openfl.display._internal.stats.Context3DStats;
 import openfl.display._internal.stats.DrawCallContext;
 #end
-import openfl.geom.Matrix;
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display.DisplayObject)
 @:access(openfl.display.BitmapData)
@@ -41,14 +36,14 @@ class Context3DShape
 			if (graphics.__bitmap != null && graphics.__visible)
 			{
 				var context = renderer.__context3D;
-				var scale9Grid = shape.__worldScale9Grid;
 
 				var shader = renderer.__initDisplayShader(cast shape.__worldShader);
 				renderer.setShader(shader);
 				renderer.applyBitmapData(graphics.__bitmap, true);
 
 				var matrix = Matrix.__pool.get();
-				matrix.scale(1 / graphics.__bitmapScale, 1 / graphics.__bitmapScale);
+				matrix.scale(1 / graphics.__bitmapScaleX, 1 / graphics.__bitmapScaleY);
+
 				matrix.concat(graphics.__worldTransform);
 
 				renderer.applyMatrix(renderer.__getMatrix(matrix, AUTO));
@@ -59,12 +54,10 @@ class Context3DShape
 				renderer.applyColorTransform(shape.__worldColorTransform);
 				renderer.updateShader();
 
-				// TODO: scale9Grid
-
-				var vertexBuffer = graphics.__bitmap.getVertexBuffer(context /*, scale9Grid, shape*/);
+				var vertexBuffer = graphics.__bitmap.getVertexBuffer(context);
 				if (shader.__position != null) context.setVertexBufferAt(shader.__position.index, vertexBuffer, 0, FLOAT_3);
 				if (shader.__textureCoord != null) context.setVertexBufferAt(shader.__textureCoord.index, vertexBuffer, 3, FLOAT_2);
-				var indexBuffer = graphics.__bitmap.getIndexBuffer(context /*, scale9Grid*/);
+				var indexBuffer = graphics.__bitmap.getIndexBuffer(context);
 				context.drawTriangles(indexBuffer);
 
 				#if gl_stats
@@ -114,4 +107,3 @@ class Context3DShape
 		}
 	}
 }
-#end

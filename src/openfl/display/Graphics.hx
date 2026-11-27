@@ -1,24 +1,25 @@
 package openfl.display;
 
-#if !flash
+import lime.graphics.cairo.Cairo;
+import lime.utils.Float32Array;
+import lime.utils.UInt16Array;
+import openfl.Vector;
 import openfl.display._internal.CairoGraphics;
 import openfl.display._internal.CanvasGraphics;
 import openfl.display._internal.Context3DBuffer;
 import openfl.display._internal.DrawCommandBuffer;
 import openfl.display._internal.DrawCommandReader;
+import openfl.display._internal.GraphicsTessellator.GraphicsTessellatedFillPart;
+import openfl.display._internal.IBitmapDrawableType;
 import openfl.display._internal.ShaderBuffer;
+import openfl.display3D.Context3DTextureFormat;
 import openfl.display3D.IndexBuffer3D;
 import openfl.display3D.VertexBuffer3D;
 import openfl.errors.ArgumentError;
+import openfl.filters.BitmapFilter;
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
-import openfl.utils._internal.Float32Array;
-import openfl.utils._internal.UInt16Array;
 import openfl.utils.ObjectPool;
-import openfl.Vector;
-#if lime
-import lime.graphics.cairo.Cairo;
-#end
 #if (js && html5)
 import js.html.CanvasElement;
 import js.html.CanvasRenderingContext2D;
@@ -46,10 +47,6 @@ import js.html.CanvasRenderingContext2D;
 	@see [Understanding the Graphics class](https://books.openfl.org/openfl-developers-guide/using-the-drawing-api/understanding-the-graphics-class.html)
 	@see [Advanced use of the drawing API](https://books.openfl.org/openfl-developers-guide/using-the-drawing-api/advanced-use-of-the-drawing-api/)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.DisplayObject)
 @:access(openfl.display.GraphicsPath)
 @:access(openfl.display.IGraphicsData)
@@ -64,14 +61,26 @@ import js.html.CanvasRenderingContext2D;
 
 	@:noCompletion private var __bounds:Rectangle;
 	@:noCompletion private var __commands:DrawCommandBuffer;
+	@:noCompletion private var __bufferCache:Array<Array<BitmapData>>;
+	@:noCompletion private var __bufferFilters:Array<Array<BitmapFilter>>;
+	@:noCompletion private var __bufferNextUpdateTime:Array<Float>;
+	@:noCompletion private var __bufferResolutionScale:Array<Float>;
+	@:noCompletion private var __bufferResult:Array<BitmapData>;
+	@:noCompletion private var __bufferSourceView:BitmapData;
+	@:noCompletion private var __bufferUpdateDelay:Array<Float>;
 	@:noCompletion private var __dirty(default, set):Bool = true;
+	@:noCompletion private var __extraBufferFormats:Array<Context3DTextureFormat>;
 	@:noCompletion private var __hardwareDirty:Bool;
+	@:noCompletion private var __hardwareCompatible:Bool = false;
+	@:noCompletion private var __hardwareCompatibilityKnown:Bool = false;
 	@:noCompletion private var __height:Int;
 	@:noCompletion private var __managed:Bool;
 	@:noCompletion private var __positionX:Float;
 	@:noCompletion private var __positionY:Float;
 	@:noCompletion private var __quadBuffer:Context3DBuffer;
+	@:noCompletion private var __renderHeight:Int;
 	@:noCompletion private var __renderTransform:Matrix;
+	@:noCompletion private var __renderWidth:Int;
 	@:noCompletion private var __shaderBufferPool:ObjectPool<ShaderBuffer>;
 	@:noCompletion private var __softwareDirty:Bool;
 	@:noCompletion private var __strokePadding:Float;
@@ -79,7 +88,8 @@ import js.html.CanvasRenderingContext2D;
 	@:noCompletion private var __triangleIndexBuffer:IndexBuffer3D;
 	@:noCompletion private var __triangleIndexBufferCount:Int;
 	@:noCompletion private var __triangleIndexBufferData:UInt16Array;
-	@:noCompletion private var __usedShaderBuffers:List<ShaderBuffer>;
+	@:noCompletion private var __tessellatedFillParts:Array<GraphicsTessellatedFillPart>;
+	@:noCompletion private var __usedShaderBuffers:Array<ShaderBuffer>;
 	@:noCompletion private var __vertexBuffer:VertexBuffer3D;
 	@:noCompletion private var __vertexBufferCount:Int;
 	@:noCompletion private var __vertexBufferCountUVT:Int;
@@ -93,12 +103,13 @@ import js.html.CanvasRenderingContext2D;
 	@:noCompletion private var __worldTransform:Matrix;
 	#if (js && html5)
 	@:noCompletion private var __canvas:CanvasElement;
-	@:noCompletion private var __context:#if lime CanvasRenderingContext2D #else Dynamic #end;
+	@:noCompletion private var __context:CanvasRenderingContext2D;
 	#else
-	@SuppressWarnings("checkstyle:Dynamic") @:noCompletion private var __cairo:#if lime Cairo #else Dynamic #end;
+	@:noCompletion private var __cairo:Cairo;
 	#end
 	@:noCompletion private var __bitmap:BitmapData;
-	@:noCompletion private var __bitmapScale:Float;
+	@:noCompletion private var __bitmapScaleX:Float;
+	@:noCompletion private var __bitmapScaleY:Float;
 
 	@:noCompletion private function new(owner:DisplayObject)
 	{
@@ -108,15 +119,13 @@ import js.html.CanvasRenderingContext2D;
 		__strokePadding = 0;
 		__positionX = 0;
 		__positionY = 0;
-		__renderTransform = new Matrix();
-		__usedShaderBuffers = new List<ShaderBuffer>();
-		__worldTransform = new Matrix();
 		__width = 0;
 		__height = 0;
+		__renderWidth = 0;
+		__renderHeight = 0;
 
-		__bitmapScale = 1;
-
-		__shaderBufferPool = new ObjectPool<ShaderBuffer>(function() return new ShaderBuffer());
+		__bitmapScaleX = 1;
+		__bitmapScaleY = 1;
 
 		#if (js && html5)
 		moveTo(0, 0);
@@ -378,7 +387,7 @@ import js.html.CanvasRenderingContext2D;
 							  `pixel3` or `pixel4` output).
 		@throws ArgumentError When the shader specifies an image input that
 							  isn't provided.
-		@throws ArgumentError When a ByteArray or Vector.<Number> instance is
+		@throws ArgumentError When a ByteArray or Vector<Float> instance is
 							  used as an input and the `width` and `height`
 							  properties aren't specified for the ShaderInput,
 							  or the specified values don't match the amount
@@ -390,13 +399,17 @@ import js.html.CanvasRenderingContext2D;
 	{
 		if (shader != null)
 		{
-			#if lime
+			if (__shaderBufferPool == null)
+			{
+				__shaderBufferPool = new ObjectPool<ShaderBuffer>(function() return new ShaderBuffer());
+				__usedShaderBuffers = [];
+			}
+
 			var shaderBuffer = __shaderBufferPool.get();
-			__usedShaderBuffers.add(shaderBuffer);
+			__usedShaderBuffers.push(shaderBuffer);
 			shaderBuffer.update(cast shader);
 
 			__commands.beginShaderFill(shaderBuffer);
-			#end
 		}
 	}
 
@@ -407,14 +420,16 @@ import js.html.CanvasRenderingContext2D;
 	**/
 	public function clear():Void
 	{
-		#if lime
-		for (shaderBuffer in __usedShaderBuffers)
+		if (__usedShaderBuffers != null)
 		{
-			__shaderBufferPool.release(shaderBuffer);
-		}
-		#end
+			for (i in 0...__usedShaderBuffers.length)
+			{
+				__shaderBufferPool.release(__usedShaderBuffers[i]);
+			}
 
-		__usedShaderBuffers.clear();
+			__usedShaderBuffers.resize(0);
+		}
+
 		__commands.clear();
 		__strokePadding = 0;
 
@@ -1294,25 +1309,6 @@ import js.html.CanvasRenderingContext2D;
 		__commands.lineGradientStyle(type, colors, alphas, ratios, matrix, spreadMethod, interpolationMethod, focalPointRatio);
 	}
 
-	#if false
-	/**
-		Specifies a shader to use for the line stroke when drawing lines.
-
-		The shader line style is used for subsequent calls to Graphics methods such as the `lineTo()` method or the
-		`drawCircle()` method. The line style remains in effect until you call the `lineStyle()` or
-		`lineGradientStyle()` methods, or the `lineBitmapStyle()` method again with different parameters.
-
-		You can call the `lineShaderStyle()` method in the middle of drawing a path to specify different styles for
-		different line segments within a path.
-
-		Call the `lineStyle()` method before you call the `lineShaderStyle()` method to enable a stroke, or else the
-		value of the line style is undefined.
-
-		Calls to the `clear()` method set the line style back to undefined.
-	**/
-	// @:require(flash10) public function lineShaderStyle (shader:Shader, ?matrix:Matrix):Void;
-	#end
-
 	/**
 		Specifies a line style used for subsequent calls to Graphics methods such
 		as the `lineTo()` method or the `drawCircle()`
@@ -1562,6 +1558,30 @@ import js.html.CanvasRenderingContext2D;
 		__commands.moveTo(x, y);
 	}
 
+	public function addBuffer(format:Context3DTextureFormat):Int
+	{
+		if (__extraBufferFormats == null) __extraBufferFormats = [];
+		__extraBufferFormats.push(format);
+		return __extraBufferFormats.length;
+	}
+
+	public function setBufferFilters(index:Int, filters:Array<BitmapFilter>, resolutionScale:Float = 1.0, updateInterval:Float = 0):Void
+	{
+		if (__bufferFilters == null) __bufferFilters = [];
+		if (__bufferResolutionScale == null) __bufferResolutionScale = [];
+		if (__bufferUpdateDelay == null) __bufferUpdateDelay = [];
+
+		__bufferFilters[index - 1] = filters;
+		__bufferResolutionScale[index - 1] = resolutionScale;
+		__bufferUpdateDelay[index - 1] = updateInterval;
+	}
+
+	public function getBuffer(index:Int):BitmapData
+	{
+		if (__bufferResult == null) return null;
+		return __bufferResult[index - 1];
+	}
+
 	@SuppressWarnings("checkstyle:FieldDocComment")
 	@:dox(hide) @:noCompletion public function overrideBlendMode(blendMode:BlendMode):Void
 	{
@@ -1627,15 +1647,13 @@ import js.html.CanvasRenderingContext2D;
 		return graphicsData;
 	}
 
-	@:noCompletion
-	private #if !js inline #end function __calculateBezierCubicPoint(t:Float, p1:Float, p2:Float, p3:Float, p4:Float):Float
+	@:noCompletion private #if !js inline #end function __calculateBezierCubicPoint(t:Float, p1:Float, p2:Float, p3:Float, p4:Float):Float
 	{
 		var iT = 1 - t;
 		return p1 * (iT * iT * iT) + 3 * p2 * t * (iT * iT) + 3 * p3 * iT * (t * t) + p4 * (t * t * t);
 	}
 
-	@:noCompletion
-	private #if !js inline #end function __calculateBezierQuadPoint(t:Float, p1:Float, p2:Float, p3:Float):Float
+	@:noCompletion private #if !js inline #end function __calculateBezierQuadPoint(t:Float, p1:Float, p2:Float, p3:Float):Float
 	{
 		var iT = 1 - t;
 		return iT * iT * p1 + 2 * iT * t * p2 + t * t * p3;
@@ -1660,13 +1678,15 @@ import js.html.CanvasRenderingContext2D;
 		__bitmap = null;
 
 		#if (js && html5)
-		if (__canvas != null) {
+		if (__canvas != null)
+		{
 			__canvas.width = 0;
 			__canvas.height = 0;
 			__canvas = null;
 		}
 
-		if (__context != null) {
+		if (__context != null)
+		{
 			__context.clearRect(0, 0, 0, 0);
 			__context = null;
 		}
@@ -1905,13 +1925,15 @@ import js.html.CanvasRenderingContext2D;
 		}
 	}
 
-	@:noCompletion private function __update(displayMatrix:Matrix, pixelRatio:Float):Void
+	@:noCompletion private function __update(displayMatrix:Matrix, pixelRatio:Float, allowRenderSizeReuse:Bool = false):Void
 	{
 		if (__bounds == null || __bounds.width <= 0 || __bounds.height <= 0)
 		{
 			if (__width >= 1 || __height >= 1) __dirty = true;
 			__width = 0;
 			__height = 0;
+			__renderWidth = 0;
+			__renderHeight = 0;
 			return;
 		}
 
@@ -1920,61 +1942,69 @@ import js.html.CanvasRenderingContext2D;
 
 		var scaleX = pixelRatio, scaleY = pixelRatio;
 
-		if (__owner.__worldScale9Grid == null)
+		if (parentTransform.b == 0)
 		{
-			if (parentTransform.b == 0)
-			{
-				scaleX = Math.abs(parentTransform.a);
-			}
-			else
-			{
-				scaleX = Math.sqrt(parentTransform.a * parentTransform.a + parentTransform.b * parentTransform.b);
-			}
-
-			if (parentTransform.c == 0)
-			{
-				scaleY = Math.abs(parentTransform.d);
-			}
-			else
-			{
-				scaleY = Math.sqrt(parentTransform.c * parentTransform.c + parentTransform.d * parentTransform.d);
-			}
-
-			if (displayMatrix != null)
-			{
-				if (displayMatrix.b == 0)
-				{
-					scaleX *= displayMatrix.a;
-				}
-				else
-				{
-					scaleX *= Math.sqrt(displayMatrix.a * displayMatrix.a + displayMatrix.b * displayMatrix.b);
-				}
-
-				if (displayMatrix.c == 0)
-				{
-					scaleY *= displayMatrix.d;
-				}
-				else
-				{
-					scaleY *= Math.sqrt(displayMatrix.c * displayMatrix.c + displayMatrix.d * displayMatrix.d);
-				}
-			}
-
-			#if openfl_disable_graphics_upscaling
-			if (scaleX > 1) scaleX = 1;
-			if (scaleY > 1) scaleY = 1;
-			#end
+			scaleX = Math.abs(parentTransform.a);
+		}
+		else
+		{
+			scaleX = Math.sqrt(parentTransform.a * parentTransform.a + parentTransform.b * parentTransform.b);
 		}
 
-		var width = __bounds.width * scaleX;
-		var height = __bounds.height * scaleY;
+		if (parentTransform.c == 0)
+		{
+			scaleY = Math.abs(parentTransform.d);
+		}
+		else
+		{
+			scaleY = Math.sqrt(parentTransform.c * parentTransform.c + parentTransform.d * parentTransform.d);
+		}
+
+		if (displayMatrix != null && __owner.__worldScale9Grid == null)
+		{
+			if (displayMatrix.b == 0)
+			{
+				scaleX *= displayMatrix.a;
+			}
+			else
+			{
+				scaleX *= Math.sqrt(displayMatrix.a * displayMatrix.a + displayMatrix.b * displayMatrix.b);
+			}
+
+			if (displayMatrix.c == 0)
+			{
+				scaleY *= displayMatrix.d;
+			}
+			else
+			{
+				scaleY *= Math.sqrt(displayMatrix.c * displayMatrix.c + displayMatrix.d * displayMatrix.d);
+			}
+		}
+
+		if (__owner.__worldScale9Grid != null)
+		{
+			scaleX = Math.abs(__owner.scaleX) * pixelRatio;
+			scaleY = Math.abs(__owner.scaleY) * pixelRatio;
+		}
+
+		#if openfl_disable_graphics_upscaling
+		if (__owner.__worldScale9Grid == null)
+		{
+			if (scaleX > 1) scaleX = 1;
+			if (scaleY > 1) scaleY = 1;
+		}
+		#end
+
+		var width = Math.abs(__bounds.width * scaleX);
+		var height = Math.abs(__bounds.height * scaleY);
 
 		if (width < 1 || height < 1)
 		{
 			if (__width >= 1 || __height >= 1) __dirty = true;
 			__width = 0;
 			__height = 0;
+			__renderWidth = 0;
+			__renderHeight = 0;
 			return;
 		}
 
@@ -1990,8 +2020,61 @@ import js.html.CanvasRenderingContext2D;
 			scaleY = maxTextureHeight / __bounds.height;
 		}
 
+		var newWidth = Math.ceil(width + 1.0);
+		var newHeight = Math.ceil(height + 1.0);
+
+		// Keep the display size exact, but allow software-backed graphics to
+		// reuse a larger raster allocation across nearby zoom levels.
+		var renderWidth = newWidth;
+		var renderHeight = newHeight;
+		var useExactRenderScale = (__owner.__drawableType == TEXT_FIELD);
+		allowRenderSizeReuse = allowRenderSizeReuse && !useExactRenderScale;
+
+		#if !openfl_disable_graphics_upscaling
+		if (allowRenderSizeReuse && __owner.__worldScale9Grid == null)
+		{
+			if (__renderWidth > 0 && renderWidth <= __renderWidth)
+			{
+				renderWidth = __renderWidth;
+			}
+			else if (__renderWidth > 0 && renderWidth > __renderWidth)
+			{
+				renderWidth = Math.ceil(Math.max(renderWidth, __renderWidth * 1.25));
+			}
+
+			if (__renderHeight > 0 && renderHeight <= __renderHeight)
+			{
+				renderHeight = __renderHeight;
+			}
+			else if (__renderHeight > 0 && renderHeight > __renderHeight)
+			{
+				renderHeight = Math.ceil(Math.max(renderHeight, __renderHeight * 1.25));
+			}
+
+			if (maxTextureWidth != null && renderWidth > maxTextureWidth)
+			{
+				renderWidth = maxTextureWidth;
+			}
+
+			if (maxTextureHeight != null && renderHeight > maxTextureHeight)
+			{
+				renderHeight = maxTextureHeight;
+			}
+		}
+		#end
+
 		var inverseA:Float;
 		var inverseD:Float;
+
+		if (__renderTransform == null)
+		{
+			__renderTransform = new Matrix();
+		}
+
+		if (__worldTransform == null)
+		{
+			__worldTransform = new Matrix();
+		}
 
 		if (__owner.__worldScale9Grid != null)
 		{
@@ -2002,8 +2085,8 @@ import js.html.CanvasRenderingContext2D;
 		}
 		else
 		{
-			__renderTransform.a = width / __bounds.width;
-			__renderTransform.d = height / __bounds.height;
+			__renderTransform.a = (allowRenderSizeReuse ? renderWidth : width) / __bounds.width;
+			__renderTransform.d = (allowRenderSizeReuse ? renderHeight : height) / __bounds.height;
 			inverseA = (1 / __renderTransform.a);
 			inverseD = (1 / __renderTransform.d);
 		}
@@ -2045,15 +2128,7 @@ import js.html.CanvasRenderingContext2D;
 		__renderTransform.ty = __worldTransform.__transformInverseY(tx, ty);
 		#end
 
-		// Calculate the size to contain the graphics and an extra subpixel
-		// We used to add tx and ty from __renderTransform instead of 1.0
-		// but it improves performance if we keep the size consistent when the
-		// extra pixel isn't needed
-		var newWidth = Math.ceil(width + 1.0);
-		var newHeight = Math.ceil(height + 1.0);
-
-		// Mark dirty if render size changed
-		if (newWidth != __width || newHeight != __height)
+		if (useExactRenderScale && (newWidth != __width || newHeight != __height))
 		{
 			#if !openfl_disable_graphics_upscaling
 			__dirty = true;
@@ -2062,6 +2137,8 @@ import js.html.CanvasRenderingContext2D;
 
 		__width = newWidth;
 		__height = newHeight;
+		__renderWidth = renderWidth;
+		__renderHeight = renderHeight;
 	}
 
 	// Get & Set Methods
@@ -2076,11 +2153,11 @@ import js.html.CanvasRenderingContext2D;
 		{
 			__softwareDirty = true;
 			__hardwareDirty = true;
+			__hardwareCompatible = false;
+			__hardwareCompatibilityKnown = false;
+			__tessellatedFillParts = null;
 		}
 
 		return __dirty = value;
 	}
 }
-#else
-typedef Graphics = flash.display.Graphics;
-#end

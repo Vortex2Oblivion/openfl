@@ -1,6 +1,5 @@
 package openfl.external;
 
-#if !flash
 import openfl.utils._internal.Lib;
 
 /**
@@ -70,10 +69,6 @@ import openfl.utils._internal.Lib;
 	in the HTMLLoader control and ActionScript in SWF content embedded in that
 	HTML page.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.Stage)
 @:access(lime.ui.Window)
 @:final class ExternalInterface
@@ -298,7 +293,7 @@ import openfl.utils._internal.Lib;
 		#end
 	}
 
-	private static function get_objectID():String
+	@:noCompletion private static function get_objectID():String
 	{
 		#if (js && html5)
 		if (Lib.application != null && Lib.application.window != null && Lib.application.window.element != null)
@@ -310,6 +305,3 @@ import openfl.utils._internal.Lib;
 		return null;
 	}
 }
-#else
-typedef ExternalInterface = flash.external.ExternalInterface;
-#end

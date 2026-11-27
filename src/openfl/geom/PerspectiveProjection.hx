@@ -1,6 +1,5 @@
 package openfl.geom;
 
-#if !flash
 /**
 	The `PerspectiveProjection` class provides an easy way to assign or modify the perspective
 	transformations of a display object and all of its children. For more complex or custom
@@ -34,10 +33,6 @@ package openfl.geom;
 	object using the `DisplayObject.transform` property. The specified projection matrix and transformation
 	will then apply to all the display object's three-dimensional children.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class PerspectiveProjection
 {
 	@SuppressWarnings("checkstyle:FieldDocComment")
@@ -79,16 +74,6 @@ class PerspectiveProjection
 	@:noCompletion private var __fieldOfView:Float;
 	@:noCompletion private var matrix3D:Matrix3D;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperty(PerspectiveProjection.prototype, "fieldOfView", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_fieldOfView (); }"),
-			set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_fieldOfView (v); }")
-		});
-	}
-	#end
-
 	/**
 		Creates an instance of a PerspectiveProjection object.
 	**/
@@ -98,7 +83,7 @@ class PerspectiveProjection
 		this.focalLength = 0;
 
 		matrix3D = new Matrix3D();
-		projectionCenter = new Point(#if !openfl_unit_testing Lib.current.stage.stageWidth / 2, Lib.current.stage.stageHeight / 2 #end);
+		projectionCenter = new Point(Lib.current.stage.stageWidth / 2, Lib.current.stage.stageHeight / 2);
 	}
 
 	/**
@@ -113,7 +98,7 @@ class PerspectiveProjection
 	**/
 	public function toMatrix3D():Matrix3D
 	{
-		if (#if neko __fieldOfView == null || #end projectionCenter == null) return null;
+		if (projectionCenter == null) return null;
 
 		var _mp = matrix3D.rawData;
 		_mp[0] = focalLength;
@@ -139,7 +124,7 @@ class PerspectiveProjection
 	**/
 	public function toMatrix3DToOutput(output:Matrix3D):Matrix3D
 	{
-		if (#if neko __fieldOfView == null || #end projectionCenter == null) return null;
+		if (projectionCenter == null) return null;
 
 		if (output == null)
 		{
@@ -171,6 +156,3 @@ class PerspectiveProjection
 		return __fieldOfView;
 	}
 }
-#else
-typedef PerspectiveProjection = flash.geom.PerspectiveProjection;
-#end

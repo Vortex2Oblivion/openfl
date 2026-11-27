@@ -1,13 +1,12 @@
 package openfl.display;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
-#if !openfljs
+#if sys
 /**
 	The FocusDirection class enumerates values to be used for the `direction`
 	parameter of the `assignFocus()` method of a Stage object and for the
 	`direction` property of a FocusEvent object.
 **/
-#if (haxe_ver >= 4.0) enum #else @:enum #end abstract FocusDirection(Null<Int>)
+enum abstract FocusDirection(Null<Int>)
 {
 	/**
 		Indicates that focus should be given to the object at the end of the
@@ -49,16 +48,4 @@ package openfl.display;
 		}
 	}
 }
-#else
-@SuppressWarnings("checkstyle:FieldDocComment") #if (haxe_ver >= 4.0) enum #else @:enum #end abstract FocusDirection(String) from String to String
-{
-	public var BOTTOM = "bottom";
-	public var NONE = "none";
-	public var TOP = "top";
-}
-#end
-#else
-#if air
-typedef FocusDirection = flash.display.FocusDirection;
-#end
 #end

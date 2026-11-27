@@ -1,29 +1,27 @@
 package openfl.net;
 
-#if !flash
-import haxe.io.Path;
 import haxe.Timer;
+import haxe.io.Path;
+import lime.utils.Bytes;
 import openfl.events.DataEvent;
 import openfl.events.Event;
 import openfl.events.EventDispatcher;
 import openfl.events.HTTPStatusEvent;
 import openfl.events.IOErrorEvent;
 import openfl.events.ProgressEvent;
+import openfl.filesystem.File;
 import openfl.utils.ByteArray;
-#if lime
-import lime.utils.Bytes;
-#end
-#if (lime && !macro)
+#if !macro
 import lime.ui.FileDialog;
+import lime.ui.FileDialogFilter;
 #end
 #if sys
-import sys.io.File;
 import sys.FileSystem;
 #end
 #if (js && html5)
+import js.Browser;
 import js.html.FileReader;
 import js.html.InputElement;
-import js.Browser;
 #end
 
 /**
@@ -307,10 +305,7 @@ import js.Browser;
 	@see `openfl.net.FileReferenceList`
 	@see `openfl.filesystem.File`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 class FileReference extends EventDispatcher
 {
 	/**
@@ -577,29 +572,7 @@ class FileReference extends EventDispatcher
 		__data = null;
 		__path = null;
 
-		#if desktop
-		var filter:String = null;
-
-		if (typeFilter != null)
-		{
-			var filters:Array<String> = [];
-
-			for (type in typeFilter)
-			{
-				filters.push(StringTools.replace(StringTools.replace(type.extension, "*.", ""), ";", ","));
-			}
-
-			filter = filters.join(";");
-		}
-
-		#if (lime && !macro)
-		var openFileDialog = new FileDialog();
-		openFileDialog.onCancel.add(openFileDialog_onCancel);
-		openFileDialog.onSelect.add(openFileDialog_onSelect);
-		openFileDialog.browse(OPEN, filter);
-		return true;
-		#end
-		#elseif (js && html5)
+		#if (js && html5)
 		var filter:String = null;
 		if (typeFilter != null)
 		{
@@ -622,7 +595,18 @@ class FileReference extends EventDispatcher
 		{
 			if (__inputControl.files.length == 0)
 			{
-				dispatchEvent(new Event(Event.CANCEL));
+				#if openfl_pool_events
+				var cancelEvent = Event.__pool.get();
+				cancelEvent.type = Event.CANCEL;
+				#else
+				var cancelEvent = new Event(Event.CANCEL);
+				#end
+
+				dispatchEvent(cancelEvent);
+
+				#if openfl_pool_events
+				Event.__pool.release(cancelEvent);
+				#end
 				return;
 			}
 			var file = __inputControl.files[0];
@@ -632,9 +616,34 @@ class FileReference extends EventDispatcher
 			type = "." + Path.extension(file.name);
 			name = Path.withoutDirectory(file.name);
 			__path = file.name;
-			dispatchEvent(new Event(Event.SELECT));
+
+			#if openfl_pool_events
+			var selectEvent = Event.__pool.get();
+			selectEvent.type = Event.SELECT;
+			#else
+			var selectEvent = new Event(Event.SELECT);
+			#end
+
+			dispatchEvent(selectEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(selectEvent);
+			#end
 		}
 		__inputControl.click();
+		return true;
+		#elseif !macro
+		FileDialog.openFile(Lib.current.stage.window, function(paths:Array<String>, filter):Void
+		{
+			if (paths.length > 0)
+			{
+				openFileDialog_onSelect(paths[0]);
+			}
+			else
+			{
+				openFileDialog_onCancel();
+			}
+		}, @:privateAccess File.__getFilterTypes(typeFilter), __path, false);
 		return true;
 		#end
 
@@ -853,11 +862,25 @@ class FileReference extends EventDispatcher
 		__urlLoader.addEventListener(ProgressEvent.PROGRESS, urlLoader_onProgress);
 		__urlLoader.load(request);
 
-		#if (lime && !macro)
-		var saveFileDialog = new FileDialog();
-		saveFileDialog.onCancel.add(saveFileDialog_onCancel);
-		saveFileDialog.onSelect.add(saveFileDialog_onSelect);
-		saveFileDialog.browse(SAVE, defaultFileName != null ? Path.extension(defaultFileName) : null, defaultFileName);
+		#if !macro
+		var filters = null;
+		if (defaultFileName != null && Path.extension(defaultFileName).length > 0)
+		{
+			var ext:String = Path.extension(defaultFileName);
+			filters = [new FileDialogFilter('*.$ext', ext)];
+		}
+
+		FileDialog.saveFile(Lib.current.stage.window, function(filepath:String, filter):Void
+		{
+			if (filepath != null)
+			{
+				saveFileDialog_onSelect(filepath);
+			}
+			else
+			{
+				saveFileDialog_onCancel();
+			}
+		}, filters, defaultFileName);
 		#end
 
 		#if (js && html5)
@@ -954,7 +977,7 @@ class FileReference extends EventDispatcher
 		if (__path != null)
 		{
 			data = Bytes.fromFile(__path);
-			openFileDialog_onComplete();
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		#elseif (js && html5)
 		var file = __inputControl.files[0];
@@ -962,7 +985,7 @@ class FileReference extends EventDispatcher
 		reader.onload = function(evt)
 		{
 			data = ByteArray.fromArrayBuffer(cast evt.target.result);
-			openFileDialog_onComplete();
+			dispatchEvent(new Event(Event.COMPLETE));
 		}
 		reader.onerror = function(evt)
 		{
@@ -1083,7 +1106,6 @@ class FileReference extends EventDispatcher
 
 		if (data == null) return;
 
-		#if desktop
 		if ((data is ByteArrayData))
 		{
 			__data = data;
@@ -1094,29 +1116,25 @@ class FileReference extends EventDispatcher
 			__data.writeUTFBytes(Std.string(data));
 		}
 
-		#if (lime && !macro)
-		var saveFileDialog = new FileDialog();
-		saveFileDialog.onCancel.add(saveFileDialog_onCancel);
-		saveFileDialog.onSelect.add(saveFileDialog_onSelect);
-		saveFileDialog.browse(SAVE, defaultFileName != null ? Path.extension(defaultFileName) : null, defaultFileName);
-		#end
-		#elseif (js && html5)
-		if ((data is ByteArrayData))
+		#if !macro
+		var filters = null;
+		if (defaultFileName != null && Path.extension(defaultFileName).length > 0)
 		{
-			__data = data;
-		}
-		else
-		{
-			__data = new ByteArray();
-			__data.writeUTFBytes(Std.string(data));
+			var ext:String = Path.extension(defaultFileName);
+			filters = [new FileDialogFilter('*.$ext', ext)];
 		}
 
-		#if (lime && !macro)
-		var saveFileDialog = new FileDialog();
-		saveFileDialog.onCancel.add(saveFileDialog_onCancel);
-		saveFileDialog.onSave.add(saveFileDialog_onSave);
-		saveFileDialog.save(__data, defaultFileName != null ? Path.extension(defaultFileName) : null, defaultFileName);
-		#end
+		FileDialog.saveFile(Lib.current.stage.window, function(filepath:String, filter):Void
+		{
+			if (filepath != null)
+			{
+				saveFileDialog_onSelect(filepath);
+			}
+			else
+			{
+				saveFileDialog_onCancel();
+			}
+		}, filters, defaultFileName);
 		#end
 	}
 
@@ -1375,7 +1393,7 @@ class FileReference extends EventDispatcher
 		#end
 	}
 
-	private function __uploadFileBytes(request:URLRequest, uploadDataFieldName:String, fileBytes:ByteArray):Void
+	@:noCompletion private function __uploadFileBytes(request:URLRequest, uploadDataFieldName:String, fileBytes:ByteArray):Void
 	{
 		var hasUrlVars = Type.typeof(request.data) == Type.ValueType.TObject;
 		if (hasUrlVars && request.method == URLRequestMethod.GET)
@@ -1444,51 +1462,110 @@ class FileReference extends EventDispatcher
 	// Event Handlers
 	@:noCompletion private function openFileDialog_onCancel():Void
 	{
-		dispatchEvent(new Event(Event.CANCEL));
+		#if openfl_pool_events
+		var cancelEvent = Event.__pool.get();
+		cancelEvent.type = Event.CANCEL;
+		#else
+		var cancelEvent = new Event(Event.CANCEL);
+		#end
+
+		dispatchEvent(cancelEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(cancelEvent);
+		#end
 	}
 
 	@:noCompletion private function openFileDialog_onComplete():Void
 	{
-		dispatchEvent(new Event(Event.COMPLETE));
+		#if openfl_pool_events
+		var completeEvent = Event.__pool.get();
+		completeEvent.type = Event.COMPLETE;
+		#else
+		var completeEvent = new Event(Event.COMPLETE);
+		#end
+
+		dispatchEvent(completeEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(completeEvent);
+		#end
 	}
 
 	@:noCompletion private function openFileDialog_onSelect(path:String):Void
 	{
 		#if sys
-		var fileInfo = FileSystem.stat(path);
-		creationDate = fileInfo.ctime;
-		modificationDate = fileInfo.mtime;
-		size = fileInfo.size;
-		type = "." + Path.extension(path);
+		try
+		{
+			var fileInfo = FileSystem.stat(path);
+			creationDate = fileInfo.ctime;
+			modificationDate = fileInfo.mtime;
+			size = fileInfo.size;
+			type = "." + Path.extension(path);
+		}
+		catch (e) {}
 		#end
 
 		name = Path.withoutDirectory(path);
 		__path = path;
 
-		dispatchEvent(new Event(Event.SELECT));
+		#if openfl_pool_events
+		var selectEvent = Event.__pool.get();
+		selectEvent.type = Event.SELECT;
+		#else
+		var selectEvent = new Event(Event.SELECT);
+		#end
+
+		dispatchEvent(selectEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(selectEvent);
+		#end
 	}
 
 	@:noCompletion private function saveFileDialog_onCancel():Void
 	{
-		dispatchEvent(new Event(Event.CANCEL));
+		#if openfl_pool_events
+		var cancelEvent = Event.__pool.get();
+		cancelEvent.type = Event.CANCEL;
+		#else
+		var cancelEvent = new Event(Event.CANCEL);
+		#end
+
+		dispatchEvent(cancelEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(cancelEvent);
+		#end
 	}
 
 	@:noCompletion private function saveFileDialog_onSave(path:String):Void
 	{
 		Timer.delay(function()
 		{
-			dispatchEvent(new Event(Event.COMPLETE));
+			#if openfl_pool_events
+			var completeEvent = Event.__pool.get();
+			completeEvent.type = Event.COMPLETE;
+			#else
+			var completeEvent = new Event(Event.COMPLETE);
+			#end
+
+			dispatchEvent(completeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(completeEvent);
+			#end
 		}, 1);
 	}
 
 	@:noCompletion private function saveFileDialog_onSelect(path:String):Void
 	{
-		#if (desktop && sys)
+		#if sys
 		name = Path.withoutDirectory(path);
 
 		if (__data != null)
 		{
-			File.saveBytes(path, __data);
+			Bytes.toFile(path, __data);
 
 			__data = null;
 			__path = null;
@@ -1499,7 +1576,18 @@ class FileReference extends EventDispatcher
 		}
 		#end
 
-		dispatchEvent(new Event(Event.SELECT));
+		#if openfl_pool_events
+		var selectEvent = Event.__pool.get();
+		selectEvent.type = Event.SELECT;
+		#else
+		var selectEvent = new Event(Event.SELECT);
+		#end
+
+		dispatchEvent(selectEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(selectEvent);
+		#end
 	}
 
 	@:noCompletion private function urlLoader_download_onComplete(event:Event):Void
@@ -1514,27 +1602,14 @@ class FileReference extends EventDispatcher
 			__data.writeUTFBytes(Std.string(__urlLoader.data));
 		}
 
-		#if (desktop && sys)
+		#if sys
 		if (__path != null)
 		{
-			File.saveBytes(__path, __data);
+			Bytes.toFile(__path, __data);
 
 			__path = null;
 			__data = null;
 		}
-		#end
-
-		#if (js && html5)
-		#if (lime && !macro)
-		if (__pendingDownload)
-		{
-			// Maybe just use an achor element and save the data as a blob with js instead of invoking lime?
-			var saveFileDialog = new FileDialog();
-			saveFileDialog.save(__data, __pendingDefaultFileName != null ? Path.extension(__pendingDefaultFileName) : null, __pendingDefaultFileName);
-			__pendingDownload = false;
-			__pendingDefaultFileName = null;
-		}
-		#end
 		#end
 
 		dispatchEvent(event);
@@ -1551,7 +1626,18 @@ class FileReference extends EventDispatcher
 		{
 			// httpStatus is not dispatched if upload is successful
 			// instead complete is dispatched
-			dispatchEvent(new Event(Event.COMPLETE));
+			#if openfl_pool_events
+			var completeEvent = Event.__pool.get();
+			completeEvent.type = Event.COMPLETE;
+			#else
+			var completeEvent = new Event(Event.COMPLETE);
+			#end
+
+			dispatchEvent(completeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(completeEvent);
+			#end
 		}
 		else if (event.status != 0)
 		{
@@ -1619,6 +1705,3 @@ class FileReference extends EventDispatcher
 		return extension;
 	}
 }
-#else
-typedef FileReference = flash.net.FileReference;
-#end

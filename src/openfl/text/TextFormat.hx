@@ -1,6 +1,5 @@
 package openfl.text;
 
-#if !flash
 /**
 	The TextFormat class represents character formatting information. Use the
 	TextFormat class to create specific text formatting for text fields. You
@@ -19,8 +18,8 @@ package openfl.text;
 	formatting BEFORE you add text to the `TextField`, and the
 	`setTextFormat()` method to add formatting AFTER you add text to the
 	`TextField`. The TextFormat properties are `null` by default because if
-	you don't provide values for the properties, Flash Player uses its own
-	default formatting. The default formatting that Flash Player uses for each
+	you don't provide values for the properties, OpenFL uses its own
+	default formatting. The default formatting that OpenFL uses for each
 	property (if property's value is `null`) is as follows:
 
 	| | |
@@ -42,6 +41,7 @@ package openfl.text;
 	| tabStops = [] (empty array) | |
 	| target = "" (empty string) | |
 	| underline = false | |
+	| strikethrough = false | |
 	| url = "" (empty string) | |
 
 	The default formatting for each property is also described in each
@@ -50,10 +50,6 @@ package openfl.text;
 	@see [Formatting text](https://books.openfl.org/openfl-developers-guide/using-the-textfield-class/formatting-text.html)
 	@see `openfl.text.TextField`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class TextFormat
 {
 	/**
@@ -98,8 +94,6 @@ class TextFormat
 		color black(0x000000).
 	**/
 	public var color:Null<Int>;
-
-	// @:noCompletion @:dox(hide) public var display:openfl.text.TextFormatDisplay;
 
 	/**
 		The name of the font for text in this text format, as a string. The
@@ -169,6 +163,16 @@ class TextFormat
 		`null`, which means that a size of 12 is used.
 	**/
 	public var size(default, set):Null<Int>;
+
+	/**
+		Indicates whether the text that uses this text format is striked out
+		(`true`) or not (`false`). This underlining is similar to that produced
+		by the `<S>` tag. The default value is `null`, which indicates that
+		strikethrough is not used.
+
+		The `strikethrough` property is ignored in Flash Player and AIR targets.
+	**/
+	public var strikethrough:Null<Bool>;
 
 	/**
 		Specifies custom tab stops as an array of non-negative integers. Each tab
@@ -291,10 +295,10 @@ class TextFormat
 		newFormat.letterSpacing = letterSpacing;
 		newFormat.tabStops = tabStops;
 
+		newFormat.strikethrough = strikethrough;
+
 		newFormat.__ascent = __ascent;
 		newFormat.__descent = __descent;
-
-		newFormat.__cacheKey = __toCacheKey();
 
 		return newFormat;
 	}
@@ -320,10 +324,10 @@ class TextFormat
 		if (format.letterSpacing != null) letterSpacing = format.letterSpacing;
 		if (format.tabStops != null) tabStops = format.tabStops;
 
+		if (format.strikethrough != null) strikethrough = format.strikethrough;
+
 		if (format.__ascent != null) __ascent = format.__ascent;
 		if (format.__descent != null) __descent = format.__descent;
-
-		__toCacheKey();
 	}
 
 	@:noCompletion private function __toCacheKey():String
@@ -336,7 +340,7 @@ class TextFormat
 		if (font != value)
 		{
 			font = value;
-			__toCacheKey();
+			__cacheKey = null;
 		}
 		return font;
 	}
@@ -346,7 +350,7 @@ class TextFormat
 		if (size != value)
 		{
 			size = value;
-			__toCacheKey();
+			__cacheKey = null;
 		}
 		return size;
 	}
@@ -356,7 +360,7 @@ class TextFormat
 		if (bold != value)
 		{
 			bold = value;
-			__toCacheKey();
+			__cacheKey = null;
 		}
 		return bold;
 	}
@@ -366,11 +370,8 @@ class TextFormat
 		if (italic != value)
 		{
 			italic = value;
-			__toCacheKey();
+			__cacheKey = null;
 		}
 		return italic;
 	}
 }
-#else
-typedef TextFormat = flash.text.TextFormat;
-#end

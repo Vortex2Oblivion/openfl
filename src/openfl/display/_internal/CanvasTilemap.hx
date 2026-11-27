@@ -1,6 +1,6 @@
 package openfl.display._internal;
 
-#if !flash
+import lime._internal.graphics.ImageCanvasUtil;
 import openfl.display.BitmapData;
 import openfl.display.BlendMode;
 import openfl.display.CanvasRenderer;
@@ -9,10 +9,6 @@ import openfl.display.Tilemap;
 import openfl.display.Tileset;
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
-#if lime
-// TODO: Avoid use of private APIs
-import lime._internal.graphics.ImageCanvasUtil;
-#end
 
 @:access(lime.graphics.ImageBuffer)
 @:access(openfl.display.BitmapData)
@@ -62,9 +58,8 @@ class CanvasTilemap
 		#end
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
-	private static function renderTileContainer(group:TileContainer, renderer:CanvasRenderer, parentTransform:Matrix, defaultTileset:Tileset, smooth:Bool,
-			alphaEnabled:Bool, worldAlpha:Float, blendModeEnabled:Bool, defaultBlendMode:BlendMode, cacheBitmapData:BitmapData, source:Dynamic,
+	@:noCompletion private static function renderTileContainer(group:TileContainer, renderer:CanvasRenderer, parentTransform:Matrix, defaultTileset:Tileset,
+			smooth:Bool, alphaEnabled:Bool, worldAlpha:Float, blendModeEnabled:Bool, defaultBlendMode:BlendMode, cacheBitmapData:BitmapData, source:Dynamic,
 			rect:Rectangle):Void
 	{
 		#if (js && html5)
@@ -187,4 +182,3 @@ class CanvasTilemap
 
 	public static function renderDrawableMask(tilemap:Tilemap, renderer:CanvasRenderer):Void {}
 }
-#end

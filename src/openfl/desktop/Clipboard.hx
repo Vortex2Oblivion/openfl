@@ -1,10 +1,7 @@
 package openfl.desktop;
 
-#if !flash
-import openfl.utils.Object;
-#if lime
 import lime.system.Clipboard as LimeClipboard;
-#end
+import openfl.utils.Object;
 
 /**
 	The Clipboard class provides a container for transferring data and objects
@@ -71,10 +68,6 @@ import lime.system.Clipboard as LimeClipboard;
 
 	@see [Copy and paste](https://books.openfl.org/openfl-developers-guide/copy-and-paste/)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class Clipboard
 {
 	/**
@@ -122,21 +115,6 @@ class Clipboard
 	@:noCompletion private var __systemClipboard:Bool;
 	@:noCompletion private var __text:String;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped global.Object.defineProperty(Clipboard, "generalClipboard", {
-			get: function()
-			{
-				return Clipboard.get_generalClipboard();
-			}
-		});
-		untyped global.Object.defineProperty(Clipboard.prototype, "formats", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_formats (); }")
-		});
-	}
-	#end
-
 	@:noCompletion private function new() {}
 
 	/**
@@ -152,13 +130,11 @@ class Clipboard
 	**/
 	public function clear():Void
 	{
-		#if lime
 		if (__systemClipboard)
 		{
 			LimeClipboard.text = null;
 			return;
 		}
-		#end
 
 		__htmlText = null;
 		__richText = null;
@@ -179,7 +155,6 @@ class Clipboard
 	**/
 	public function clearData(format:ClipboardFormats):Void
 	{
-		#if lime
 		if (__systemClipboard)
 		{
 			switch (format)
@@ -192,7 +167,6 @@ class Clipboard
 
 			return;
 		}
-		#end
 
 		switch (format)
 		{
@@ -259,7 +233,6 @@ class Clipboard
 			transferMode = ORIGINAL_PREFERRED;
 		}
 
-		#if lime
 		if (__systemClipboard)
 		{
 			return switch (format)
@@ -268,7 +241,6 @@ class Clipboard
 				default: null;
 			}
 		}
-		#end
 
 		return switch (format)
 		{
@@ -294,7 +266,6 @@ class Clipboard
 	**/
 	public function hasFormat(format:ClipboardFormats):Bool
 	{
-		#if lime
 		if (__systemClipboard)
 		{
 			return switch (format)
@@ -303,7 +274,6 @@ class Clipboard
 				default: false;
 			}
 		}
-		#end
 
 		return switch (format)
 		{
@@ -401,7 +371,6 @@ class Clipboard
 	**/
 	public function setData(format:ClipboardFormats, data:Object, serializable:Bool = true):Bool
 	{
-		#if lime
 		if (__systemClipboard)
 		{
 			switch (format)
@@ -414,7 +383,6 @@ class Clipboard
 					return false;
 			}
 		}
-		#end
 
 		switch (format)
 		{
@@ -434,87 +402,6 @@ class Clipboard
 				return false;
 		}
 	}
-
-	#if !openfl_strict
-	/**
-		Adds a reference to a handler function that produces the data to be
-		transfered.
-		Use a handler function to defer creation or rendering of the data
-		until it is actually accessed.
-
-		The handler function must return the appropriate data type for the
-		specified format:
-
-		| Format | Return Type |
-		| --- | --- |
-		| `ClipboardFormats.TEXT_FORMAT` | `String` |
-		| `ClipboardFormats.HTML_FORMAT` | `String` |
-		| `ClipboardFormats.URL_FORMAT` | `String` (AIR only) |
-		| `ClipboardFormats.RICH_TEXT_FORMAT` | `ByteArray` |
-		| `ClipboardFormats.BITMAP_FORMAT` | `BitmapData` (AIR only) |
-		| `ClipboardFormats.FILE_LIST_FORMAT` | Array of `File` (AIR only) |
-		| `ClipboardFormats.FILE_PROMISE_LIST_FORMAT` | Array of `File` (AIR only) |
-		| Custom format name | Non-void |
-
-		The handler function is called when and only when the data in the
-		specified format is read. Note that in some cases, the operating
-		system calls the function before a drop occurs. For example, when you
-		use a handler function to provide the data for a file dragged from an
-		AIR application to the file system, the operating system calls the
-		data handler function as soon as the drag gesture leaves the AIR
-		application — typically resulting in an undesireable pause as the file
-		data is downloaded or created. You can use a URLFilePromise for this
-		purpose instead.
-
-		Note that the underlying data can change between the time the handler
-		is added and the time the data is read unless your application takes
-		steps to protect the data. The behavior that occurs when data on the
-		clipboard represented by a handler function is read more than once is
-		not guaranteed. The clipboard might return the data produced by the
-		first function call or it might call the function again. Do not rely
-		on either behavior.
-
-		In the application sandbox of Adobe AIR, `setDataHandler()` can be
-		called anytime. In other contexts, `setDataHandler()` can only be
-		called in response to a user-generated event such as a key press or
-		mouse click.
-
-		To add data directly to this Clipboard object, use the `setData()`
-		method instead. If both the `setData()` and the `setDataHandler()`
-		methods are called with the same format name, then the handler
-		function is never called.
-
-		**Note:** On Mac OS, when you set the `format` parameter to
-		`ClipboardFormats.URL_FORMAT`, the URL is transferred only if the
-		handler function returns a valid URL. Otherwise, the Clipboard object
-		is emptied (and calling `getData()` returns `null`).
-
-		@param format       A function that returns the data to be
-							transferred.
-		@param handler      The format of the data.
-		@param serializable Specify `true` if the object returned by `handler`
-							can be serialized (and deserialized).
-		@return `true` if the handler was succesfully set; `false` otherwise.
-		@throws IllegalOperationError The Clipboard object requested is no
-									  longer in scope (AIR only).
-		@throws SecurityError         Reading from or writing to the clipboard
-									  is not permitted in this context. In
-									  Flash Player, you can only call this
-									  method successfully during the
-									  processing of a user event (such as a
-									  key press or mouse click). In AIR, this
-									  restriction only applies to content
-									  outside of the application security
-									  sandbox.
-		@throws TypeError             `format` or `handler` is `null`.
-	**/
-	@SuppressWarnings("checkstyle:Dynamic")
-	public function setDataHandler(format:ClipboardFormats, handler:Void->Dynamic, serializable:Bool = true):Bool
-	{
-		openfl.utils._internal.Lib.notImplemented();
-		return false;
-	}
-	#end
 
 	// Get & Set Methods
 	@:noCompletion private function get_formats():Array<ClipboardFormats>
@@ -537,6 +424,3 @@ class Clipboard
 		return __generalClipboard;
 	}
 }
-#else
-typedef Clipboard = flash.desktop.Clipboard;
-#end

@@ -1,30 +1,25 @@
 package openfl.filesystem;
 
-#if (haxe4 && !flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import haxe.Json;
 import haxe.Serializer;
 import haxe.Timer;
 import haxe.Unserializer;
+import haxe.io.Bytes;
 import haxe.io.BytesInput;
 import haxe.io.BytesOutput;
 import haxe.io.Encoding;
-import haxe.io.Bytes;
 import haxe.io.Path;
+import lime.system.BackgroundWorker;
 import openfl.errors.Error;
+import openfl.errors.IOError;
 import openfl.events.Event;
 import openfl.events.EventDispatcher;
-import openfl.filesystem.FileMode;
-import openfl.errors.IOError;
 import openfl.events.IOErrorEvent;
-import openfl.net.ObjectEncoding;
 import openfl.events.OutputProgressEvent;
 import openfl.events.ProgressEvent;
-import openfl.utils._internal.format.amf.AMFReader;
-import openfl.utils._internal.format.amf.AMFWriter;
-import openfl.utils._internal.format.amf.AMFTools;
-import openfl.utils._internal.format.amf3.AMF3Reader;
-import openfl.utils._internal.format.amf3.AMF3Writer;
-import openfl.utils._internal.format.amf3.AMF3Tools;
+import openfl.filesystem.FileMode;
+import openfl.net.ObjectEncoding;
 import openfl.utils.ByteArray;
 import openfl.utils.Endian;
 import openfl.utils.IDataInput;
@@ -35,7 +30,6 @@ import sys.io.FileInput;
 import sys.io.FileOutput;
 import sys.io.FileSeek;
 import sys.thread.Mutex;
-import lime.system.BackgroundWorker;
 
 @:noCompletion private typedef HaxeFile = sys.io.File;
 
@@ -74,12 +68,10 @@ import lime.system.BackgroundWorker;
 	@see [Data formats, and choosing the read and write methods to use](https://books.openfl.org/openfl-developers-guide/working-with-the-file-system/data-formats-and-choosing-the-read-and-write-methods-to-use.html)
 	@see `openfl.filesystem.File`
 **/
+@:access(openfl.events.Event)
 @:access(openfl.utils.ByteArray)
 @:access(openfl.utils.ByteArrayData)
 @:access(openfl.filesystem.File)
-#if !openfl_debug
-@:fileXml('tags="haxe,release"') @:noDebug
-#end
 class FileStream extends EventDispatcher implements IDataInput implements IDataOutput
 {
 	/**
@@ -265,7 +257,19 @@ class FileStream extends EventDispatcher implements IDataInput implements IDataO
 		if (__fileStreamWorker != null)
 		{
 			__disposeFileStreamWorker();
-			dispatchEvent(new Event(Event.CLOSE));
+
+			#if openfl_pool_events
+			var closeEvent = Event.__pool.get();
+			closeEvent.type = Event.CLOSE;
+			#else
+			var closeEvent = new Event(Event.CLOSE);
+			#end
+
+			dispatchEvent(closeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(closeEvent);
+			#end
 		}
 	}
 
@@ -700,7 +704,10 @@ class FileStream extends EventDispatcher implements IDataInput implements IDataO
 			return result;
 		}
 
-		return readUTFBytes(length);
+		var byteArray = new ByteArray(length);
+		__input.readBytes(byteArray, 0, length);
+		byteArray.position = 0;
+		return byteArray.readMultiByte(length, charSet);
 	}
 
 	/**
@@ -730,26 +737,6 @@ class FileStream extends EventDispatcher implements IDataInput implements IDataO
 
 		switch (objectEncoding)
 		{
-			case AMF0:
-				var bytes:Bytes = Bytes.alloc(bytesAvailable);
-				__input.readBytes(bytes, 0, bytesAvailable);
-
-				var input = new BytesInput(bytes, 0);
-				var reader = new AMFReader(input);
-				var data = AMFTools.unwrapValue(reader.read());
-				__positionDirty = true;
-				return data;
-
-			case AMF3:
-				var bytes:Bytes = Bytes.alloc(bytesAvailable);
-				__input.readBytes(bytes, 0, bytesAvailable);
-
-				var input = new BytesInput(bytes, 0);
-				var reader = new AMF3Reader(input);
-				var data = AMF3Tools.decode(reader.read());
-				__positionDirty = true;
-				return data;
-
 			case HXSF:
 				var data = readUTF();
 				return Unserializer.run(data);
@@ -1512,22 +1499,6 @@ class FileStream extends EventDispatcher implements IDataInput implements IDataO
 	{
 		switch (objectEncoding)
 		{
-			case AMF0:
-				var value = AMFTools.encode(object);
-				var output:BytesOutput = new BytesOutput();
-				var writer = new AMFWriter(output);
-				writer.write(value);
-				var bytes:Bytes = output.getBytes();
-				__output.writeBytes(bytes, 0, bytes.length);
-
-			case AMF3:
-				var value = AMF3Tools.encode(object);
-				var output = new BytesOutput();
-				var writer = new AMF3Writer(output);
-				writer.write(value);
-				var bytes:Bytes = output.getBytes();
-				__output.writeBytes(bytes, 0, bytes.length);
-
 			case HXSF:
 				var value = Serializer.run(object);
 				writeUTF(value);
@@ -1639,8 +1610,4 @@ class FileStream extends EventDispatcher implements IDataInput implements IDataO
 		return position = value;
 	}
 }
-#elseif flash
-#if air
-typedef FileStream = flash.filesystem.FileStream;
-#end
 #end

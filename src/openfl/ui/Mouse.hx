@@ -1,22 +1,15 @@
 package openfl.ui;
 
-#if !flash
-#if lime
 import lime.app.Application;
 import lime.ui.MouseCursor as LimeMouseCursor;
-#end
 
 /**
 	The methods of the Mouse class are used to hide and show the mouse pointer,
 	or to set the pointer to a specific style. The Mouse class is a top-level
 	class whose properties and methods you can access without using a
-	constructor. <ph outputclass="flashonly">The pointer is visible by default,
+	constructor. The pointer is visible by default,
 	but you can hide it and implement a custom pointer.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.Stage)
 @:final class Mouse
 {
@@ -68,22 +61,6 @@ import lime.ui.MouseCursor as LimeMouseCursor;
 	@:noCompletion private static var __cursor:MouseCursor = MouseCursor.AUTO;
 	@:noCompletion private static var __hidden:Bool;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperty(Mouse, "cursor", {
-			get: function()
-			{
-				return Mouse.get_cursor();
-			},
-			set: function(value)
-			{
-				return Mouse.set_cursor(value);
-			}
-		});
-	}
-	#end
-
 	/**
 		Hides the pointer. The pointer is visible by default.
 
@@ -96,25 +73,11 @@ import lime.ui.MouseCursor as LimeMouseCursor;
 	{
 		__hidden = true;
 
-		#if lime
 		for (window in Application.current.windows)
 		{
 			window.cursor = null;
 		}
-		#end
 	}
-
-	#if false
-	/**
-		Registers a native cursor under the given name, with the given data.
-
-		@param name   The name to use as a reference to the native cursor
-					  instance.
-		@param cursor The properties for the native cursor, such as icon
-					  bitmap, specified as a MouseCursorData instance.
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash10_2) public static function registerCursor (name:String, cursor:openfl.ui.MouseCursorData):Void;
-	#end
 
 	/**
 		Displays the pointer. The pointer is visible by default.
@@ -133,14 +96,6 @@ import lime.ui.MouseCursor as LimeMouseCursor;
 		cursor = cacheCursor;
 	}
 
-	#if false
-	/**
-		Unregisters the native cursor with the given name.
-
-		@param name The name referring to the native cursor instance.
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash11) public static function unregisterCursor (name:String):Void;
-	#end
 	// Get & Set Methods
 	@:noCompletion private static function get_cursor():MouseCursor
 	{
@@ -151,7 +106,6 @@ import lime.ui.MouseCursor as LimeMouseCursor;
 	{
 		if (value == null) value = AUTO;
 
-		#if lime
 		var setCursor:LimeMouseCursor = null;
 
 		switch (value)
@@ -190,11 +144,7 @@ import lime.ui.MouseCursor as LimeMouseCursor;
 				window.cursor = setCursor;
 			}
 		}
-		#end
 
 		return __cursor = value;
 	}
 }
-#else
-typedef Mouse = flash.ui.Mouse;
-#end

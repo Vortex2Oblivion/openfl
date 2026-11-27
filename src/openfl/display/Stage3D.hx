@@ -1,7 +1,9 @@
 package openfl.display;
 
-#if !flash
 import haxe.Timer;
+import lime.graphics.RenderContext;
+import lime.graphics.opengl.GL;
+import openfl.Vector;
 import openfl.display3D.Context3D;
 import openfl.display3D.Context3DProfile;
 import openfl.display3D.Context3DRenderMode;
@@ -11,133 +13,53 @@ import openfl.events.ErrorEvent;
 import openfl.events.Event;
 import openfl.events.EventDispatcher;
 import openfl.geom.Matrix3D;
-import openfl.Vector;
-#if lime
-import lime.graphics.opengl.GL;
-import lime.graphics.RenderContext;
-#end
 #if (js && html5)
-import js.html.webgl.RenderingContext;
-import js.html.CanvasElement;
-import js.html.CSSStyleDeclaration;
 import js.Browser;
+import js.html.CSSStyleDeclaration;
+import js.html.CanvasElement;
+import js.html.webgl.RenderingContext;
 #end
 
 /**
-	The Stage class represents the main drawing area.
-	For SWF content running in the browser (in Flash<sup>®</sup> Player), the
-	Stage represents the entire area where Flash content is shown. For content
-	running in AIR on desktop operating systems, each NativeWindow object has
-	a corresponding Stage object.
+	The Stage3D class provides a display area and a programmable rendering
+	context for drawing 2D and 3D graphics.
 
-	The Stage object is not globally accessible. You need to access it through
-	the `stage` property of a DisplayObject instance.
+	Stage3D provides a high-performance rendering surface for content rendered
+	using the `Context3D` class. This surface uses the graphics processing unit
+	(GPU) when possible. The runtime stage provides a fixed number of `Stage3D`
+	objects. The number of instances varies by the type of device. Desktop
+	computers typically provide four Stage3D instances.
 
-	The Stage class has several ancestor classes נDisplayObjectContainer,
-	InteractiveObject, DisplayObject, and EventDispatcher נfrom which it
-	inherits properties and methods. Many of these properties and methods are
-	either inapplicable to Stage objects, or require security checks when
-	called on a Stage object. The properties and methods that require security
-	checks are documented as part of the Stage class.
+	Content drawn to the `Stage3D` viewport is composited with other visible
+	graphics objects in a predefined order. The most distant are all
+	`StageVideo` surfaces. `Stage3D` comes next, with traditional Flash display
+	object content being rendered last, on top of all others. StageVideo and
+	Stage3D layers are rendered with no transparency; thus a viewport completely
+	obscures any other Stage3D or StageVideo viewports positioned underneath it.
+	Display list content is rendered with transparency.
 
-	In addition, the following inherited properties are inapplicable to Stage
-	objects. If you try to set them, an IllegalOperationError is thrown. These
-	properties may always be read, but since they cannot be set, they will
-	always contain default values.
+	**Note:** You can use the `visible` property of a Stage3D object to remove
+	it from the display temporarily, such as when playing a video using the
+	StageVideo class.
 
-	* `accessibilityProperties`
-	* `alpha`
-	* `blendMode`
-	* `cacheAsBitmap`
-	* `contextMenu`
-	* `filters`
-	* `focusRect`
-	* `loaderInfo`
-	* `mask`
-	* `mouseEnabled`
-	* `name`
-	* `opaqueBackground`
-	* `rotation`
-	* `scale9Grid`
-	* `scaleX`
-	* `scaleY`
-	* `scrollRect`
-	* `tabEnabled`
-	* `tabIndex`
-	* `transform`
-	* `visible`
-	* `x`
-	* `y`
+	A `Stage3D` object is retrieved from the Player stage using its `stage3Ds`
+	member. Use the Stage3D instance to request an associated rendering context
+	and to position the display on the runtime stage.
 
-	Some events that you might expect to be a part of the Stage class, such as
-	`enterFrame`, `exitFrame`, `frameConstructed`, and `render`, cannot be
-	Stage events because a reference to the Stage object cannot be guaranteed
-	to exist in every situation where these events are used. Because these
-	events cannot be dispatched by the Stage object, they are instead
-	dispatched by every DisplayObject instance, which means that you can add
-	an event listener to any DisplayObject instance to listen for these
-	events. These events, which are part of the DisplayObject class, are
-	called broadcast events to differentiate them from events that target a
-	specific DisplayObject instance. Two other broadcast events, `activate`
-	and `deactivate`, belong to DisplayObject's superclass, EventDispatcher.
-	The `activate` and `deactivate` events behave similarly to the
-	DisplayObject broadcast events, except that these two events are
-	dispatched not only by all DisplayObject instances, but also by all
-	EventDispatcher instances and instances of other EventDispatcher
-	subclasses. For more information on broadcast events, see the
-	DisplayObject class.
+	@event context3DCreate      Dispatched when a rendering context is created.
+	@event error             	Dispatched when a request for a rendering
+								context fails.
 
-	@event fullScreen             Dispatched when the Stage object enters, or
-								  leaves, full-screen mode. A change in
-								  full-screen mode can be initiated through
-								  Haxe code, or the user invoking a
-								  keyboard shortcut, or if the current focus
-								  leaves the full-screen window.
-	@event mouseLeave             Dispatched by the Stage object when the
-								  pointer moves out of the stage area. If the
-								  mouse button is pressed, the event is not
-								  dispatched.
-	@event orientationChange      Dispatched by the Stage object when the
-								  stage orientation changes.
-								  Orientation changes can occur when the user
-								  rotates the device, opens a slide-out
-								  keyboard, or when the `setAspectRatio()` is
-								  called.
-
-								  **Note:** If the `autoOrients` property is
-								  `false`, then the stage orientation does not
-								  change when a device is rotated. Thus,
-								  StageOrientationEvents are only dispatched
-								  for device rotation when `autoOrients` is
-								  `true`.
-	@event orientationChanging    Dispatched by the Stage object when the
-								  stage orientation begins changing.
-								  **Important:** orientationChanging events
-								  are not dispatched on Android devices.
-
-								  **Note:** If the `autoOrients` property is
-								  `false`, then the stage orientation does not
-								  change when a device is rotated. Thus,
-								  StageOrientationEvents are only dispatched
-								  for device rotation when `autoOrients` is
-								  `true`.
-	@event resize                 Dispatched when the `scaleMode` property of
-								  the Stage object is set to
-								  `StageScaleMode.NO_SCALE` and the SWF file
-								  is resized.
-	@event stageVideoAvailability Dispatched by the Stage object when the
-								  state of the stageVideos property changes.
+	@see `openfl.display.Stage`
+	@see `openfl.display3D.Context3D`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(lime.graphics.opengl.GL)
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display3D.Program3D)
 @:access(openfl.display.Bitmap)
 @:access(openfl.display.BitmapData)
 @:access(openfl.display.Stage)
+@:access(openfl.events.Event)
 class Stage3D extends EventDispatcher
 {
 	@:noCompletion private static var __active:Bool;
@@ -190,22 +112,6 @@ class Stage3D extends EventDispatcher
 	@:noCompletion private var __renderContext:RenderContext;
 	@:noCompletion private var __style:CSSStyleDeclaration;
 	@:noCompletion private var __webgl:RenderingContext;
-	#end
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Stage3D.prototype, {
-			"x": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_x (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_x (v); }")
-			},
-			"y": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_y (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_y (v); }")
-			},
-		});
-	}
 	#end
 
 	@:noCompletion private function new(stage:Stage)
@@ -338,7 +244,7 @@ class Stage3D extends EventDispatcher
 		{
 			var stage3D:Stage3D = stage.stage3Ds[0];
 			stage3D.addEventListener( Event.CONTEXT3D_CREATE, myContext3DHandler );
-			stage3D.requestContext3DMatchingProfiles(Vector.<string>([Context3DProfile.BASELINE, Context3DProfile.BASELINE_EXTENDED]));
+			stage3D.requestContext3DMatchingProfiles(Vector.ofValues(Context3DProfile.BASELINE, Context3DProfile.BASELINE_EXTENDED));
 		}
 
 		function myContext3DHandler ( event : Event ) : Void
@@ -374,7 +280,6 @@ class Stage3D extends EventDispatcher
 
 	@:noCompletion private function __createContext():Void
 	{
-		#if lime
 		var stage = __stage;
 		var renderer = stage.__renderer;
 
@@ -393,83 +298,6 @@ class Stage3D extends EventDispatcher
 			#end
 			__dispatchCreate();
 		}
-		else if (renderer.__type == DOM)
-		{
-			// TODO: Do not set Stage.context3D, create separate canvas elements for each Context3D
-
-			#if (js && html5)
-			if (stage.context3D == null)
-			{
-				__canvas = cast Browser.document.createElement("canvas");
-				__canvas.width = stage.stageWidth;
-				__canvas.height = stage.stageHeight;
-
-				var window = stage.window;
-				var attributes = stage.window.context.attributes;
-
-				var transparentBackground = Reflect.hasField(attributes, "background") && attributes.background == null;
-				var colorDepth = Reflect.hasField(attributes, "colorDepth") ? attributes.colorDepth : 32;
-
-				var options = {
-					alpha: (transparentBackground || colorDepth > 16) ? true : false,
-					antialias: Reflect.hasField(attributes, "antialiasing") ? attributes.antialiasing > 0 : false,
-					depth: true,
-					premultipliedAlpha: true,
-					stencil: true,
-					preserveDrawingBuffer: false
-				};
-
-				__webgl = cast __canvas.getContextWebGL(options);
-
-				if (__webgl != null)
-				{
-					#if webgl_debug
-					__webgl = untyped WebGLDebugUtils.makeDebugContext(__webgl);
-					#end
-
-					if (GL.context == null)
-					{
-						GL.context = cast __webgl;
-						GL.type = WEBGL;
-						// GL.version = isWebGL2 ? 2 : 1;
-						GL.version = 1;
-						// stage.window.context.webgl = GL.context;
-					}
-
-					stage.context3D = new Context3D(stage);
-					stage.context3D.configureBackBuffer(stage.window.width, stage.window.height, 0, true, true, true);
-					stage.context3D.present();
-
-					var renderer:DOMRenderer = cast renderer;
-					renderer.element.appendChild(__canvas);
-
-					__style = __canvas.style;
-					__style.setProperty("position", "absolute", null);
-					__style.setProperty("top", "0", null);
-					__style.setProperty("left", "0", null);
-					__style.setProperty(renderer.__transformOriginProperty, "0 0 0", null);
-					__style.setProperty("z-index", "-1", null);
-				}
-
-				if (stage.context3D != null)
-				{
-					#if openfl_share_context
-					context3D = stage.context3D;
-					#else
-					context3D = new Context3D(stage, stage.context3D.__contextState, this);
-					#end
-				}
-
-				__dispatchCreate();
-				// __dispatchError();
-			}
-			else
-			{
-				__dispatchError();
-			}
-			#end
-		}
-		#end
 	}
 
 	@:noCompletion private function __dispatchError():Void
@@ -483,7 +311,19 @@ class Stage3D extends EventDispatcher
 		if (__contextRequested)
 		{
 			__contextRequested = false;
-			dispatchEvent(new Event(Event.CONTEXT3D_CREATE));
+
+			#if openfl_pool_events
+			var context3DCreateEvent = Event.__pool.get();
+			context3DCreateEvent.type = Event.CONTEXT3D_CREATE;
+			#else
+			var context3DCreateEvent = new Event(Event.CONTEXT3D_CREATE);
+			#end
+
+			dispatchEvent(context3DCreateEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(context3DCreateEvent);
+			#end
 		}
 	}
 
@@ -577,6 +417,3 @@ class Stage3D extends EventDispatcher
 		return value;
 	}
 }
-#else
-typedef Stage3D = flash.display.Stage3D;
-#end

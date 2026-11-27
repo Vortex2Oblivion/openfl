@@ -1,15 +1,15 @@
 package openfl.text;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.display.BitmapData;
 import openfl.display.Stage;
+import openfl.errors.ArgumentError;
+import openfl.errors.Error;
+import openfl.errors.RangeError;
 import openfl.events.Event;
 import openfl.events.EventDispatcher;
 import openfl.events.FocusEvent;
 import openfl.events.KeyboardEvent;
-import openfl.errors.ArgumentError;
-import openfl.errors.Error;
-import openfl.errors.RangeError;
 import openfl.geom.Rectangle;
 import openfl.text.engine.FontPosture;
 import openfl.text.engine.FontWeight;
@@ -70,10 +70,7 @@ import openfl.text.engine.FontWeight;
 	display object use `stage.focus`.
 	- To assign focus to StageText, use `stageText.assignFocus()`.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 class StageText extends EventDispatcher
 {
 	@:noCompletion private var __textField:TextField;
@@ -734,7 +731,19 @@ class StageText extends EventDispatcher
 		if (!__complete && __textField.stage != null && !__viewPort.isEmpty())
 		{
 			__complete = true;
-			dispatchEvent(new Event(Event.COMPLETE));
+
+			#if openfl_pool_events
+			var completeEvent = Event.__pool.get();
+			completeEvent.type = Event.COMPLETE;
+			#else
+			var completeEvent = new Event(Event.COMPLETE);
+			#end
+
+			dispatchEvent(completeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(completeEvent);
+			#end
 		}
 	}
 
@@ -751,8 +760,4 @@ class StageText extends EventDispatcher
 		event.stopPropagation();
 	}
 }
-#else
-#if air
-typedef StageText = flash.text.StageText;
-#end
 #end

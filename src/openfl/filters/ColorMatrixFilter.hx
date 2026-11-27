@@ -1,15 +1,12 @@
 package openfl.filters;
 
-#if !flash
+import lime._internal.graphics.ImageCanvasUtil;
+import lime.math.RGBA;
 import openfl.display.BitmapData;
 import openfl.display.DisplayObjectRenderer;
 import openfl.display.Shader;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
-#if lime
-import lime._internal.graphics.ImageCanvasUtil; // TODO
-import lime.math.RGBA;
-#end
 
 /**
 	The ColorMatrixFilter class lets you apply a 4 x 5 matrix transformation
@@ -54,10 +51,6 @@ import lime.math.RGBA;
 	@see `openfl.display.DisplayObject.filters`
 	@see `openfl.display.BitmapData.applyFilter`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:final class ColorMatrixFilter extends BitmapFilter
 {
 	@:noCompletion private static var __colorMatrixShader:ColorMatrixShader = new ColorMatrixShader();
@@ -120,18 +113,6 @@ import lime.math.RGBA;
 
 	@:noCompletion private var __matrix:Array<Float>;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(ColorMatrixFilter.prototype, {
-			"matrix": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_matrix (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_matrix (v); }")
-			},
-		});
-	}
-	#end
-
 	/**
 		Initializes a new ColorMatrixFilter instance with the specified
 		parameters.
@@ -154,7 +135,6 @@ import lime.math.RGBA;
 	@:noCompletion private override function __applyFilter(destBitmapData:BitmapData, sourceBitmapData:BitmapData, sourceRect:Rectangle,
 			destPoint:Point):BitmapData
 	{
-		#if lime
 		var sourceImage = sourceBitmapData.image;
 		var image = destBitmapData.image;
 
@@ -217,7 +197,7 @@ import lime.math.RGBA;
 		}
 
 		destBitmapData.image.dirty = true;
-		#end
+
 		return destBitmapData;
 	}
 
@@ -247,10 +227,6 @@ import lime.math.RGBA;
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 private class ColorMatrixShader extends BitmapFilterShader
 {
@@ -316,6 +292,3 @@ private class ColorMatrixShader extends BitmapFilterShader
 		#end
 	}
 }
-#else
-typedef ColorMatrixFilter = flash.filters.ColorMatrixFilter;
-#end

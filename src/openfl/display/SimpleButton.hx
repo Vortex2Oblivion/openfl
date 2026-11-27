@@ -1,12 +1,11 @@
 package openfl.display;
 
-#if !flash
+import openfl.Vector;
+import openfl.events.MouseEvent;
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
-import openfl.events.MouseEvent;
 import openfl.media.SoundTransform;
 import openfl.ui.MouseCursor;
-import openfl.Vector;
 
 /**
 	The SimpleButton class lets you control all instances of button symbols in
@@ -24,10 +23,6 @@ import openfl.Vector;
 
 	The SimpleButton class inherits from the InteractiveObject class.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.MovieClip)
 @:access(openfl.geom.Matrix)
 @:access(openfl.geom.Rectangle)
@@ -61,13 +56,13 @@ class SimpleButton extends InteractiveObject
 		button. For a basic button, set the `hitTestState` property to
 		the same display object as the `overState` property. If you do
 		not set the `hitTestState` property, the SimpleButton is
-		inactive  -  it does not respond to user input events.
+		inactive — it does not respond to user input events.
 	**/
 	public var hitTestState(get, set):DisplayObject;
 
 	/**
 		Specifies a display object that is used as the visual object for the
-		button over state  -  the state that the button is in when the pointer is
+		button over state — the state that the button is in when the pointer is
 		positioned over the button.
 	**/
 	public var overState(get, set):DisplayObject;
@@ -96,7 +91,7 @@ class SimpleButton extends InteractiveObject
 
 	/**
 		Specifies a display object that is used as the visual object for the
-		button up state  -  the state that the button is in when the pointer is
+		button up state — the state that the button is in when the pointer is
 		not positioned over the button.
 	**/
 	public var upState(get, set):DisplayObject;
@@ -122,34 +117,6 @@ class SimpleButton extends InteractiveObject
 	@:noCompletion private var __previousStates:Vector<DisplayObject>;
 	@:noCompletion private var __soundTransform:SoundTransform;
 	@:noCompletion private var __upState:DisplayObject;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(SimpleButton.prototype, {
-			"downState": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_downState (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_downState (v); }")
-			},
-			"hitTestState": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_hitTestState (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_hitTestState (v); }")
-			},
-			"overState": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_overState (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_overState (v); }")
-			},
-			"soundTransform": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_soundTransform (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_soundTransform (v); }")
-			},
-			"upState": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_upState (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_upState (v); }")
-			},
-		});
-	}
-	#end
 
 	/**
 		Creates a new SimpleButton instance. Any or all of the display objects
@@ -459,35 +426,8 @@ class SimpleButton extends InteractiveObject
 			value.parent.removeChild(value);
 		}
 
-		// #if (js && html5 && dom)
-		#if (js && html5)
-		if (DisplayObject.__supportDOM && __previousStates == null)
-		{
-			__previousStates = new Vector<DisplayObject>();
-		}
-		#end
-
 		if (value != __currentState)
 		{
-			// #if (js && html5 && dom)
-			#if (js && html5)
-			if (DisplayObject.__supportDOM)
-			{
-				if (__currentState != null)
-				{
-					__currentState.__setStageReference(null);
-					__previousStates.push(__currentState);
-				}
-
-				var index = __previousStates.indexOf(value);
-
-				if (index > -1)
-				{
-					__previousStates.splice(index, 1);
-				}
-			}
-			#end
-
 			if (value != null)
 			{
 				value.__renderParent = this;
@@ -548,7 +488,3 @@ class SimpleButton extends InteractiveObject
 		}
 	}
 }
-#else
-typedef SimpleButton = flash.display.SimpleButton;
-typedef SimpleButton2 = flash.display.SimpleButton.SimpleButton2;
-#end

@@ -1,7 +1,5 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
 /**
 	An object dispatches an AsyncErrorEvent when an exception is thrown from
 	native asynchronous code, which could be from, for example,
@@ -9,10 +7,6 @@ package openfl.events;
 	one type of asynchronous error event: `AsyncErrorEvent.ASYNC_ERROR`.
 
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class AsyncErrorEvent extends ErrorEvent
 {
 	/**
@@ -34,9 +28,6 @@ class AsyncErrorEvent extends ErrorEvent
 		The exception that was thrown.
 	**/
 	public var error:Dynamic;
-
-	// @:noCompletion private static var __pool:ObjectPool<AsyncErrorEvent> = new ObjectPool<AsyncErrorEvent>(function() return new AsyncErrorEvent(null),
-	// function(event) event.__init());
 
 	/**
 		Creates an AsyncErrorEvent object that contains information about
@@ -89,6 +80,3 @@ class AsyncErrorEvent extends ErrorEvent
 		error = null;
 	}
 }
-#else
-typedef AsyncErrorEvent = flash.events.AsyncErrorEvent;
-#end

@@ -1,6 +1,6 @@
 package openfl.events;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.events.Event;
 
 /**
@@ -56,8 +56,4 @@ class OutputProgressEvent extends Event
 		bytesTotal = Math.NaN;
 	}
 }
-#else
-#if air
-typedef OutputProgressEvent = flash.events.OutputProgressEvent;
-#end
 #end

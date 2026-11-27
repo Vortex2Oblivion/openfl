@@ -1,23 +1,18 @@
 package openfl.display;
 
+import openfl.Lib;
 import openfl.events.Event;
 import openfl.events.ProgressEvent;
-import openfl.Lib;
 
 /**
 	The Preloader class is a Lime Preloader instance that uses an OpenFL
 	display object to display loading progress.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.LoaderInfo)
 @SuppressWarnings("checkstyle:FieldDocComment")
 class Preloader
 {
-	@SuppressWarnings("checkstyle:Dynamic")
-	public var onComplete:#if lime lime.app.Event<Void->Void> = new lime.app.Event<Void->Void>() #else Dynamic #end;
+	public var onComplete:lime.app.Event<Void->Void> = new lime.app.Event<Void->Void>();
 
 	@:noCompletion private var complete:Bool;
 	@:noCompletion private var display:Sprite;
@@ -38,9 +33,7 @@ class Preloader
 	{
 		ready = true;
 
-		#if !flash
 		Lib.current.loaderInfo.__complete();
-		#end
 
 		if (display != null)
 		{
@@ -54,21 +47,17 @@ class Preloader
 		}
 		else
 		{
-			#if lime
 			if (!complete)
 			{
 				complete = true;
 				onComplete.dispatch();
 			}
-			#end
 		}
 	}
 
 	@:noCompletion private function update(loaded:Int, total:Int):Void
 	{
-		#if !flash
 		Lib.current.loaderInfo.__update(loaded, total);
-		#end
 
 		if (display != null)
 		{
@@ -94,13 +83,11 @@ class Preloader
 
 		if (ready)
 		{
-			#if lime
 			if (!complete)
 			{
 				complete = true;
 				onComplete.dispatch();
 			}
-			#end
 		}
 	}
 }
@@ -108,10 +95,10 @@ class Preloader
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:dox(hide) class DefaultPreloader extends Sprite
 {
-	@:noCompletion private var endAnimation:Int;
+	@:noCompletion private var endAnimation:Float;
 	@:noCompletion private var outline:Shape;
 	@:noCompletion private var progress:Shape;
-	@:noCompletion private var startAnimation:Int;
+	@:noCompletion private var startAnimation:Float;
 
 	public function new()
 	{

@@ -1,6 +1,5 @@
 package openfl.display3D.textures;
 
-#if !flash
 import openfl.display3D.Context3D;
 import openfl.display3D._internal.ASTCReader;
 import openfl.errors.IllegalOperationError;
@@ -16,25 +15,21 @@ using StringTools;
 	ASTCTexture cannot be instantiated directly. Create instances by using Context3D
 	`createASTCTexture()` method.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @:final class ASTCTexture extends TextureBase
 {
-	@:noCompletion
-	private static var __astcCompressedTexturesSupported:Null<Bool>;
+	@:noCompletion private static var __astcCompressedTexturesSupported:Null<Bool>;
 
-	@:noCompletion
-	private function new(context:Context3D, data:ByteArray):Void
+	@:noCompletion private function new(context:Context3D, data:ByteArray):Void
 	{
 		super(context);
 
 		final extension:Null<Dynamic> = __context.gl.getExtension("KHR_texture_compression_astc_ldr");
 
 		if (extension == null)
+		{
 			throw new IllegalOperationError("ASTC texture compression is not supported on this device (missing GL extension: GL_KHR_texture_compression_astc_ldr).");
+		}
 
 		var reader:ASTCReader = new ASTCReader(data);
 
@@ -42,7 +37,9 @@ using StringTools;
 			final format:Null<Int> = Reflect.field(extension, 'COMPRESSED_RGBA_ASTC_${reader.blockX}x${reader.blockY}_KHR');
 
 			if (format == null)
+			{
 				throw new IllegalOperationError('ASTC format ${reader.blockX}x${reader.blockY} is not supported on this device (GL extension KHR_texture_compression_astc_ldr is present, but this block size is missing).');
+			}
 
 			__textureTarget = __context.gl.TEXTURE_2D;
 			__width = reader.width;
@@ -65,14 +62,15 @@ using StringTools;
 		reader = null;
 	}
 
-	@:noCompletion
-	private override function __setSamplerState(state:openfl.display._internal.SamplerState):Bool
+	@:noCompletion private override function __setSamplerState(state:openfl.display._internal.SamplerState):Bool
 	{
 		if (super.__setSamplerState(state))
 		{
+			var gl = __context.gl;
+
 			if (state.mipfilter != MIPNONE && !__samplerState.mipmapGenerated)
 			{
-				__context.gl.generateMipmap(__textureTarget);
+				gl.generateMipmap(__textureTarget);
 				__samplerState.mipmapGenerated = true;
 			}
 
@@ -99,7 +97,7 @@ using StringTools;
 
 				if (aniso > Context3D.__glMaxTextureMaxAnisotropy) aniso = Context3D.__glMaxTextureMaxAnisotropy;
 
-				__context.gl.texParameterf(__context.gl.TEXTURE_2D, Context3D.__glTextureMaxAnisotropy, aniso);
+				gl.texParameterf(gl.TEXTURE_2D, Context3D.__glTextureMaxAnisotropy, aniso);
 			}
 
 			return true;
@@ -108,4 +106,3 @@ using StringTools;
 		return false;
 	}
 }
-#end

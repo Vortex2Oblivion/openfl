@@ -1,6 +1,6 @@
 package openfl.net.dns;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 /**
 	The ResourceRecord class is the base class for Domain Name System (DNS)
 	resource record classes.
@@ -10,7 +10,7 @@ package openfl.net.dns;
 **/
 class ResourceRecord
 {
-	private function new() {}
+	@:noCompletion private function new() {}
 
 	/**
 		The query string used to look up this resource record.
@@ -27,8 +27,4 @@ class ResourceRecord
 	**/
 	public var ttl:Int;
 }
-#else
-#if air
-typedef ResourceRecord = flash.net.dns.ResourceRecord;
-#end
 #end

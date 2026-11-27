@@ -1,6 +1,5 @@
 package openfl.filters;
 
-#if !flash
 import openfl.display.BitmapData;
 import openfl.display.DisplayObjectRenderer;
 import openfl.display.Shader;
@@ -43,10 +42,6 @@ import openfl.display.Shader;
 	@see `openfl.display.DisplayObject.filters`
 	@see `openfl.display.BitmapData.applyFilter`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class ConvolutionFilter extends BitmapFilter
 {
 	@:noCompletion private static var __convolutionShader:ConvolutionShader = new ConvolutionShader();
@@ -171,18 +166,6 @@ class ConvolutionFilter extends BitmapFilter
 
 	@:noCompletion private var __matrix:Array<Float>;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(ConvolutionFilter.prototype, {
-			"matrix": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_matrix (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_matrix (v); }")
-			},
-		});
-	}
-	#end
-
 	/**
 		Initializes a ConvolutionFilter instance with the specified
 		parameters.
@@ -273,10 +256,6 @@ class ConvolutionFilter extends BitmapFilter
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class ConvolutionShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -355,6 +334,3 @@ private class ConvolutionShader extends BitmapFilterShader
 		#end
 	}
 }
-#else
-typedef ConvolutionFilter = flash.filters.ConvolutionFilter;
-#end

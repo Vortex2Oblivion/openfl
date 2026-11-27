@@ -1,6 +1,6 @@
 package openfl.display;
 
-#if !flash
+import lime.graphics.Canvas2DRenderContext;
 import openfl.display._internal.CanvasBitmap;
 import openfl.display._internal.CanvasBitmapData;
 import openfl.display._internal.CanvasDisplayObject;
@@ -11,20 +11,10 @@ import openfl.display._internal.CanvasTilemap;
 import openfl.display._internal.CanvasVideo;
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
-#if lime
-import lime.graphics.Canvas2DRenderContext;
-#end
 
 /**
-	**BETA**
-
-	The CanvasRenderer API exposes support for HTML5 canvas render instructions within the
-	`RenderEvent.RENDER_CANVAS` event
+	The CanvasRenderer API exposes support for HTML5 canvas render instructions within the `RenderEvent.RENDER_CANVAS` event
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.DisplayObject)
 @:access(openfl.display.IBitmapDrawable)
 @:access(openfl.display.Stage)
@@ -37,14 +27,11 @@ class CanvasRenderer extends DisplayObjectRenderer
 	/**
 		The current HTML5 canvas render context
 	**/
-	@SuppressWarnings("checkstyle:Dynamic")
-	public var context:#if lime Canvas2DRenderContext #else Dynamic #end;
+	public var context:Canvas2DRenderContext;
 
-	@:noCompletion private var __isDOM:Bool;
 	@:noCompletion private var __tempMatrix:Matrix;
 
-	@SuppressWarnings("checkstyle:Dynamic")
-	@:noCompletion private function new(context:#if lime Canvas2DRenderContext #else Dynamic #end)
+	@:noCompletion private function new(context:Canvas2DRenderContext)
 	{
 		super();
 
@@ -52,16 +39,13 @@ class CanvasRenderer extends DisplayObjectRenderer
 
 		__tempMatrix = new Matrix();
 
-		#if lime
 		__type = CANVAS;
-		#end
 	}
 
 	/**
 		Set whether smoothing should be enabled on a canvas context
 	**/
-	@SuppressWarnings("checkstyle:Dynamic")
-	public function applySmoothing(context:#if lime Canvas2DRenderContext #else Dynamic #end, value:Bool):Void
+	public function applySmoothing(context:Canvas2DRenderContext, value:Bool):Void
 	{
 		context.imageSmoothingEnabled = value;
 	}
@@ -70,8 +54,7 @@ class CanvasRenderer extends DisplayObjectRenderer
 		Set the matrix value for the current render context, or (optionally) another canvas
 		context
 	**/
-	@SuppressWarnings("checkstyle:Dynamic")
-	public function setTransform(transform:Matrix, context:#if lime Canvas2DRenderContext #else Dynamic #end = null):Void
+	public function setTransform(transform:Matrix, context:Canvas2DRenderContext = null):Void
 	{
 		if (context == null)
 		{
@@ -245,35 +228,54 @@ class CanvasRenderer extends DisplayObjectRenderer
 		__setBlendModeContext(context, value);
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
-	@:noCompletion private function __setBlendModeContext(context:#if lime Canvas2DRenderContext #else Dynamic #end, value:BlendMode):Void
+	@:noCompletion private function __setBlendModeContext(context:Canvas2DRenderContext, value:BlendMode):Void
 	{
-		switch (value) {
-			case ADD: context.globalCompositeOperation = "lighter";
-			case ALPHA: context.globalCompositeOperation = "destination-in";
-			case DARKEN: context.globalCompositeOperation = "darken";
-			case DIFFERENCE: context.globalCompositeOperation = "difference";
-			case ERASE: context.globalCompositeOperation = "xor";
-			case HARDLIGHT: context.globalCompositeOperation = "hard-light";
-			case INVERT: context.globalCompositeOperation = "hard-light";
-			case LAYER: context.globalCompositeOperation = "source-in";
-			case LIGHTEN: context.globalCompositeOperation = "lighten";
-			case MULTIPLY: context.globalCompositeOperation = "multiply";
-			case OVERLAY: context.globalCompositeOperation = "overlay";
-			case SCREEN: context.globalCompositeOperation = "screen";
-			case SUBTRACT: context.globalCompositeOperation = "source-out";
-			case COLORDODGE: context.globalCompositeOperation = "color-dodge";
-			case COLORBURN: context.globalCompositeOperation = "color-burn";
-			case SOFTLIGHT: context.globalCompositeOperation = "soft-light";
-			case EXCLUSION: context.globalCompositeOperation = "exclusion";
-			case HUE: context.globalCompositeOperation = "hue";
-			case SATURATION: context.globalCompositeOperation = "saturation";
-			case COLOR: context.globalCompositeOperation = "color";
-			case LUMINOSITY: context.globalCompositeOperation = "luminosity";
-			default: context.globalCompositeOperation = "source-over";
+		switch (value)
+		{
+			case ADD:
+				context.globalCompositeOperation = "lighter";
+			case ALPHA:
+				context.globalCompositeOperation = "destination-in";
+			case DARKEN:
+				context.globalCompositeOperation = "darken";
+			case DIFFERENCE:
+				context.globalCompositeOperation = "difference";
+			case ERASE:
+				context.globalCompositeOperation = "xor";
+			case HARDLIGHT:
+				context.globalCompositeOperation = "hard-light";
+			case INVERT:
+				context.globalCompositeOperation = "hard-light";
+			case LAYER:
+				context.globalCompositeOperation = "source-in";
+			case LIGHTEN:
+				context.globalCompositeOperation = "lighten";
+			case MULTIPLY:
+				context.globalCompositeOperation = "multiply";
+			case OVERLAY:
+				context.globalCompositeOperation = "overlay";
+			case SCREEN:
+				context.globalCompositeOperation = "screen";
+			case SUBTRACT:
+				context.globalCompositeOperation = "source-out";
+			case COLORDODGE:
+				context.globalCompositeOperation = "color-dodge";
+			case COLORBURN:
+				context.globalCompositeOperation = "color-burn";
+			case SOFTLIGHT:
+				context.globalCompositeOperation = "soft-light";
+			case EXCLUSION:
+				context.globalCompositeOperation = "exclusion";
+			case HUE:
+				context.globalCompositeOperation = "hue";
+			case SATURATION:
+				context.globalCompositeOperation = "saturation";
+			case COLOR:
+				context.globalCompositeOperation = "color";
+			case LUMINOSITY:
+				context.globalCompositeOperation = "luminosity";
+			default:
+				context.globalCompositeOperation = "source-over";
 		}
 	}
 }
-#else
-typedef CanvasRenderer = Dynamic;
-#end

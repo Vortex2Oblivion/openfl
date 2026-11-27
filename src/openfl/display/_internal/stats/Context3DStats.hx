@@ -2,14 +2,10 @@ package openfl.display._internal.stats;
 
 import haxe.ds.IntMap;
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 class Context3DStats
 {
-	private static var drawCallsCounters:IntMap<DrawCallCounter> = [
+	@:noCompletion private static var drawCallsCounters:IntMap<DrawCallCounter> = [
 		DrawCallContext.STAGE => new DrawCallCounter(),
 		DrawCallContext.STAGE3D => new DrawCallCounter()
 	];

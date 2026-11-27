@@ -1,7 +1,9 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
+#if openfl_pool_events
+import openfl.utils.ObjectPool;
+#end
+
 /**
 	A ProgressEvent object is dispatched when a load operation has begun or a
 	socket has received data. These events are usually generated when SWF
@@ -11,10 +13,6 @@ package openfl.events;
 	objects are dispatched when a data is sent to or from a child process using
 	the NativeProcess class.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class ProgressEvent extends Event
 {
 	/**
@@ -49,7 +47,7 @@ class ProgressEvent extends Event
 	**/
 	public static inline var SOCKET_DATA:EventType<ProgressEvent> = "socketData";
 
-	#if (haxe4 && sys)
+	#if sys
 	/**
 		Defines the value of the `type` property of a `standardOutputData` event
 		object.
@@ -97,8 +95,10 @@ class ProgressEvent extends Event
 	**/
 	public var bytesTotal:Float;
 
-	// @:noCompletion private static var __pool:ObjectPool<ProgressEvent> = new ObjectPool<ProgressEvent>(function() return new ProgressEvent(null),
-	// function(event) event.__init());
+	#if openfl_pool_events
+	@:noCompletion private static var __pool:ObjectPool<ProgressEvent> = new ObjectPool<ProgressEvent>(function() return new ProgressEvent(null),
+		function(event) event.__init());
+	#end
 
 	/**
 		Creates an Event object that contains information about progress events.
@@ -147,6 +147,3 @@ class ProgressEvent extends Event
 		bytesTotal = 0;
 	}
 }
-#else
-typedef ProgressEvent = flash.events.ProgressEvent;
-#end

@@ -1,8 +1,8 @@
 package openfl.display;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
-import openfl.events.EventDispatcher;
+#if sys
 import lime.system.System;
+import openfl.events.EventDispatcher;
 import openfl.geom.Rectangle;
 
 /**
@@ -65,17 +65,29 @@ class Screen extends EventDispatcher
 	/**
 		The bounds of the area on this screen in which windows can be visible.
 
-		The visibleBounds of a screen excludes the task bar (and other docked desk bars) on Windows, 
-		and excludes the menu bar and, depending on system settings, the dock on Mac OS X. On some Linux 
-		configurations, it is not possible to determine the visible bounds. 
+		The visibleBounds of a screen excludes the task bar (and other docked desk bars) on Windows,
+		and excludes the menu bar and, depending on system settings, the dock on Mac OS X. On some Linux
+		configurations, it is not possible to determine the visible bounds.
 
 		In these cases, the visibleBounds property returns the same value as the screenBounds property.
 	**/
 	public var visibleBounds(get, null):Rectangle;
 
+	/**
+		The bounds of the area on this screen in which content will not be
+		covered by notches, cut outs, rounded corners, or other obstructions.
+
+		Supported on native targets for the Android, iOS, and macOS operating
+		systems. On other targets, the rectangle will be equal to
+		`visibleBounds`.
+
+		Requires Lime 8.3 or newer.
+	**/
+	public var safeArea(get, null):Rectangle;
+
 	@:noCompletion private var __displayIndex:Int;
 
-	private function new(index:Int)
+	@:noCompletion private function new(index:Int)
 	{
 		super();
 		__displayIndex = index;
@@ -104,7 +116,7 @@ class Screen extends EventDispatcher
 	@:noCompletion private function get_modes():Array<ScreenMode>
 	{
 		var display = System.getDisplay(__displayIndex);
-		var screenModes = [];
+		var screenModes:Array<ScreenMode> = [];
 		var displayModes = display.supportedModes;
 
 		for (displayMode in displayModes)
@@ -122,6 +134,17 @@ class Screen extends EventDispatcher
 		var rect:Rectangle = new Rectangle(0, 0, currentMode.width, currentMode.height);
 
 		return rect;
+	}
+
+	@:noCompletion private function get_safeArea():Rectangle
+	{
+		var display = System.getDisplay(__displayIndex);
+		var safeArea = display.safeArea;
+		if (safeArea != null)
+		{
+			return new Rectangle(safeArea.x, safeArea.y, safeArea.width, safeArea.height);
+		}
+		return this.visibleBounds;
 	}
 
 	@:noCompletion private function get_mode():ScreenMode
@@ -156,8 +179,4 @@ class Screen extends EventDispatcher
 		return new Screen(0);
 	}
 }
-#else
-#if air
-typedef Screen = flash.display.Screen;
-#end
 #end

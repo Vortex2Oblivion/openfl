@@ -1,8 +1,5 @@
 package openfl.display._internal;
 
-#if !flash
-import openfl.text._internal.HTMLParser;
-import openfl.text._internal.TextEngine;
 import openfl.display.BitmapData;
 import openfl.display.CanvasRenderer;
 import openfl.geom.Matrix;
@@ -10,12 +7,15 @@ import openfl.geom.Rectangle;
 import openfl.text.TextField;
 import openfl.text.TextFieldAutoSize;
 import openfl.text.TextFieldType;
+import openfl.text._internal.HTMLParser;
+import openfl.text._internal.TextEngine;
 #if (js && html5)
-import js.html.CanvasRenderingContext2D;
 import js.Browser;
+import js.html.CanvasRenderingContext2D;
 #end
 
 @:access(openfl.text._internal.TextEngine)
+@:access(openfl.display.BitmapData)
 @:access(openfl.display.Graphics)
 @:access(openfl.geom.Matrix)
 @:access(openfl.text.TextField)
@@ -24,8 +24,8 @@ import js.Browser;
 class CanvasTextField
 {
 	#if (js && html5)
-	private static var context:CanvasRenderingContext2D;
-	private static var clearRect:Null<Bool>;
+	@:noCompletion private static var context:CanvasRenderingContext2D;
+	@:noCompletion private static var clearRect:Null<Bool>;
 	#end
 
 	public static inline function render(textField:TextField, renderer:CanvasRenderer, transform:Matrix):Void
@@ -95,6 +95,14 @@ class CanvasTextField
 		var pixelRatio = renderer.__pixelRatio;
 		#end
 
+		if (graphics.__bitmapScaleX != pixelRatio || graphics.__bitmapScaleY != pixelRatio)
+		{
+			// the TextField might have rendered in a context that requires a
+			// different pixel ratio than normal, such as when drawing to
+			// BitmapData.
+			graphics.__softwareDirty = true;
+		}
+
 		graphics.__update(renderer.__worldTransform, pixelRatio);
 
 		if (textField.__dirty || graphics.__softwareDirty)
@@ -129,12 +137,6 @@ class CanvasTextField
 				graphics.__canvas.width = width;
 				graphics.__canvas.height = height;
 
-				if (renderer.__isDOM)
-				{
-					graphics.__canvas.style.width = Math.round(width / pixelRatio) + "px";
-					graphics.__canvas.style.height = Math.round(height / pixelRatio) + "px";
-				}
-
 				var matrix = Matrix.__pool.get();
 				matrix.scale(pixelRatio, pixelRatio);
 				matrix.concat(graphics.__renderTransform);
@@ -145,7 +147,7 @@ class CanvasTextField
 
 				if (clearRect == null)
 				{
-					clearRect = untyped #if haxe4 js.Syntax.code #else __js__ #end ("(typeof navigator !== 'undefined' && typeof navigator['isCocoonJS'] !== 'undefined')");
+					clearRect = untyped js.Syntax.code("(typeof navigator !== 'undefined' && typeof navigator['isCocoonJS'] !== 'undefined')");
 				}
 
 				if (clearRect)
@@ -211,6 +213,10 @@ class CanvasTextField
 
 						context.font = TextEngine.getFont(group.format);
 						context.fillStyle = color;
+						if (textEngine.__useLetterSpacing)
+						{
+							Reflect.setField(context, "letterSpacing", group.format.letterSpacing + "px");
+						}
 
 						context.fillText(text.substring(group.startIndex, group.endIndex), group.offsetX
 							+ scrollX
@@ -325,6 +331,19 @@ class CanvasTextField
 							context.stroke();
 							context.closePath();
 						}
+
+						if (group.format.strikethrough)
+						{
+							context.beginPath();
+							context.strokeStyle = color;
+							context.lineWidth = 1;
+							var x = group.offsetX + scrollX - bounds.x;
+							var y = Math.ceil(group.offsetY + scrollY + 2.0 * group.ascent / 3.0 - bounds.y);
+							context.moveTo(x, y);
+							context.lineTo(x + group.width, y);
+							context.stroke();
+							context.closePath();
+						}
 					}
 				}
 				else
@@ -375,8 +394,28 @@ class CanvasTextField
 					}
 				}
 
-				graphics.__bitmap = BitmapData.fromCanvas(textField.__graphics.__canvas);
-				graphics.__bitmapScale = pixelRatio;
+				if (graphics.__bitmap == null)
+				{
+					graphics.__bitmap = BitmapData.fromCanvas(graphics.__canvas);
+				}
+				else if (graphics.__bitmap.width != graphics.__canvas.width || graphics.__bitmap.height != graphics.__canvas.height)
+				{
+					var texture = graphics.__bitmap.__texture;
+					if (texture != null)
+					{
+						texture.dispose();
+					}
+					graphics.__bitmap = BitmapData.fromCanvas(graphics.__canvas);
+				}
+				else
+				{
+					// optimization: if the size of the canvas hasn't changed,
+					// we can re-use the same BitmapData.
+					graphics.__bitmap.image.version++;
+				}
+
+				graphics.__bitmapScaleX = pixelRatio;
+				graphics.__bitmapScaleY = pixelRatio;
 				graphics.__visible = true;
 				textField.__dirty = false;
 				graphics.__softwareDirty = false;
@@ -389,28 +428,6 @@ class CanvasTextField
 	public static function renderDrawable(textField:TextField, renderer:CanvasRenderer):Void
 	{
 		#if (js && html5)
-		// TODO: Better DOM workaround on cacheAsBitmap
-
-		if (renderer.__isDOM && !textField.__renderedOnCanvasWhileOnDOM)
-		{
-			textField.__renderedOnCanvasWhileOnDOM = true;
-
-			if (textField.type == TextFieldType.INPUT)
-			{
-				textField.replaceText(0, textField.__text.length, textField.__text);
-			}
-
-			if (textField.__isHTML)
-			{
-				textField.__updateText(HTMLParser.parse(textField.__text, textField.multiline, textField.__styleSheet, textField.__textFormat,
-					textField.__textEngine.textFormatRanges));
-			}
-
-			textField.__dirty = true;
-			textField.__layoutDirty = true;
-			textField.__setRenderDirty();
-		}
-
 		if (textField.mask == null || (textField.mask.width > 0 && textField.mask.height > 0))
 		{
 			renderer.__updateCacheBitmap(textField, textField.__dirty);
@@ -451,4 +468,3 @@ class CanvasTextField
 		CanvasDisplayObject.renderDrawableMask(textField, renderer);
 	}
 }
-#end

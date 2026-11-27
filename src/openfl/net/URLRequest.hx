@@ -1,6 +1,5 @@
 package openfl.net;
 
-#if !flash
 import haxe.macro.Compiler;
 
 /**
@@ -44,10 +43,6 @@ import haxe.macro.Compiler;
 	@see `openfl.net.URLStream`
 	@see `openfl.net.FileReference`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:final class URLRequest
 {
 	/**
@@ -142,46 +137,6 @@ import haxe.macro.Compiler;
 		description of the `contentType` property.
 	**/
 	public var data:Dynamic;
-
-	#if false
-	/**
-		A string that uniquely identifies the signed Adobe platform component
-		to be stored to (or retrieved from) the Flash Player cache. An Adobe
-		platform component is a signed file (a SWZ file) that contains SWF
-		content that is cached persistently on a user's machine. All SWZ files
-		are signed by Adobe. A digest corresponds to a single cached file; if
-		you change the file in any way, its digest will change in an
-		unpredictable way. By using a digest, you can verify the cached file
-		across multiple domains. Two files with the same digest are the same
-		file, and two files with different digests are not the same file. A
-		file cannot (practically) be created to "spoof" a digest and pretend
-		to be another digest.
-		The digest is based on an SHA-256 message digest algorithm (64
-		characters long in hexadecimal format).
-
-		For example, the Flex SDK includes a SWZ for the Flex framework (and
-		it provides the digest string for that SWZ file). You can post this
-		SWZ on your web server and load it in your SWF file (using the
-		`load()` method of a URLLoader object). If the end user's machine
-		already has the matching SWZ file cached, the application uses the
-		cached SWZ file. (A SWZ file matches if its `digest` matches the one
-		you provide.) Otherwise, the application downloads the SWZ file from
-		the URL you specify.
-
-		Only set the `digest` parameter in a URLRequest object used in a call
-		to the `URLLoader.load()` method to load a SWZ file. If the `digest`
-		property of a a URLRequest object is set when it is used in other
-		methods, the application throws an IOError exception.
-
-		@throws ArgumentError The digest provided does not match the digest of
-							  the file that is extracted from the downloaded
-							  signed file or the signed file loaded out of the
-							  cache. The application also throws this error if
-							  the provided digest is the wrong length or
-							  contains invalid (nonhexadecimal) characters.
-	**/
-	// @:noCompletion @:dox(hide) public var digest:String;
-	#end
 
 	/**
 		Specifies whether redirects are to be followed (`true`) or not (`false`).
@@ -323,7 +278,7 @@ import haxe.macro.Compiler;
 		see the description of the URLRequest class.
 
 		For content running in Adobe AIR, files in the application security
-		sandbox  -  files installed with the AIR application  -  can access URLs
+		sandbox — files installed with the AIR application — can access URLs
 		using any of the following URL schemes:
 
 		* `http` and `https`
@@ -394,9 +349,4 @@ import haxe.macro.Compiler;
 		requestHeaders = [];
 		userAgent = URLRequestDefaults.userAgent;
 	}
-
-	// @:noCompletion @:dox(hide) public function useRedirectedURL (sourceRequest:URLRequest, wholeURL:Bool = false, pattern:Dynamic = null, replace:String = null):Void;
 }
-#else
-typedef URLRequest = flash.net.URLRequest;
-#end

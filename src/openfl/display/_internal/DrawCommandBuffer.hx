@@ -1,6 +1,6 @@
 package openfl.display._internal;
 
-#if !flash
+import openfl.Vector;
 import openfl.display.BitmapData;
 import openfl.display.BlendMode;
 import openfl.display.CapsStyle;
@@ -11,32 +11,36 @@ import openfl.display.LineScaleMode;
 import openfl.display.SpreadMethod;
 import openfl.display.TriangleCulling;
 import openfl.geom.Matrix;
-import openfl.Vector;
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:allow(openfl.display._internal.DrawCommandReader)
 @SuppressWarnings("checkstyle:FieldDocComment")
 class DrawCommandBuffer
 {
-	private static var empty:DrawCommandBuffer = new DrawCommandBuffer();
+	@:noCompletion private static inline var COW_TYPES:Int = 1;
+	@:noCompletion private static inline var COW_B:Int = 2;
+	@:noCompletion private static inline var COW_I:Int = 4;
+	@:noCompletion private static inline var COW_F:Int = 8;
+	@:noCompletion private static inline var COW_O:Int = 16;
+	@:noCompletion private static inline var COW_FF:Int = 32;
+	@:noCompletion private static inline var COW_II:Int = 64;
+	@:noCompletion private static inline var COW_ALL:Int = COW_TYPES | COW_B | COW_I | COW_F | COW_O | COW_FF | COW_II;
+
+	@:noCompletion private static var empty:DrawCommandBuffer = new DrawCommandBuffer();
 
 	public var length(get, never):Int;
 	public var types:Array<DrawCommandType>;
 
-	private var b:Array<Bool>;
-	private var copyOnWrite:Bool;
-	private var f:Array<Float>;
-	private var ff:Array<Array<Float>>;
-	private var i:Array<Int>;
-	private var ii:Array<Array<Int>>;
-	@SuppressWarnings("checkstyle:Dynamic") private var o:Array<Dynamic>;
+	@:noCompletion private var b:Array<Bool>;
+	@:noCompletion private var copyOnWrite:Int;
+	@:noCompletion private var f:Array<Float>;
+	@:noCompletion private var ff:Array<Array<Float>>;
+	@:noCompletion private var i:Array<Int>;
+	@:noCompletion private var ii:Array<Array<Int>>;
+	@:noCompletion private var o:Array<Dynamic>;
 
 	public function new()
 	{
-		copyOnWrite = true;
+		copyOnWrite = COW_ALL;
 
 		if (empty == null)
 		{
@@ -66,7 +70,7 @@ class DrawCommandBuffer
 			this.o = other.o;
 			this.ff = other.ff;
 			this.ii = other.ii;
-			this.copyOnWrite = other.copyOnWrite = true;
+			this.copyOnWrite = other.copyOnWrite = COW_ALL;
 
 			return other;
 		}
@@ -150,7 +154,7 @@ class DrawCommandBuffer
 
 	public function beginBitmapFill(bitmap:BitmapData, matrix:Matrix, repeat:Bool, smooth:Bool):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O | COW_B);
 
 		types.push(BEGIN_BITMAP_FILL);
 		o.push(bitmap);
@@ -161,7 +165,7 @@ class DrawCommandBuffer
 
 	public function beginFill(color:Int, alpha:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_I | COW_F);
 
 		types.push(BEGIN_FILL);
 		i.push(color);
@@ -171,7 +175,7 @@ class DrawCommandBuffer
 	public function beginGradientFill(type:GradientType, colors:Array<Int>, alphas:Array<Float>, ratios:Array<Int>, matrix:Matrix, spreadMethod:SpreadMethod,
 			interpolationMethod:InterpolationMethod, focalPointRatio:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O | COW_II | COW_FF | COW_F);
 
 		types.push(BEGIN_GRADIENT_FILL);
 		o.push(type);
@@ -186,7 +190,7 @@ class DrawCommandBuffer
 
 	public function beginShaderFill(shaderBuffer:ShaderBuffer):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O);
 
 		types.push(BEGIN_SHADER_FILL);
 		o.push(shaderBuffer);
@@ -194,36 +198,37 @@ class DrawCommandBuffer
 
 	public function clear():Void
 	{
-		#if haxe4
-		if (!copyOnWrite)
-		{
-			// if these arrays have already been copied, then we should be able
-			// to reuse them instead of creating new copies. this will result in
-			// fewer temporary objects that need to be garbage collected
+		// if these arrays have already been copied, then we should be able
+		// to reuse them instead of creating new copies. this will result in
+		// fewer temporary objects that need to be garbage collected
 
-			types.resize(0);
+		if ((copyOnWrite & COW_TYPES) == 0) types.resize(0);
+		else
+			types = empty.types;
 
-			b.resize(0);
-			i.resize(0);
-			f.resize(0);
-			o.resize(0);
-			ff.resize(0);
-			ii.resize(0);
+		if ((copyOnWrite & COW_B) == 0) b.resize(0);
+		else
+			b = empty.b;
 
-			return;
-		}
-		#end
+		if ((copyOnWrite & COW_I) == 0) i.resize(0);
+		else
+			i = empty.i;
 
-		types = empty.types;
+		if ((copyOnWrite & COW_F) == 0) f.resize(0);
+		else
+			f = empty.f;
 
-		b = empty.b;
-		i = empty.i;
-		f = empty.f;
-		o = empty.o;
-		ff = empty.ff;
-		ii = empty.ii;
+		if ((copyOnWrite & COW_O) == 0) o.resize(0);
+		else
+			o = empty.o;
 
-		copyOnWrite = true;
+		if ((copyOnWrite & COW_FF) == 0) ff.resize(0);
+		else
+			ff = empty.ff;
+
+		if ((copyOnWrite & COW_II) == 0) ii.resize(0);
+		else
+			ii = empty.ii;
 	}
 
 	public function copy():DrawCommandBuffer
@@ -235,7 +240,7 @@ class DrawCommandBuffer
 
 	public function cubicCurveTo(controlX1:Float, controlY1:Float, controlX2:Float, controlY2:Float, anchorX:Float, anchorY:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_F);
 
 		types.push(CUBIC_CURVE_TO);
 		f.push(controlX1);
@@ -248,7 +253,7 @@ class DrawCommandBuffer
 
 	public function curveTo(controlX:Float, controlY:Float, anchorX:Float, anchorY:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_F);
 
 		types.push(CURVE_TO);
 		f.push(controlX);
@@ -273,7 +278,7 @@ class DrawCommandBuffer
 
 	public function drawCircle(x:Float, y:Float, radius:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_F);
 
 		types.push(DRAW_CIRCLE);
 		f.push(x);
@@ -283,7 +288,7 @@ class DrawCommandBuffer
 
 	public function drawEllipse(x:Float, y:Float, width:Float, height:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_F);
 
 		types.push(DRAW_ELLIPSE);
 		f.push(x);
@@ -294,7 +299,7 @@ class DrawCommandBuffer
 
 	public function drawQuads(rects:Vector<Float>, indices:Vector<Int>, transforms:Vector<Float>):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O);
 
 		types.push(DRAW_QUADS);
 		o.push(rects);
@@ -304,7 +309,7 @@ class DrawCommandBuffer
 
 	public function drawRect(x:Float, y:Float, width:Float, height:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_F);
 
 		types.push(DRAW_RECT);
 		f.push(x);
@@ -315,7 +320,7 @@ class DrawCommandBuffer
 
 	public function drawRoundRect(x:Float, y:Float, width:Float, height:Float, ellipseWidth:Float, ellipseHeight:Null<Float>):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_F | COW_O);
 
 		types.push(DRAW_ROUND_RECT);
 		f.push(x);
@@ -328,7 +333,7 @@ class DrawCommandBuffer
 
 	public function drawTriangles(vertices:Vector<Float>, indices:Vector<Int>, uvtData:Vector<Float>, culling:TriangleCulling):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O);
 
 		types.push(DRAW_TRIANGLES);
 		o.push(vertices);
@@ -339,14 +344,14 @@ class DrawCommandBuffer
 
 	public function endFill():Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES);
 
 		types.push(END_FILL);
 	}
 
 	public function lineBitmapStyle(bitmap:BitmapData, matrix:Matrix, repeat:Bool, smooth:Bool):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O | COW_B);
 
 		types.push(LINE_BITMAP_STYLE);
 		o.push(bitmap);
@@ -358,7 +363,7 @@ class DrawCommandBuffer
 	public function lineGradientStyle(type:GradientType, colors:Array<Int>, alphas:Array<Float>, ratios:Array<Int>, matrix:Matrix, spreadMethod:SpreadMethod,
 			interpolationMethod:InterpolationMethod, focalPointRatio:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O | COW_II | COW_FF | COW_F);
 
 		types.push(LINE_GRADIENT_STYLE);
 		o.push(type);
@@ -374,7 +379,7 @@ class DrawCommandBuffer
 	public function lineStyle(thickness:Null<Float>, color:Int, alpha:Float, pixelHinting:Bool, scaleMode:LineScaleMode, caps:CapsStyle, joints:JointStyle,
 			miterLimit:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O | COW_I | COW_F | COW_B);
 
 		types.push(LINE_STYLE);
 		o.push(thickness);
@@ -389,7 +394,7 @@ class DrawCommandBuffer
 
 	public function lineTo(x:Float, y:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_F);
 
 		types.push(LINE_TO);
 		f.push(x);
@@ -398,32 +403,32 @@ class DrawCommandBuffer
 
 	public function moveTo(x:Float, y:Float):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_F);
 
 		types.push(MOVE_TO);
 		f.push(x);
 		f.push(y);
 	}
 
-	private function prepareWrite():Void
+	@:noCompletion private function prepareWrite(mask:Int):Void
 	{
-		if (copyOnWrite)
+		if ((copyOnWrite & mask) != 0)
 		{
-			types = types.copy();
-			b = b.copy();
-			i = i.copy();
-			f = f.copy();
-			o = o.copy();
-			ff = ff.copy();
-			ii = ii.copy();
+			if ((copyOnWrite & COW_TYPES) != 0 && (mask & COW_TYPES) != 0) types = types.copy();
+			if ((copyOnWrite & COW_B) != 0 && (mask & COW_B) != 0) b = b.copy();
+			if ((copyOnWrite & COW_I) != 0 && (mask & COW_I) != 0) i = i.copy();
+			if ((copyOnWrite & COW_F) != 0 && (mask & COW_F) != 0) f = f.copy();
+			if ((copyOnWrite & COW_O) != 0 && (mask & COW_O) != 0) o = o.copy();
+			if ((copyOnWrite & COW_FF) != 0 && (mask & COW_FF) != 0) ff = ff.copy();
+			if ((copyOnWrite & COW_II) != 0 && (mask & COW_II) != 0) ii = ii.copy();
 
-			copyOnWrite = false;
+			copyOnWrite &= ~mask;
 		}
 	}
 
 	public function overrideBlendMode(blendMode:BlendMode):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O);
 
 		types.push(OVERRIDE_BLEND_MODE);
 		o.push(blendMode);
@@ -431,7 +436,7 @@ class DrawCommandBuffer
 
 	public function overrideMatrix(matrix:Matrix):Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES | COW_O);
 
 		types.push(OVERRIDE_MATRIX);
 		o.push(matrix);
@@ -439,22 +444,22 @@ class DrawCommandBuffer
 
 	public function windingEvenOdd():Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES);
 
 		types.push(WINDING_EVEN_ODD);
 	}
 
 	public function windingNonZero():Void
 	{
-		prepareWrite();
+		prepareWrite(COW_TYPES);
 
 		types.push(WINDING_NON_ZERO);
 	}
 
 	// Get & Set Methods
-	private function get_length():Int
+
+	@:noCompletion private function get_length():Int
 	{
 		return types.length;
 	}
 }
-#end

@@ -1,11 +1,11 @@
 package openfl.display;
 
-#if !flash
-import openfl.events.EventDispatcher;
 import openfl.events.Event;
+import openfl.events.EventDispatcher;
 import openfl.events.ProgressEvent;
 import openfl.events.UncaughtErrorEvents;
 import openfl.system.ApplicationDomain;
+import openfl.utils.AssetLibrary;
 import openfl.utils.ByteArray;
 #if (js && html5)
 import js.Browser;
@@ -107,15 +107,10 @@ import js.Browser;
 
 	@see `openfl.display.Loader`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 class LoaderInfo extends EventDispatcher
 {
 	@:noCompletion private static var __rootURL:String = #if (js && html5) (Browser.supported ? Browser.document.URL : "") #else "" #end;
-
-	// @:noCompletion @:dox(hide) public var actionScriptVersion (default, never):openfl.display.ActionScriptVersion;
 
 	/**
 		When an external SWF file is loaded, all ActionScript 3.0 definitions
@@ -140,6 +135,8 @@ class LoaderInfo extends EventDispatcher
 							  to access this ApplicationDomain.
 	**/
 	public var applicationDomain(default, null):ApplicationDomain;
+
+	public var assetLibrary(default, null):AssetLibrary;
 
 	/**
 		The bytes associated with a LoaderInfo object.
@@ -192,8 +189,6 @@ class LoaderInfo extends EventDispatcher
 	**/
 	public var childAllowsParent(default, null):Bool;
 
-	// @:noCompletion @:dox(hide) @:require(flash11_4) public var childSandboxBridge:Dynamic;
-
 	/**
 		The loaded object associated with this LoaderInfo object.
 
@@ -238,7 +233,7 @@ class LoaderInfo extends EventDispatcher
 					  requested information.
 		@throws Error If the file is not a SWF file.
 	**/
-	public var frameRate(default, null):Float;
+	public var frameRate(default, null):Float = -1;
 
 	/**
 		The nominal height of the loaded file. This value might differ from the
@@ -248,9 +243,7 @@ class LoaderInfo extends EventDispatcher
 		@throws Error If the file is not downloaded sufficiently to retrieve the
 					  requested information.
 	**/
-	public var height(default, null):Int;
-
-	// @:noCompletion @:dox(hide) @:require(flash10_1) public var isURLInaccessible (default, null):Bool;
+	public var height(default, null):Int = -1;
 
 	/**
 		The Loader object associated with this LoaderInfo object. If this
@@ -298,7 +291,6 @@ class LoaderInfo extends EventDispatcher
 		only non-null for Loader objects that contain SWF files that use
 		ActionScript 3.0.
 	**/
-	@SuppressWarnings("checkstyle:Dynamic")
 	public var parameters(default, null):Dynamic<String>;
 
 	/**
@@ -318,8 +310,6 @@ class LoaderInfo extends EventDispatcher
 	**/
 	public var parentAllowsChild(default, null):Bool;
 
-	// @:noCompletion @:dox(hide) @:require(flash11_4) public var parentSandboxBridge:Dynamic;
-
 	/**
 		Expresses the domain relationship between the loader and the content:
 		`true` if they have the same origin domain; `false`
@@ -338,8 +328,6 @@ class LoaderInfo extends EventDispatcher
 		object.
 	**/
 	public var sharedEvents(default, null):EventDispatcher;
-
-	// @:noCompletion @:dox(hide) public var swfVersion (default, null):UInt;
 
 	/**
 		An object that dispatches an `uncaughtError` event when an
@@ -382,7 +370,7 @@ class LoaderInfo extends EventDispatcher
 		@throws Error If the file is not downloaded sufficiently to retrieve the
 					  requested information.
 	**/
-	public var width(default, null):Int;
+	public var width(default, null):Int = -1;
 
 	@:noCompletion private var __completed:Bool;
 
@@ -416,7 +404,6 @@ class LoaderInfo extends EventDispatcher
 		return loaderInfo;
 	}
 
-	// @:noCompletion @:dox(hide) public static function getLoaderInfoByDefinition (object:Dynamic):LoaderInfo;
 	@:noCompletion private function __complete():Void
 	{
 		if (!__completed)
@@ -429,7 +416,18 @@ class LoaderInfo extends EventDispatcher
 			__update(bytesLoaded, bytesTotal);
 			__completed = true;
 
-			dispatchEvent(new Event(Event.COMPLETE));
+			#if openfl_pool_events
+			var completeEvent = Event.__pool.get();
+			completeEvent.type = Event.COMPLETE;
+			#else
+			var completeEvent = new Event(Event.COMPLETE);
+			#end
+
+			dispatchEvent(completeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(completeEvent);
+			#end
 		}
 	}
 
@@ -438,9 +436,19 @@ class LoaderInfo extends EventDispatcher
 		this.bytesLoaded = bytesLoaded;
 		this.bytesTotal = bytesTotal;
 
-		dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytesLoaded, bytesTotal));
+		#if openfl_pool_events
+		var progressEvent = ProgressEvent.__pool.get();
+		progressEvent.type = ProgressEvent.PROGRESS;
+		progressEvent.bytesLoaded = bytesLoaded;
+		progressEvent.bytesTotal = bytesTotal;
+		#else
+		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytesLoaded, bytesTotal);
+		#end
+
+		dispatchEvent(progressEvent);
+
+		#if openfl_pool_events
+		ProgressEvent.__pool.release(progressEvent);
+		#end
 	}
 }
-#else
-typedef LoaderInfo = flash.display.LoaderInfo;
-#end

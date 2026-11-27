@@ -1,15 +1,14 @@
 package openfl.display;
 
-import openfl.utils._internal.Lib;
-import openfl.events.Event;
-#if lime
 import lime.app.Application as LimeApplication;
+import lime.ui.Window as LimeWindow;
 import lime.ui.WindowAttributes;
-#end
-#if ((sys || air) && (!flash_doc_gen || air_doc_gen))
+import openfl.events.Event;
+import openfl.utils._internal.Lib;
+#if sys
 import openfl.desktop.NativeApplication;
 #end
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.display.NativeWindow;
 import openfl.display.NativeWindowInitOptions;
 import openfl.events.InvokeEvent;
@@ -19,18 +18,15 @@ import openfl.events.InvokeEvent;
 	The Application class is a Lime Application instance that uses
 	OpenFL Window by default when a new window is created.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.DisplayObject)
 @:access(openfl.display.LoaderInfo)
 @:access(openfl.display.Window)
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 @:access(openfl.display.NativeWindowInitOptions)
 #end
+@:access(openfl.events.Event)
 @SuppressWarnings("checkstyle:FieldDocComment")
-class Application #if lime extends LimeApplication #end
+class Application extends LimeApplication
 {
 	#if !lime
 	public static var current:Application;
@@ -45,10 +41,50 @@ class Application #if lime extends LimeApplication #end
 		Lib.application ??= this;
 	}
 
-	#if lime
-	public override function createWindow(attributes:WindowAttributes):Window
+	@:noCompletion override public function createWindow(attributes:WindowAttributes):Window
+	{
+		return cast super.createWindow(attributes);
+	}
+
+	@:noCompletion override public function exec():Int
+	{
+		#if sys
+		// wait for the first update to dispatch invoke event
+		// to ensure that the document class constructor has completed
+		onUpdate.add(function(_):Void
+		{
+			if (NativeApplication.nativeApplication.hasEventListener(InvokeEvent.INVOKE))
+			{
+				var args = Sys.args();
+				var cwd = new openfl.filesystem.File(Sys.getCwd());
+				var invokeEvent = new openfl.events.InvokeEvent(InvokeEvent.INVOKE, false, false, cwd, args);
+				NativeApplication.nativeApplication.dispatchEvent(invokeEvent);
+			}
+		}, true);
+		#end
+
+		return super.exec();
+	}
+
+	@:noCompletion override function __createWindow(attributes:WindowAttributes):Window
 	{
 		var window = new Window(this, attributes);
+		if (window.id == -1) return null;
+
+		#if !macro
+		if (Lib.current.__loaderInfo.width == -1)
+		{
+			Lib.current.__loaderInfo.width = window.width;
+			Lib.current.__loaderInfo.height = window.height;
+		}
+		#end
+
+		return window;
+	}
+
+	@:noCompletion override function __addWindow(window:LimeWindow):Void
+	{
+		if (window == null) return;
 
 		__windows.push(window);
 		__windowByID.set(window.id, window);
@@ -64,6 +100,10 @@ class Application #if lime extends LimeApplication #end
 			window.onRenderContextRestored.add(onRenderContextRestored);
 			window.onDeactivate.add(onWindowDeactivate);
 			window.onDropFile.add(onWindowDropFile);
+			window.onDropText.add(onWindowDropText);
+			window.onDropBegin.add(onWindowDropBegin);
+			window.onDropComplete.add(onWindowDropComplete);
+			window.onDropPosition.add(onWindowDropPosition);
 			window.onEnter.add(onWindowEnter);
 			window.onExpose.add(onWindowExpose);
 			window.onFocusIn.add(onWindowFocusIn);
@@ -71,6 +111,8 @@ class Application #if lime extends LimeApplication #end
 			window.onFullscreen.add(onWindowFullscreen);
 			window.onKeyDown.add(onKeyDown);
 			window.onKeyUp.add(onKeyUp);
+			window.onKeyDownPrecise.add(onKeyDownPrecise);
+			window.onKeyUpPrecise.add(onKeyUpPrecise);
 			window.onLeave.add(onWindowLeave);
 			window.onMinimize.add(onWindowMinimize);
 			window.onMouseDown.add(onMouseDown);
@@ -87,7 +129,7 @@ class Application #if lime extends LimeApplication #end
 
 			onWindowCreate();
 
-			#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+			#if sys
 			var initOptions = new NativeWindowInitOptions();
 			initOptions.__window = cast __window;
 			new NativeWindow(initOptions);
@@ -126,15 +168,27 @@ class Application #if lime extends LimeApplication #end
 		{
 			return;
 		}
-		#if ((sys || air) && (!flash_doc_gen || air_doc_gen))
+		#if sys
 		if (!NativeApplication.nativeApplication.autoExit)
 		{
 			return;
 		}
 		#end
-		#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+		#if sys
+		#if openfl_pool_events
+		var exitingEvent = Event.__pool.get();
+		exitingEvent.type = Event.EXITING;
+		exitingEvent.cancelable = true;
+		#else
 		var exitingEvent = new Event(Event.EXITING, false, true);
+		#end
+
 		var result = NativeApplication.nativeApplication.dispatchEvent(exitingEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(exitingEvent);
+		#end
+
 		if (!result)
 		{
 			return;
@@ -155,5 +209,4 @@ class Application #if lime extends LimeApplication #end
 		}
 		super.__onModuleExit(code);
 	}
-	#end
 }

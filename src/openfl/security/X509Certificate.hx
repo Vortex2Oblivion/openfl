@@ -2,7 +2,6 @@ package openfl.security;
 
 import openfl.utils.ByteArray;
 
-#if !flash
 /**
 	The X509Certificate class represents an X.509 certificate. This class
 	defines X.509 properties specified in
@@ -22,7 +21,7 @@ import openfl.utils.ByteArray;
 **/
 class X509Certificate
 {
-	private function new() {}
+	@:noCompletion private function new() {}
 
 	/**
 		Provides the whole certificate in encoded form. Client code can decode
@@ -102,6 +101,3 @@ class X509Certificate
 	**/
 	public var version(default, null):UInt;
 }
-#else
-typedef X509Certificate = flash.security.X509Certificate;
-#end

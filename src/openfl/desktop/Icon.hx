@@ -1,6 +1,6 @@
 package openfl.desktop;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.display.BitmapData;
 import openfl.events.EventDispatcher;
 
@@ -50,8 +50,4 @@ class Icon extends EventDispatcher
 	**/
 	public var bitmaps:Array<BitmapData> = [];
 }
-#else
-#if air
-typedef Icon = flash.desktop.Icon;
-#end
 #end

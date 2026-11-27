@@ -1,7 +1,5 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
 import openfl.events.TextEvent;
 
 /**
@@ -22,10 +20,6 @@ import openfl.events.TextEvent;
 	event to appear when content is running in the debugger version of Flash
 	Player or the AIR Debug Launcher (ADL) application.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class ErrorEvent extends TextEvent
 {
 	/**
@@ -48,9 +42,6 @@ class ErrorEvent extends TextEvent
 		`id` parameter supplied in the constructor.
 	**/
 	public var errorID(default, null):Int;
-
-	// @:noCompletion private static var __pool:ObjectPool<ErrorEvent> = new ObjectPool<ErrorEvent>(function() return new ErrorEvent(null),
-	// function(event) event.__init());
 
 	/**
 		Creates an Event object that contains information about error events.
@@ -98,6 +89,3 @@ class ErrorEvent extends TextEvent
 		errorID = 0;
 	}
 }
-#else
-typedef ErrorEvent = flash.events.ErrorEvent;
-#end

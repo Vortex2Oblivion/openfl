@@ -1,6 +1,6 @@
 package openfl.net.dns;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 /**
 	The MXRecord class represents a Domain Name System (DNS) MX resource record
 	containing a mail exchange server address.
@@ -34,8 +34,4 @@ class MXRecord extends ResourceRecord
 		super();
 	}
 }
-#else
-#if air
-typedef MXRecord = flash.net.dns.MXRecord;
-#end
 #end

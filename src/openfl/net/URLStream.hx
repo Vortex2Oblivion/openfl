@@ -1,14 +1,13 @@
 package openfl.net;
 
-#if !flash
-import openfl.events.EventDispatcher;
 import openfl.events.Event;
+import openfl.events.EventDispatcher;
 import openfl.events.IOErrorEvent;
-import openfl.events.SecurityErrorEvent;
 import openfl.events.ProgressEvent;
-import openfl.utils.IDataInput;
+import openfl.events.SecurityErrorEvent;
 import openfl.utils.ByteArray;
 import openfl.utils.Endian;
+import openfl.utils.IDataInput;
 
 /**
 	The URLStream class provides low-level access to downloading URLs. Data is
@@ -65,10 +64,7 @@ import openfl.utils.Endian;
 	@see `openfl.net.URLRequest`
 	@see `openfl.net.URLStream`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 class URLStream extends EventDispatcher implements IDataInput
 {
 	/**
@@ -107,20 +103,6 @@ class URLStream extends EventDispatcher implements IDataInput
 	// @:require(flash11_4) public var position:Float;
 	@:noCompletion private var __data:ByteArray;
 	@:noCompletion private var __loader:URLLoader;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(URLStream.prototype, {
-			"bytesAvailable": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bytesAvailable (); }")},
-			"connected": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_connected (); }")},
-			"endian": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_endian (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_endian (v); }")
-			},
-		});
-	}
-	#end
 
 	public function new()
 	{
@@ -605,8 +587,33 @@ class URLStream extends EventDispatcher implements IDataInput
 		__removeEventListeners();
 		__data = __loader.data;
 
-		dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, __loader.bytesLoaded, __loader.bytesTotal));
-		dispatchEvent(new Event(Event.COMPLETE));
+		#if openfl_pool_events
+		var progressEvent = ProgressEvent.__pool.get();
+		progressEvent.type = ProgressEvent.PROGRESS;
+		progressEvent.bytesLoaded = __loader.bytesLoaded;
+		progressEvent.bytesTotal = __loader.bytesTotal;
+		#else
+		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, __loader.bytesLoaded, __loader.bytesTotal);
+		#end
+
+		dispatchEvent(progressEvent);
+
+		#if openfl_pool_events
+		ProgressEvent.__pool.release(progressEvent);
+		#end
+
+		#if openfl_pool_events
+		var completeEvent = Event.__pool.get();
+		completeEvent.type = Event.COMPLETE;
+		#else
+		var completeEvent = new Event(Event.COMPLETE);
+		#end
+
+		dispatchEvent(completeEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(completeEvent);
+		#end
 	}
 
 	@:noCompletion private function loader_onIOError(event:IOErrorEvent):Void
@@ -630,7 +637,7 @@ class URLStream extends EventDispatcher implements IDataInput
 	}
 
 	// Get & Set Methods
-	private function get_bytesAvailable():UInt
+	@:noCompletion private function get_bytesAvailable():UInt
 	{
 		if (__data != null)
 		{
@@ -640,21 +647,18 @@ class URLStream extends EventDispatcher implements IDataInput
 		return 0;
 	}
 
-	private function get_connected():Bool
+	@:noCompletion private function get_connected():Bool
 	{
 		return false;
 	}
 
-	private function get_endian():Endian
+	@:noCompletion private function get_endian():Endian
 	{
 		return __data.endian;
 	}
 
-	private function set_endian(value:Endian):Endian
+	@:noCompletion private function set_endian(value:Endian):Endian
 	{
 		return __data.endian = value;
 	}
 }
-#else
-typedef URLStream = flash.net.URLStream;
-#end

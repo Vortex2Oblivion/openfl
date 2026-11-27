@@ -1,16 +1,13 @@
 package openfl.filters;
 
 import haxe.Timer;
-#if !flash
+import lime._internal.graphics.ImageDataUtil;
 import openfl.display.BitmapData;
 import openfl.display.DisplayObjectRenderer;
 import openfl.display.Shader;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
-#if lime
-import lime._internal.graphics.ImageDataUtil; // TODO
 
-#end
 /**
 	The BlurFilter class lets you apply a blur visual effect to display
 	objects. A blur effect softens the details of an image. You can produce
@@ -61,10 +58,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	filter is turned off if the resulting image exceeds the maximum
 	dimensions.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.geom.Point)
 @:access(openfl.geom.Rectangle)
 @:final class BlurFilter extends BitmapFilter
@@ -116,26 +109,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	@:noCompletion private var __quality:Int;
 	@:noCompletion private var __verticalPasses:Int;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(BlurFilter.prototype, {
-			"blurX": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_blurX (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_blurX (v); }")
-			},
-			"blurY": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_blurY (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_blurY (v); }")
-			},
-			"quality": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_quality (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_quality (v); }")
-			},
-		});
-	}
-	#end
-
 	/**
 		Initializes the filter with the specified parameters. The default values
 		create a soft, unfocused image.
@@ -181,14 +154,13 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 
 	@:noCompletion private override function __applyFilter(bitmapData:BitmapData, sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point):BitmapData
 	{
-		#if lime
 		var time = Timer.stamp();
 		var finalImage = ImageDataUtil.gaussianBlur(bitmapData.image, sourceBitmapData.image, sourceRect.__toLimeRectangle(), destPoint.__toLimeVector2(),
 			__blurX, __blurY, __quality);
 		var elapsed = Timer.stamp() - time;
 		// trace("blurX: " + __blurX + " blurY: " + __blurY + " quality: " + __quality + " elapsed: " + elapsed * 1000 + "ms");
 		if (finalImage == bitmapData.image) return bitmapData;
-		#end
+
 		return sourceBitmapData;
 	}
 
@@ -216,11 +188,8 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	{
 		if (value <= 0) return 0;
 		var passes = (__quality > 0 ? __quality : 1);
-		#if lime
 		var reach = value * passes * 3.0;
-		#else
-		var reach = value;
-		#end
+
 		return Std.int(Math.ceil(reach)) + 2;
 	}
 
@@ -285,10 +254,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class BlurShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -345,6 +310,3 @@ private class BlurShader extends BitmapFilterShader
 		super.__update();
 	}
 }
-#else
-typedef BlurFilter = flash.filters.BlurFilter;
-#end

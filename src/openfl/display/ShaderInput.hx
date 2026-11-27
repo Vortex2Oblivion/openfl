@@ -1,10 +1,10 @@
 package openfl.display;
 
-#if !flash
+import openfl.display3D.Context3D;
 import openfl.display3D.Context3DMipFilter;
 import openfl.display3D.Context3DTextureFilter;
 import openfl.display3D.Context3DWrapMode;
-import openfl.display3D.Context3D;
+import openfl.display3D.Context3DBlendTarget;
 
 /**
 	// TODO: Document GLSL Shaders
@@ -13,7 +13,7 @@ import openfl.display3D.Context3D;
 	that are used in the kernel execution. A ShaderInput instance provides a
 	mechanism for specifying the input image that is used when the shader
 	executes. To specify a value for the input, create a BitmapData,
-	ByteArray, or Vector.<Number> instance containing the image data and
+	ByteArray, or Vector<Float> instance containing the image data and
 	assign it to the `input` property.
 	The ShaderInput instance representing a Shader instance's input image is
 	accessed as a property of the Shader instance's `data` property. The
@@ -50,9 +50,6 @@ import openfl.display3D.Context3D;
 	Shader instance is created.
 **/
 @:access(openfl.display3D.Context3D)
-#if !openfl_debug
-@:fileXml('tags="haxe,release"') @:noDebug
-#end
 #if (!js && !display)
 @:generic
 #end
@@ -60,7 +57,7 @@ import openfl.display3D.Context3D;
 {
 	/**
 		The number of channels that a shader input expects. This property must
-		be accounted for when the input data is a ByteArray or Vector.<Number>
+		be accounted for when the input data is a ByteArray or Vector<Float>
 		instance.
 	**/
 	public var channels(default, null):Int;
@@ -74,7 +71,7 @@ import openfl.display3D.Context3D;
 
 	/**
 		The height of the shader input. This property is only used when the
-		input data is a ByteArray or Vector.<Number> instance. When the input
+		input data is a ByteArray or Vector<Float> instance. When the input
 		is a BitmapData instance the height is automatically determined.
 	**/
 	public var height:Int;
@@ -83,12 +80,12 @@ import openfl.display3D.Context3D;
 		The zero-based index of the input in the shader, indicating the order
 		of the input definitions in the shader.
 	**/
-	@SuppressWarnings("checkstyle:Dynamic") public var index(default, null):Dynamic;
+	public var index(default, null):Dynamic;
 
 	/**
 		The input data that is used when the shader executes. This property
 		can be a BitmapData instance, a ByteArray instance, or a
-		Vector.<Number> instance.
+		Vector<Float> instance.
 		If a ByteArray value is assigned to the `input` property, the
 		following conditions must be met:
 
@@ -100,7 +97,7 @@ import openfl.display3D.Context3D;
 		times `height` times `channels` times 4.
 		* The byte array's `endian` property must be `Endian.LITTLE_ENDIAN`.
 
-		If a Vector.<Number> instance is assigned to the `input` property, the
+		If a Vector<Float> instance is assigned to the `input` property, the
 		length of the Vector must be equal to `width` times `height` times
 		`channels`.
 	**/
@@ -117,7 +114,7 @@ import openfl.display3D.Context3D;
 
 	/**
 		The width of the shader input. This property is only used when the
-		input data is a ByteArray or Vector.<Number> instance. When the input
+		input data is a ByteArray or Vector<Float> instance. When the input
 		is a BitmapData instance the width is automatically determined.
 	**/
 	public var width:Int;
@@ -128,6 +125,13 @@ import openfl.display3D.Context3D;
 		This property is not available when targeting Flash.
 	**/
 	public var wrap:Context3DWrapMode;
+
+	/**
+		Against what must this input apply it's blends.
+
+		Default is BlendRenderTarget.
+	**/
+	public var blendTarget:Context3DBlendTarget = Context3DBlendTarget.BlendRenderTarget;
 
 	@:noCompletion private var __isUniform:Bool;
 
@@ -178,6 +182,3 @@ import openfl.display3D.Context3D;
 		}
 	}
 }
-#else
-typedef ShaderInput<T> = flash.display.ShaderInput<T>;
-#end

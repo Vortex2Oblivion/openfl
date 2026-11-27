@@ -1,6 +1,6 @@
 package openfl.desktop;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.display.BitmapData;
 import openfl.events.EventDispatcher;
 
@@ -43,8 +43,4 @@ class InteractiveIcon extends Icon
 	**/
 	public var height(default, never):Int = 0;
 }
-#else
-#if air
-typedef InteractiveIcon = flash.desktop.InteractiveIcon;
-#end
 #end

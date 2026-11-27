@@ -1,16 +1,13 @@
 package openfl.filters;
 
-#if !flash
+import lime._internal.graphics.ImageDataUtil;
 import openfl.display.BitmapData;
 import openfl.display.DisplayObjectRenderer;
 import openfl.display.Shader;
 import openfl.geom.ColorTransform;
 import openfl.geom.Point;
 import openfl.geom.Rectangle;
-#if lime
-import lime._internal.graphics.ImageDataUtil; // TODO
 
-#end
 /**
 	The GlowFilter class lets you apply a glow effect to display objects. You
 	have several options for the style of the glow, including inner or outer
@@ -58,10 +55,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	@see `openfl.display.DisplayObject.filters`
 	@see `openfl.display.BitmapData.applyFilter`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.geom.ColorTransform)
 @:access(openfl.geom.Point)
 @:access(openfl.geom.Rectangle)
@@ -149,46 +142,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	@:noCompletion private var __strength:Float;
 	@:noCompletion private var __verticalPasses:Int;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(GlowFilter.prototype, {
-			"alpha": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_alpha (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_alpha (v); }")
-			},
-			"blurX": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_blurX (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_blurX (v); }")
-			},
-			"blurY": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_blurY (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_blurY (v); }")
-			},
-			"color": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_color (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_color (v); }")
-			},
-			"inner": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_inner (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_inner (v); }")
-			},
-			"knockout": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_knockout (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_knockout (v); }")
-			},
-			"quality": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_quality (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_quality (v); }")
-			},
-			"strength": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_strength (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_strength (v); }")
-			},
-		});
-	}
-	#end
-
 	/**
 		Initializes a new GlowFilter instance with the specified parameters.
 
@@ -258,7 +211,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	{
 		// TODO: Support knockout, inner
 
-		#if lime
 		var r = (__color >> 16) & 0xFF;
 		var g = (__color >> 8) & 0xFF;
 		var b = __color & 0xFF;
@@ -268,7 +220,7 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 		finalImage.colorTransform(finalImage.rect, new ColorTransform(0, 0, 0, __alpha, r, g, b, 0).__toLimeColorMatrix());
 
 		if (finalImage == bitmapData.image) return bitmapData;
-		#end
+
 		return sourceBitmapData;
 	}
 
@@ -302,8 +254,9 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 			shader.uColor.value[0] = ((color >> 16) & 0xFF) / 255;
 			shader.uColor.value[1] = ((color >> 8) & 0xFF) / 255;
 			shader.uColor.value[2] = (color & 0xFF) / 255;
-			shader.uColor.value[3] = alpha;
-			shader.uStrength.value[0] = blurPass == (numBlurPasses - 1) ? __strength : 1.0;
+			var finalBlurPass = blurPass == (numBlurPasses - 1);
+			shader.uColor.value[3] = finalBlurPass ? alpha : 1.0;
+			shader.uStrength.value[0] = finalBlurPass ? __strength : 1.0;
 			return shader;
 		}
 		if (__inner)
@@ -471,10 +424,6 @@ import lime._internal.graphics.ImageDataUtil; // TODO
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class InvertAlphaShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -499,10 +448,6 @@ private class InvertAlphaShader extends BitmapFilterShader
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class BlurAlphaShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -565,10 +510,6 @@ private class BlurAlphaShader extends BitmapFilterShader
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class CombineShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -600,10 +541,6 @@ private class CombineShader extends BitmapFilterShader
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class InnerCombineShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -635,10 +572,6 @@ private class InnerCombineShader extends BitmapFilterShader
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class CombineKnockoutShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -670,10 +603,6 @@ private class CombineKnockoutShader extends BitmapFilterShader
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class InnerCombineKnockoutShader extends BitmapFilterShader
 {
 	@:glFragmentSource("#pragma header
@@ -704,6 +633,3 @@ private class InnerCombineKnockoutShader extends BitmapFilterShader
 		#end
 	}
 }
-#else
-typedef GlowFilter = flash.filters.GlowFilter;
-#end

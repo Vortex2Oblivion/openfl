@@ -1,21 +1,18 @@
 package openfl.display3D;
 
-#if !flash
-import openfl.display3D._internal.GLProgram;
-import openfl.display3D._internal.GLShader;
-import openfl.display3D._internal.GLUniformLocation;
-import openfl.display3D._internal.AGALConverter;
-import openfl.display._internal.SamplerState;
-import openfl.utils._internal.Float32Array;
-import openfl.utils._internal.Log;
+import lime.graphics.opengl.GL;
+import lime.graphics.opengl.GLProgram;
+import lime.graphics.opengl.GLShader;
+import lime.graphics.opengl.GLUniformLocation;
+import lime.utils.BytePointer;
+import lime.utils.Float32Array;
+import lime.utils.Log;
+import openfl.Vector;
 import openfl.display.ShaderParameterType;
+import openfl.display._internal.SamplerState;
+import openfl.display3D._internal.AGALConverter;
 import openfl.errors.IllegalOperationError;
 import openfl.utils.ByteArray;
-import openfl.Vector;
-#if lime
-import lime.graphics.opengl.GL;
-import lime.utils.BytePointer;
-#end
 
 /**
 	The Program3D class represents a pair of rendering programs (also called "shaders")
@@ -43,10 +40,6 @@ import lime.utils.BytePointer;
 	You cannot create a Program3D object directly; use the Context3D `createProgram()`
 	method instead.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display.ShaderInput)
 @:access(openfl.display.ShaderParameter)
@@ -74,7 +67,6 @@ import lime.utils.BytePointer;
 	@:noCompletion private var __glslUniformTypes:Array<ShaderParameterType>;
 	@:noCompletion private var __glVertexShader:GLShader;
 	@:noCompletion private var __glVertexSource:String;
-	// @:noCompletion private var __memUsage:Int;
 	@:noCompletion private var __samplerStates:Array<SamplerState>;
 
 	@:noCompletion private function new(context3D:Context3D, format:Context3DProgramFormat)
@@ -114,12 +106,9 @@ import lime.utils.BytePointer;
 	}
 
 	/**
-		**BETA**
-
 		Get the index for the specified shader attribute.
 
-		@returns	The index, or -1 if the attribute is not bound or
-		was not found in the shader sources
+		@returns	The index, or -1 if the attribute is not bound or was not found in the shader sources
 	**/
 	public function getAttributeIndex(name:String):Int
 	{
@@ -148,8 +137,6 @@ import lime.utils.BytePointer;
 	}
 
 	/**
-		**BETA**
-
 		Get the index for the specified shader constant.
 
 		@returns	The index, or -1 if the constant is not bound or
@@ -394,7 +381,7 @@ import lime.utils.BytePointer;
 		var glslVertex = AGALConverter.convertToGLSL(vertexProgram, null);
 		var glslFragment = AGALConverter.convertToGLSL(fragmentProgram, samplerStates);
 
-		if (Log.level == LogLevel.VERBOSE)
+		if (Log.level == VERBOSE)
 		{
 			Log.info(glslVertex);
 			Log.info(glslFragment);
@@ -411,8 +398,6 @@ import lime.utils.BytePointer;
 	}
 
 	/**
-		**BETA**
-
 		Uploads a pair of rendering programs expressed in GLSL (GL Shader Language).
 	**/
 	public function uploadSources(vertexSource:String, fragmentSource:String):Void
@@ -481,7 +466,6 @@ import lime.utils.BytePointer;
 	{
 		if (__format == GLSL) return;
 
-		#if lime
 		var gl = __context.gl;
 
 		__agalUniforms.clear();
@@ -572,7 +556,7 @@ import lime.utils.BytePointer;
 				__agalAlphaSamplerEnabled[uniform.regIndex] = uniform;
 			}
 
-			if (Log.level == LogLevel.VERBOSE)
+			if (Log.level == VERBOSE)
 			{
 				Log.verbose('${i} name:${uniform.name} type:${uniform.type} size:${uniform.size} location:${uniform.location}');
 			}
@@ -580,7 +564,6 @@ import lime.utils.BytePointer;
 
 		__agalVertexUniformMap = new UniformMap(Lambda.array(vertexUniforms));
 		__agalFragmentUniformMap = new UniformMap(Lambda.array(fragmentUniforms));
-		#end
 	}
 
 	@:noCompletion private function __deleteShaders():Void
@@ -924,10 +907,6 @@ import lime.utils.BytePointer;
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:dox(hide) @:noCompletion class Uniform
@@ -941,9 +920,7 @@ import lime.utils.BytePointer;
 	public var regCount:Int;
 	public var isDirty:Bool;
 	public var context:Context3D;
-	#if lime
 	public var regDataPointer:BytePointer;
-	#end
 
 	public function new(context:Context3D)
 	{
@@ -951,14 +928,11 @@ import lime.utils.BytePointer;
 
 		isDirty = true;
 
-		#if lime
 		regDataPointer = new BytePointer();
-		#end
 	}
 
 	public function flush():Void
 	{
-		#if lime
 		#if (js && html5)
 		var gl = context.gl;
 		#else
@@ -1000,7 +974,6 @@ import lime.utils.BytePointer;
 				gl.uniform4fv(location, regCount, __getUniformRegisters(index, regCount * 4));
 			#end
 		}
-		#end
 	}
 
 	#if (js && html5)
@@ -1022,17 +995,13 @@ import lime.utils.BytePointer;
 	#end
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 @:dox(hide) @:noCompletion class UniformMap
 {
 	// TODO: it would be better to use a bitmask with a dirty bit per uniform, but not super important now
 	@:noCompletion private var __allDirty:Bool;
 	@:noCompletion private var __anyDirty:Bool;
-	@:noCompletion private var __registerLookup:Vector<Uniform>;
+	@:noCompletion private var __registerLookup:Array<Uniform>;
 	@:noCompletion private var __uniforms:Array<Uniform>;
 
 	public function new(list:Array<Uniform>)
@@ -1054,7 +1023,9 @@ import lime.utils.BytePointer;
 			}
 		}
 
-		__registerLookup = new Vector<Uniform>(total);
+		__registerLookup = [];
+
+		__registerLookup.resize(total);
 
 		for (uniform in __uniforms)
 		{
@@ -1124,6 +1095,3 @@ import lime.utils.BytePointer;
 		}
 	}
 }
-#else
-typedef Program3D = flash.display3D.Program3D;
-#end

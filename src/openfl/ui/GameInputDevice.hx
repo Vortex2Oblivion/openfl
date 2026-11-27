@@ -1,15 +1,8 @@
 package openfl.ui;
 
-#if !flash
-import openfl.utils.ByteArray;
-#if lime
 import lime.ui.Gamepad;
-#end
+import openfl.utils.ByteArray;
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.ui.GameInputControl)
 @:final class GameInputDevice
 {
@@ -48,18 +41,7 @@ import lime.ui.Gamepad;
 	@:noCompletion private var __axis:Map<Int, GameInputControl> = new Map();
 	@:noCompletion private var __button:Map<Int, GameInputControl> = new Map();
 	@:noCompletion private var __controls:Array<GameInputControl> = new Array();
-	#if lime
 	@:noCompletion private var __gamepad:Gamepad;
-	#end
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(GameInputDevice.prototype, {
-			"numControls": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_numControls (); }")},
-		});
-	}
-	#end
 
 	@:noCompletion private function new(gamepad:Gamepad)
 	{
@@ -127,12 +109,31 @@ import lime.ui.Gamepad;
 	**/
 	public function stopCachingSamples():Void {}
 
+	/**
+		Start a rumble effect.
+	**/
+	public function rumble(lowFrequency:Float, highFrequency:Float, duration:Int):Void
+	{
+		if (__gamepad != null)
+		{
+			__gamepad.rumble(lowFrequency, highFrequency, duration);
+		}
+	}
+
+	/**
+		Update the LED color.
+	**/
+	public function setLED(red:Int, green:Int, blue:Int):Void
+	{
+		if (__gamepad != null)
+		{
+			__gamepad.setLED(red, green, blue);
+		}
+	}
+
 	// Get & Set Methods
 	@:noCompletion private function get_numControls():Int
 	{
 		return __controls.length;
 	}
 }
-#else
-typedef GameInputDevice = flash.ui.GameInputDevice;
-#end

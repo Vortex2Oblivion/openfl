@@ -1,8 +1,5 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
-
 /**
 	Almost exactly StageVideoEvent.
 **/
@@ -35,9 +32,6 @@ class VideoTextureEvent extends Event
 	**/
 	@:isVar public var status(default, null):String;
 
-	// @:noCompletion private static var __pool:ObjectPool<VideoTextureEvent> = new ObjectPool<VideoTextureEvent>(function() return new VideoTextureEvent(null),
-	// function(event) event.__init());
-
 	public function new(type:String, bubbles:Bool = false, cancelable:Bool = false, status:String = null, colorSpace:String = null)
 	{
 		super(type, bubbles, cancelable);
@@ -66,6 +60,3 @@ class VideoTextureEvent extends Event
 		colorSpace = null;
 	}
 }
-#else
-typedef VideoTextureEvent = flash.events.VideoTextureEvent;
-#end

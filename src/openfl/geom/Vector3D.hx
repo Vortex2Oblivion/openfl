@@ -1,6 +1,5 @@
 package openfl.geom;
 
-#if !flash
 /**
 	The Vector3D class represents a point or a location in the three-dimensional space using
 	the Cartesian coordinates x, y, and z. As in a two-dimensional space, the `x` property
@@ -28,10 +27,6 @@ package openfl.geom;
 
 	![Vector3D elements](/images/Vector3Delements.jpg)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class Vector3D
 {
 	/**
@@ -102,37 +97,6 @@ class Vector3D
 		three-dimensional space. The default value is 0.
 	**/
 	public var z:Float;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Vector3D, {
-			"X_AXIS": {
-				get: function()
-				{
-					return Vector3D.get_X_AXIS();
-				}
-			},
-			"Y_AXIS": {
-				get: function()
-				{
-					return Vector3D.get_Y_AXIS();
-				}
-			},
-			"Z_AXIS": {
-				get: function()
-				{
-					return Vector3D.get_Z_AXIS();
-				}
-			}
-		});
-
-		untyped Object.defineProperties(Vector3D.prototype, {
-			"length": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_length (); }")},
-			"lengthSquared": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_lengthSquared (); }")},
-		});
-	}
-	#end
 
 	/**
 		Creates an instance of a Vector3D object. If you do not specify a parameter for
@@ -574,21 +538,18 @@ class Vector3D
 		return x * x + y * y + z * z;
 	}
 
-	private inline static function get_X_AXIS():Vector3D
+	@:noCompletion private inline static function get_X_AXIS():Vector3D
 	{
 		return new Vector3D(1, 0, 0);
 	}
 
-	private inline static function get_Y_AXIS():Vector3D
+	@:noCompletion private inline static function get_Y_AXIS():Vector3D
 	{
 		return new Vector3D(0, 1, 0);
 	}
 
-	private inline static function get_Z_AXIS():Vector3D
+	@:noCompletion private inline static function get_Z_AXIS():Vector3D
 	{
 		return new Vector3D(0, 0, 1);
 	}
 }
-#else
-typedef Vector3D = flash.geom.Vector3D;
-#end

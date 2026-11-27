@@ -1,6 +1,9 @@
 package openfl.display;
 
-#if !flash
+import lime.graphics.CairoRenderContext;
+import lime.graphics.cairo.Cairo;
+import lime.graphics.cairo.CairoOperator;
+import lime.math.Matrix3;
 import openfl.display._internal.CairoBitmap;
 import openfl.display._internal.CairoBitmapData;
 import openfl.display._internal.CairoDisplayObject;
@@ -12,23 +15,10 @@ import openfl.display._internal.CairoTextField;
 import openfl.display._internal.CairoTilemap;
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
-#if lime
-import lime.graphics.cairo.Cairo;
-import lime.graphics.cairo.CairoOperator;
-import lime.graphics.CairoRenderContext;
-import lime.math.Matrix3;
-#end
 
 /**
-	**BETA**
-
-	The CairoRenderer API exposes support for native Cairo render instructions within the
-	`RenderEvent.RENDER_CAIRO` event
+	The CairoRenderer API exposes support for native Cairo render instructions within the `RenderEvent.RENDER_CAIRO` event
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.DisplayObject)
 @:access(openfl.display.Graphics)
 @:access(openfl.display.IBitmapDrawable)
@@ -41,14 +31,12 @@ class CairoRenderer extends DisplayObjectRenderer
 	/**
 		The current Cairo render context
 	**/
-	@SuppressWarnings("checkstyle:Dynamic")
-	public var cairo:#if lime CairoRenderContext #else Dynamic #end;
+	public var cairo:CairoRenderContext;
 
 	@:noCompletion private var __matrix:Matrix;
-	@SuppressWarnings("checkstyle:Dynamic") @:noCompletion private var __matrix3:#if lime Matrix3 #else Dynamic #end;
+	@:noCompletion private var __matrix3:Matrix3;
 
-	@SuppressWarnings("checkstyle:Dynamic")
-	@:noCompletion private function new(cairo:#if lime Cairo #else Dynamic #end)
+	@:noCompletion private function new(cairo:Cairo)
 	{
 		super();
 
@@ -66,8 +54,7 @@ class CairoRenderer extends DisplayObjectRenderer
 		Set the matrix value for the current render context, or (optionally) another Cairo
 		object
 	**/
-	@SuppressWarnings("checkstyle:Dynamic")
-	public function applyMatrix(transform:Matrix, cairo:#if lime Cairo #else Dynamic #end = null):Void
+	public function applyMatrix(transform:Matrix, cairo:Cairo = null):Void
 	{
 		if (cairo == null) cairo = this.cairo;
 
@@ -241,37 +228,54 @@ class CairoRenderer extends DisplayObjectRenderer
 		__setBlendModeCairo(cairo, value);
 	}
 
-	@SuppressWarnings("checkstyle:Dynamic")
-	@:noCompletion private function __setBlendModeCairo(cairo:#if lime Cairo #else Dynamic #end, value:BlendMode):Void
+	@:noCompletion private function __setBlendModeCairo(cairo:Cairo, value:BlendMode):Void
 	{
 		#if lime
-		switch (value) {
-			case ADD: cairo.setOperator(CairoOperator.ADD);
-			case ALPHA: cairo.setOperator(CairoOperator.DEST_IN);
-			case DARKEN: cairo.setOperator(CairoOperator.DARKEN);
-			case DIFFERENCE: cairo.setOperator(CairoOperator.DIFFERENCE);
-			case ERASE: cairo.setOperator(CairoOperator.XOR);
-			case HARDLIGHT: cairo.setOperator(CairoOperator.HARD_LIGHT);
-			case INVERT: cairo.setOperator(CairoOperator.DIFFERENCE);
-			case LAYER: cairo.setOperator(CairoOperator.IN);
-			case LIGHTEN: cairo.setOperator(CairoOperator.LIGHTEN);
-			case MULTIPLY: cairo.setOperator(CairoOperator.MULTIPLY);
-			case OVERLAY: cairo.setOperator(CairoOperator.OVERLAY);
-			case SCREEN: cairo.setOperator(CairoOperator.SCREEN);
-			case SUBTRACT: cairo.setOperator(CairoOperator.OUT);
-			case COLORDODGE: cairo.setOperator(CairoOperator.COLOR_DODGE);
-			case COLORBURN: cairo.setOperator(CairoOperator.COLOR_BURN);
-			case SOFTLIGHT: cairo.setOperator(CairoOperator.SOFT_LIGHT);
-			case EXCLUSION: cairo.setOperator(CairoOperator.EXCLUSION);
-			case HUE: cairo.setOperator(CairoOperator.HSL_HUE);
-			case SATURATION: cairo.setOperator(CairoOperator.HSL_SATURATION);
-			case COLOR: cairo.setOperator(CairoOperator.HSL_COLOR);
-			case LUMINOSITY: cairo.setOperator(CairoOperator.HSL_LUMINOSITY);
-			default: cairo.setOperator(CairoOperator.OVER);
+		switch (value)
+		{
+			case ADD:
+				cairo.setOperator(CairoOperator.ADD);
+			case ALPHA:
+				cairo.setOperator(CairoOperator.DEST_IN);
+			case DARKEN:
+				cairo.setOperator(CairoOperator.DARKEN);
+			case DIFFERENCE:
+				cairo.setOperator(CairoOperator.DIFFERENCE);
+			case ERASE:
+				cairo.setOperator(CairoOperator.XOR);
+			case HARDLIGHT:
+				cairo.setOperator(CairoOperator.HARD_LIGHT);
+			case INVERT:
+				cairo.setOperator(CairoOperator.DIFFERENCE);
+			case LAYER:
+				cairo.setOperator(CairoOperator.IN);
+			case LIGHTEN:
+				cairo.setOperator(CairoOperator.LIGHTEN);
+			case MULTIPLY:
+				cairo.setOperator(CairoOperator.MULTIPLY);
+			case OVERLAY:
+				cairo.setOperator(CairoOperator.OVERLAY);
+			case SCREEN:
+				cairo.setOperator(CairoOperator.SCREEN);
+			case SUBTRACT:
+				cairo.setOperator(CairoOperator.OUT);
+			case COLORDODGE:
+				cairo.setOperator(CairoOperator.COLOR_DODGE);
+			case COLORBURN:
+				cairo.setOperator(CairoOperator.COLOR_BURN);
+			case SOFTLIGHT:
+				cairo.setOperator(CairoOperator.SOFT_LIGHT);
+			case EXCLUSION:
+				cairo.setOperator(CairoOperator.EXCLUSION);
+			case HUE:
+				cairo.setOperator(CairoOperator.HSL_HUE);
+			case SATURATION:
+				cairo.setOperator(CairoOperator.HSL_SATURATION);
+			case COLOR:
+				cairo.setOperator(CairoOperator.HSL_COLOR);
+			case LUMINOSITY:
+				cairo.setOperator(CairoOperator.HSL_LUMINOSITY);
+			default:
+				cairo.setOperator(CairoOperator.OVER);
 		}
-		#end
-	}
-}
-#else
-typedef CairoRenderer = Dynamic;
-#end
+		}}

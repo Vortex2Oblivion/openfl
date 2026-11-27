@@ -1,16 +1,15 @@
 package openfl.net;
 
-#if !flash
-#if (cpp || hl)
+#if native
 import haxe.io.Path;
+import lime.ui.FileDialog;
 import openfl.events.Event;
 import openfl.events.EventDispatcher;
-#if lime
-import lime.ui.FileDialog;
-#end
+import openfl.filesystem.File;
 #if sys
 import sys.FileSystem;
 #end
+
 /**
 	The FileReferenceList class provides a means to let users select one or
 	more files for uploading. A FileReferenceList object represents a group of
@@ -51,10 +50,7 @@ import sys.FileSystem;
 	@see [Using the FileReferenceList class](https://books.openfl.org/openfl-developers-guide/working-with-the-file-system/using-the-filereference-class.html#filereferencelist-class)
 	@see `openfl.net.FileReference`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 @:access(openfl.net.FileReference)
 class FileReferenceList extends EventDispatcher
 {
@@ -135,30 +131,22 @@ class FileReferenceList extends EventDispatcher
 	**/
 	public function browse(typeFilter:Array<FileFilter> = null):Bool
 	{
-		#if desktop
-		var filter:String = null;
-
-		if (typeFilter != null)
-		{
-			var filters:Array<String> = [];
-
-			for (type in typeFilter)
-			{
-				filters.push(StringTools.replace(StringTools.replace(type.extension, "*.", ""), ";", ","));
-			}
-
-			filter = filters.join(";");
-		}
-
 		fileList = new Array();
 
-		#if (lime && !macro)
-		var fileDialog = new FileDialog();
-		fileDialog.onCancel.add(fileDialog_onCancel);
-		fileDialog.onSelectMultiple.add(fileDialog_onSelectMultiple);
-		fileDialog.browse(OPEN_MULTIPLE, filter);
+		#if !macro
+		FileDialog.openFile(Lib.current.stage.window, function(paths:Array<String>, filter):Void
+		{
+			if (paths.length > 0)
+			{
+				fileDialog_onSelectMultiple(paths);
+			}
+			else
+			{
+				fileDialog_onCancel();
+			}
+		}, @:privateAccess File.__getFilterTypes(typeFilter), null, true);
+
 		return true;
-		#end
 		#end
 
 		return false;
@@ -167,7 +155,18 @@ class FileReferenceList extends EventDispatcher
 	// Event Handlers
 	@:noCompletion private function fileDialog_onCancel():Void
 	{
-		dispatchEvent(new Event(Event.CANCEL));
+		#if openfl_pool_events
+		var cancelEvent = Event.__pool.get();
+		cancelEvent.type = Event.CANCEL;
+		#else
+		var cancelEvent = new Event(Event.CANCEL);
+		#end
+
+		dispatchEvent(cancelEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(cancelEvent);
+		#end
 	}
 
 	@:noCompletion private function fileDialog_onSelectMultiple(paths:Array<String>):Void
@@ -177,11 +176,15 @@ class FileReferenceList extends EventDispatcher
 			var fileReference = new FileReference();
 
 			#if sys
-			var fileInfo = FileSystem.stat(path);
-			fileReference.creationDate = fileInfo.ctime;
-			fileReference.modificationDate = fileInfo.mtime;
-			fileReference.size = fileInfo.size;
-			fileReference.type = "." + Path.extension(path);
+			try
+			{
+				var fileInfo = FileSystem.stat(path);
+				fileReference.creationDate = fileInfo.ctime;
+				fileReference.modificationDate = fileInfo.mtime;
+				fileReference.size = fileInfo.size;
+				fileReference.type = "." + Path.extension(path);
+			}
+			catch (e) {}
 			#end
 
 			fileReference.__path = path;
@@ -190,32 +193,36 @@ class FileReferenceList extends EventDispatcher
 			fileList.push(fileReference);
 		}
 
-		dispatchEvent(new Event(Event.SELECT));
+		#if openfl_pool_events
+		var selectEvent = Event.__pool.get();
+		selectEvent.type = Event.SELECT;
+		#else
+		var selectEvent = new Event(Event.SELECT);
+		#end
+
+		dispatchEvent(selectEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(selectEvent);
+		#end
 	}
 }
 #elseif js
-import openfl.utils.ByteArray;
+import js.lib.DataView;
+import openfl.events.Event;
+import openfl.events.EventDispatcher;
 import openfl.events.MouseEvent;
 import openfl.net.FileFilter;
 import openfl.net.FileReference;
-import openfl.events.EventDispatcher;
-import openfl.events.Event;
-#if haxe4
-import js.lib.DataView;
-#else
-import js.html.DataView;
-#end
+import openfl.utils.ByteArray;
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 @:access(openfl.net.FileReference)
 class FileReferenceList extends EventDispatcher
 {
 	public var fileList(default, null):Array<FileReference>;
 
-	private var fileInput:Dynamic;
+	@:noCompletion private var fileInput:Dynamic;
 
 	public function new()
 	{
@@ -246,12 +253,23 @@ class FileReferenceList extends EventDispatcher
 		return true;
 	}
 
-	private function fileInput_onChange(event:Dynamic):Void
+	@:noCompletion private function fileInput_onChange(event:Dynamic):Void
 	{
 		var files = (event.target : js.html.InputElement).files;
 		if (files.length == 0)
 		{
-			dispatchEvent(new Event(Event.CANCEL));
+			#if openfl_pool_events
+			var cancelEvent = Event.__pool.get();
+			cancelEvent.type = Event.CANCEL;
+			#else
+			var cancelEvent = new Event(Event.CANCEL);
+			#end
+
+			dispatchEvent(cancelEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(cancelEvent);
+			#end
 			return;
 		}
 		for (i in 0...files.length)
@@ -280,14 +298,22 @@ class FileReferenceList extends EventDispatcher
 				fileList.push(fileReference);
 				if (fileList.length == files.length)
 				{
-					dispatchEvent(new Event(Event.SELECT));
+					#if openfl_pool_events
+					var selectEvent = Event.__pool.get();
+					selectEvent.type = Event.SELECT;
+					#else
+					var selectEvent = new Event(Event.SELECT);
+					#end
+
+					dispatchEvent(selectEvent);
+
+					#if openfl_pool_events
+					Event.__pool.release(selectEvent);
+					#end
 				}
 			});
 			reader.readAsArrayBuffer(cast file);
 		}
 	}
 }
-#end
-#else
-typedef FileReferenceList = flash.net.FileReferenceList;
 #end

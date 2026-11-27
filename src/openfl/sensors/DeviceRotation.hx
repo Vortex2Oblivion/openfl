@@ -1,14 +1,11 @@
 package openfl.sensors;
 
-#if !flash
 import haxe.Timer;
+import lime.system.Sensor;
+import lime.system.SensorType;
 import openfl.errors.ArgumentError;
 import openfl.events.DeviceRotationEvent;
 import openfl.events.EventDispatcher;
-#if lime
-import lime.system.Sensor;
-import lime.system.SensorType;
-#end
 
 /**
 	The DeviceRotation class dispatches events based on activity detected by the
@@ -63,22 +60,6 @@ class DeviceRotation extends EventDispatcher
 	@:noCompletion private var __muted:Bool;
 	@:noCompletion private var __timer:Timer;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperty(DeviceRotation.prototype, "muted", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_muted (); }"),
-			set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_muted (v); }")
-		});
-		untyped Object.defineProperty(DeviceRotation, "isSupported", {
-			get: function()
-			{
-				return DeviceRotation.get_isSupported();
-			}
-		});
-	}
-	#end
-
 	/**
 		Creates a new DeviceRotation instance.
 	**/
@@ -105,7 +86,6 @@ class DeviceRotation extends EventDispatcher
 	{
 		if (!initialized)
 		{
-			#if lime
 			var sensors = Sensor.getSensors(SensorType.GYROSCOPE);
 
 			if (sensors.length > 0)
@@ -113,7 +93,6 @@ class DeviceRotation extends EventDispatcher
 				sensors[0].onUpdate.add(gyroscope_onUpdate);
 				supported = true;
 			}
-			#end
 
 			initialized = true;
 		}
@@ -181,7 +160,7 @@ class DeviceRotation extends EventDispatcher
 	}
 
 	// Getters & Setters
-	private static function get_isSupported():Bool
+	@:noCompletion private static function get_isSupported():Bool
 	{
 		initialize();
 		return supported;
@@ -200,8 +179,3 @@ class DeviceRotation extends EventDispatcher
 		return value;
 	}
 }
-#else
-#if air
-typedef DeviceRotation = flash.sensors.DeviceRotation;
-#end
-#end

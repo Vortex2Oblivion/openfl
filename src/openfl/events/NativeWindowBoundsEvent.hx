@@ -1,6 +1,6 @@
 package openfl.events;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.geom.Rectangle;
 
 /**
@@ -124,8 +124,4 @@ class NativeWindowBoundsEvent extends Event
 		return __formatToString("NativeWindowBoundsEvent", ["type", "bubbles", "cancelable", "beforeBounds", "afterBounds"]);
 	}
 }
-#else
-#if air
-typedef NativeWindowBoundsEvent = flash.events.NativeWindowBoundsEvent;
-#end
 #end

@@ -1,6 +1,5 @@
 package openfl.display;
 
-#if !flash
 import openfl.events.MouseEvent;
 
 /**
@@ -46,13 +45,9 @@ import openfl.events.MouseEvent;
 	@see [Basics of display programming](https://books.openfl.org/openfl-developers-guide/display-programming/basics-of-display-programming.html)
 	@see [Core display classes](https://books.openfl.org/openfl-developers-guide/display-programming/core-display-classes.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display.Timeline)
 @:access(openfl.geom.ColorTransform)
-class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implements Dynamic<DisplayObject> #end
+class MovieClip extends Sprite
 {
 	/**
 		Specifies the number of the frame in which the playhead is located in the
@@ -141,7 +136,6 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
 	**/
 	public var totalFrames(get, never):Int;
 
-	// @:noCompletion @:dox(hide) public var trackAsMenu:Bool;
 	@:noCompletion private var __enabled:Bool;
 	@:noCompletion private var __hasDown:Bool;
 	@:noCompletion private var __hasOver:Bool;
@@ -149,25 +143,6 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
 	@:noCompletion private var __mouseIsDown:Bool;
 	@:noCompletion private var __scene:Scene;
 	@:noCompletion private var __timeline:Timeline;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(MovieClip.prototype, {
-			"currentFrame": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_currentFrame (); }")},
-			"currentFrameLabel": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_currentFrameLabel (); }")},
-			"currentLabel": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_currentLabel (); }")},
-			"currentLabels": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_currentLabels (); }")},
-			"enabled": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_enabled (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_enabled (v); }")
-			},
-			"framesLoaded": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_framesLoaded (); }")},
-			"isPlaying": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_isPlaying (); }")},
-			"totalFrames": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_totalFrames (); }")},
-		});
-	}
-	#end
 
 	/**
 		Creates a new MovieClip instance. After creating the MovieClip, call the
@@ -249,7 +224,7 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
 
 		@see [Controlling movie clip playback](https://books.openfl.org/openfl-developers-guide/working-with-movie-clips/controlling-movie-clip-playback.html)
 	**/
-	public function gotoAndPlay(frame:#if (haxe_ver >= "3.4.2") Any #else Dynamic #end, scene:String = null):Void
+	public function gotoAndPlay(frame:Any, scene:String = null):Void
 	{
 		if (__timeline != null)
 		{
@@ -276,7 +251,7 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
 
 		@see [Controlling movie clip playback](https://books.openfl.org/openfl-developers-guide/working-with-movie-clips/controlling-movie-clip-playback.html)
 	**/
-	public function gotoAndStop(frame:#if (haxe_ver >= "3.4.2") Any #else Dynamic #end, scene:String = null):Void
+	public function gotoAndStop(frame:Any, scene:String = null):Void
 	{
 		if (__timeline != null)
 		{
@@ -608,7 +583,3 @@ class MovieClip extends Sprite #if (openfl_dynamic && haxe_ver < "4.0.0") implem
 		}
 	}
 }
-#else
-typedef MovieClip = flash.display.MovieClip;
-typedef MovieClip2 = flash.display.MovieClip.MovieClip2;
-#end

@@ -1,7 +1,5 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
 import openfl.display.InteractiveObject;
 
 /**
@@ -14,10 +12,6 @@ import openfl.display.InteractiveObject;
 	* `FocusEvent.KEY_FOCUS_CHANGE`
 	* `FocusEvent.MOUSE_FOCUS_CHANGE`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class FocusEvent extends Event
 {
 	/**
@@ -96,20 +90,6 @@ class FocusEvent extends Event
 	**/
 	public static inline var MOUSE_FOCUS_CHANGE:EventType<FocusEvent> = "mouseFocusChange";
 
-	#if false
-	/**
-		If `true`, the `relatedObject` property is set to `null` for reasons
-		related to security sandboxes. If the nominal value of `relatedObject`
-		is a reference to a DisplayObject in another sandbox, `relatedObject`
-		is set to `null` unless there is permission in both directions across
-		this sandbox boundary. Permission is established by calling
-		`Security.allowDomain()` from a SWF file, or by providing a policy
-		file from the server of an image file, and setting the
-		`LoaderContext.checkPolicyFile` property when loading the image.
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash10) public var isRelatedObjectInaccessible:Bool;
-	#end
-
 	/**
 		The key code value of the key pressed to trigger a
 		`keyFocusChange` event.
@@ -137,9 +117,6 @@ class FocusEvent extends Event
 		`keyFocusChange`.
 	**/
 	public var shiftKey:Bool;
-
-	// @:noCompletion private static var __pool:ObjectPool<FocusEvent> = new ObjectPool<FocusEvent>(function() return new FocusEvent(null),
-	// function(event) event.__init());
 
 	/**
 		Creates an Event object with specific information relevant to focus
@@ -195,6 +172,3 @@ class FocusEvent extends Event
 		relatedObject = null;
 	}
 }
-#else
-typedef FocusEvent = flash.events.FocusEvent;
-#end

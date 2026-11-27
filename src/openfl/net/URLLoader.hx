@@ -1,7 +1,8 @@
 package openfl.net;
 
-#if !flash
 import haxe.io.Bytes;
+import lime.net.HTTPRequest;
+import lime.net.HTTPRequestHeader;
 import openfl.events.Event;
 import openfl.events.EventDispatcher;
 import openfl.events.HTTPStatusEvent;
@@ -9,10 +10,6 @@ import openfl.events.IOErrorEvent;
 import openfl.events.ProgressEvent;
 import openfl.events.SecurityErrorEvent;
 import openfl.utils.ByteArray;
-#if lime
-import lime.net.HTTPRequest;
-import lime.net.HTTPRequestHeader;
-#end
 
 /**
 	The URLLoader class downloads data from a URL as text, binary data, or
@@ -90,10 +87,7 @@ import lime.net.HTTPRequestHeader;
 	@see `openfl.net.URLRequest`
 	@see `openfl.net.URLStream`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 class URLLoader extends EventDispatcher
 {
 	/**
@@ -151,7 +145,7 @@ class URLLoader extends EventDispatcher
 	**/
 	public var dataFormat:URLLoaderDataFormat;
 
-	@:noCompletion private var __httpRequest:#if (!lime || display || macro || doc_gen) Dynamic #else _IHTTPRequest #end; // TODO: Better (non-private) solution
+	@:noCompletion private var __httpRequest:#if (display || macro || doc_gen) Dynamic #else _IHTTPRequest #end; // TODO: Better (non-private) solution
 
 	/**
 		Creates a URLLoader object.
@@ -290,9 +284,19 @@ class URLLoader extends EventDispatcher
 	**/
 	public function load(request:URLRequest):Void
 	{
-		#if (lime && !macro)
-		var openEvent:Event = new Event(Event.OPEN);
+		#if !macro
+		#if openfl_pool_events
+		var openEvent = Event.__pool.get();
+		openEvent.type = Event.OPEN;
+		#else
+		var openEvent = new Event(Event.OPEN);
+		#end
+
 		dispatchEvent(openEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(openEvent);
+		#end
 
 		if (dataFormat == BINARY)
 		{
@@ -308,8 +312,18 @@ class URLLoader extends EventDispatcher
 					__dispatchStatus();
 					this.data = data;
 
-					var event = new Event(Event.COMPLETE);
-					dispatchEvent(event);
+					#if openfl_pool_events
+					var completeEvent = Event.__pool.get();
+					completeEvent.type = Event.COMPLETE;
+					#else
+					var completeEvent = new Event(Event.COMPLETE);
+					#end
+
+					dispatchEvent(completeEvent);
+
+					#if openfl_pool_events
+					Event.__pool.release(completeEvent);
+					#end
 				});
 		}
 		else
@@ -334,8 +348,18 @@ class URLLoader extends EventDispatcher
 						this.data = data;
 					}
 
-					var event = new Event(Event.COMPLETE);
-					dispatchEvent(event);
+					#if openfl_pool_events
+					var completeEvent = Event.__pool.get();
+					completeEvent.type = Event.COMPLETE;
+					#else
+					var completeEvent = new Event(Event.COMPLETE);
+					#end
+
+					dispatchEvent(completeEvent);
+
+					#if openfl_pool_events
+					Event.__pool.release(completeEvent);
+					#end
 				});
 		}
 		#end
@@ -347,7 +371,7 @@ class URLLoader extends EventDispatcher
 		responseStatusEvent.responseURL = __httpRequest.uri;
 
 		var headers = new Array<URLRequestHeader>();
-		#if (lime && !display && !macro && !doc_gen)
+		#if (!display && !macro && !doc_gen)
 		if (__httpRequest.enableResponseHeaders && __httpRequest.responseHeaders != null)
 		{
 			for (header in __httpRequest.responseHeaders)
@@ -366,10 +390,8 @@ class URLLoader extends EventDispatcher
 		dispatchEvent(statusEvent);
 	}
 
-	@:noCompletion private function __prepareRequest(httpRequest:#if (!lime || display || macro || doc_gen) Dynamic #else _IHTTPRequest #end,
-			request:URLRequest):Void
+	@:noCompletion private function __prepareRequest(httpRequest:#if (display || macro || doc_gen) Dynamic #else _IHTTPRequest #end, request:URLRequest):Void
 	{
-		#if lime
 		__httpRequest = httpRequest;
 		__httpRequest.uri = request.url;
 		__httpRequest.method = request.method;
@@ -407,9 +429,7 @@ class URLLoader extends EventDispatcher
 
 		__httpRequest.followRedirects = request.followRedirects;
 		__httpRequest.timeout = Std.int(request.idleTimeout);
-		#if (lime >= "8.0.0")
 		__httpRequest.manageCookies = request.manageCookies;
-		#end
 		__httpRequest.withCredentials = request.withCredentials;
 
 		// TODO: Better user agent?
@@ -418,7 +438,6 @@ class URLLoader extends EventDispatcher
 
 		__httpRequest.userAgent = request.userAgent;
 		__httpRequest.enableResponseHeaders = true;
-		#end
 	}
 
 	// Event Handlers
@@ -427,21 +446,19 @@ class URLLoader extends EventDispatcher
 		__dispatchResponseStatus();
 		__dispatchStatus();
 
-		#if (lime && !doc_gen)
+		#if !doc_gen
 		// some targets won't allow us to cast to HTTPRequest<Dynamic>
-		if (#if (haxe_ver >= 4.2) Std.isOfType #else Std.is #end (__httpRequest, _HTTPRequest_Bytes))
+		if (Std.isOfType(__httpRequest, _HTTPRequest_Bytes))
 		{
 			var bytesRequest:_HTTPRequest_Bytes<Bytes> = cast __httpRequest;
 			data = bytesRequest.responseData;
 		}
-		else if (#if (haxe_ver >= 4.2) Std.isOfType #else Std.is #end (__httpRequest, _HTTPRequest_String))
+		else if (Std.isOfType(__httpRequest, _HTTPRequest_String))
 		{
 			var stringRequest:_HTTPRequest_String<String> = cast __httpRequest;
 			data = stringRequest.responseData;
 		}
 		#end
-		#if !hl
-		// can't compare a string against an integer in HashLink
 		if (error == 403)
 		{
 			var event = new SecurityErrorEvent(SecurityErrorEvent.SECURITY_ERROR);
@@ -449,7 +466,6 @@ class URLLoader extends EventDispatcher
 			dispatchEvent(event);
 		}
 		else
-		#end
 		{
 			var event = new IOErrorEvent(IOErrorEvent.IO_ERROR);
 			event.text = Std.string(error);
@@ -459,12 +475,19 @@ class URLLoader extends EventDispatcher
 
 	@:noCompletion private function httpRequest_onProgress(bytesLoaded:Int, bytesTotal:Int):Void
 	{
-		var event = new ProgressEvent(ProgressEvent.PROGRESS);
-		event.bytesLoaded = bytesLoaded;
-		event.bytesTotal = bytesTotal;
-		dispatchEvent(event);
+		#if openfl_pool_events
+		var progressEvent = ProgressEvent.__pool.get();
+		progressEvent.type = ProgressEvent.PROGRESS;
+		progressEvent.bytesLoaded = bytesLoaded;
+		progressEvent.bytesTotal = bytesTotal;
+		#else
+		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytesLoaded, bytesTotal);
+		#end
+
+		dispatchEvent(progressEvent);
+
+		#if openfl_pool_events
+		ProgressEvent.__pool.release(progressEvent);
+		#end
 	}
 }
-#else
-typedef URLLoader = flash.net.URLLoader;
-#end

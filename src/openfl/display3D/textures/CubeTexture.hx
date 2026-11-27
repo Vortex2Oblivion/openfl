@@ -1,14 +1,12 @@
 package openfl.display3D.textures;
 
-#if !flash
 import haxe.Timer;
-import openfl.display3D._internal.GLFramebuffer;
-import openfl.display3D._internal.ATFReader;
-import openfl.display._internal.SamplerState;
-import openfl.utils._internal.ArrayBufferView;
-import openfl.utils._internal.Log;
-import openfl.utils._internal.UInt8Array;
+import lime.graphics.opengl.GLFramebuffer;
+import lime.utils.ArrayBufferView;
+import lime.utils.Log;
+import lime.utils.UInt8Array;
 import openfl.display.BitmapData;
+import openfl.display._internal.SamplerState;
 import openfl.errors.IllegalOperationError;
 import openfl.events.Event;
 import openfl.utils.ByteArray;
@@ -22,10 +20,6 @@ import openfl.utils.ByteArray;
 	You cannot create a CubeTexture object directly; use the Context3D
 	`createCubeTexture()` instead.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display.Stage)
 @:access(openfl.events.Event)
@@ -37,11 +31,10 @@ import openfl.utils.ByteArray;
 
 	@:noCompletion private function new(context:Context3D, size:Int, format:Context3DTextureFormat, optimizeForRenderToTexture:Bool, streamingLevels:Int)
 	{
-		super(context);
+		super(context, format);
 
 		__size = size;
 		__width = __height = __size;
-		// __format = format;
 		__optimizeForRenderToTexture = optimizeForRenderToTexture;
 		__streamingLevels = streamingLevels;
 
@@ -83,32 +76,7 @@ import openfl.utils.ByteArray;
 	**/
 	public function uploadCompressedTextureFromByteArray(data:ByteArray, byteArrayOffset:UInt, async:Bool = false):Void
 	{
-		if (!async)
-		{
-			__uploadCompressedTextureFromByteArray(data, byteArrayOffset);
-		}
-		else
-		{
-			Timer.delay(function()
-			{
-				__uploadCompressedTextureFromByteArray(data, byteArrayOffset);
-
-				var event:Event = null;
-
-				#if openfl_pool_events
-				event = Event.__pool.get();
-				event.type = Event.TEXTURE_READY;
-				#else
-				event = new Event(Event.TEXTURE_READY);
-				#end
-
-				dispatchEvent(event);
-
-				#if openfl_pool_events
-				Event.__pool.release(event);
-				#end
-			}, 1);
-		}
+		openfl.utils._internal.Lib.notImplemented();
 	}
 
 	/**
@@ -143,7 +111,6 @@ import openfl.utils.ByteArray;
 	**/
 	public function uploadFromBitmapData(source:BitmapData, side:UInt, miplevel:UInt = 0, generateMipmap:Bool = false):Void
 	{
-		#if lime
 		if (source == null) return;
 		var size = __size >> miplevel;
 		if (size == 0) return;
@@ -172,7 +139,6 @@ import openfl.utils.ByteArray;
 		#end
 
 		uploadFromTypedArray(image.data, side, miplevel);
-		#end
 	}
 
 	/**
@@ -203,7 +169,6 @@ import openfl.utils.ByteArray;
 	**/
 	public function uploadFromByteArray(data:ByteArray, byteArrayOffset:UInt, side:UInt, miplevel:UInt = 0):Void
 	{
-		#if lime
 		#if (js && !display)
 		if (byteArrayOffset == 0)
 		{
@@ -213,7 +178,6 @@ import openfl.utils.ByteArray;
 		#end
 
 		uploadFromTypedArray(new UInt8Array(data.toArrayBuffer(), byteArrayOffset), side, miplevel);
-		#end
 	}
 
 	/**
@@ -336,67 +300,4 @@ import openfl.utils.ByteArray;
 			default: throw new IllegalOperationError();
 		}
 	}
-
-	@:noCompletion private function __uploadCompressedTextureFromByteArray(data:ByteArray, byteArrayOffset:UInt):Void
-	{
-		var reader = new ATFReader(data, byteArrayOffset);
-		var alpha = reader.readHeader(__size, __size, true);
-
-		var gl = __context.gl;
-
-		__context.__bindGLTextureCubeMap(__textureID);
-
-		var hasTexture = false;
-
-		#if lime
-		reader.readTextures(function(side, level, gpuFormat, width, height, blockLength, bytes)
-		{
-			var format = alpha ? TextureBase.__compressedFormatsAlpha[gpuFormat] : TextureBase.__compressedFormats[gpuFormat];
-			if (format == 0) return;
-
-			hasTexture = true;
-			var target = __sideToTarget(side);
-
-			__format = format;
-			__internalFormat = format;
-
-			if (alpha && gpuFormat == 2)
-			{
-				var size = Std.int(blockLength / 2);
-
-				gl.compressedTexImage2D(target, level, __internalFormat, width, height, 0,
-					new UInt8Array(#if js @:privateAccess bytes.b.buffer #else bytes #end, 0, size));
-
-				var alphaTexture = new CubeTexture(__context, __size, Context3DTextureFormat.COMPRESSED, __optimizeForRenderToTexture, __streamingLevels);
-				alphaTexture.__format = format;
-				alphaTexture.__internalFormat = format;
-
-				__context.__bindGLTextureCubeMap(alphaTexture.__textureID);
-				gl.compressedTexImage2D(target, level, alphaTexture.__internalFormat, width, height, 0,
-					new UInt8Array(#if js @:privateAccess bytes.b.buffer #else bytes #end, size, size));
-
-				__alphaTexture = alphaTexture;
-			}
-			else
-			{
-				gl.compressedTexImage2D(target, level, __internalFormat, width, height, 0,
-					new UInt8Array(#if js @:privateAccess bytes.b.buffer #else bytes #end, 0, blockLength));
-			}
-		});
-
-		if (!hasTexture)
-		{
-			for (side in 0...6)
-			{
-				var data = new UInt8Array(__size * __size * 4);
-				gl.texImage2D(__sideToTarget(side), 0, __internalFormat, __size, __size, 0, __format, gl.UNSIGNED_BYTE, data);
-			}
-		}
-		#end
-
-		__context.__bindGLTextureCubeMap(null);
-	}
 }
-#else
-typedef CubeTexture = flash.display3D.textures.CubeTexture;
-#end

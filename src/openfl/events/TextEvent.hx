@@ -1,17 +1,11 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
 /**
 	An object dispatches a TextEvent object when a user enters text in a text
 	field or clicks a hyperlink in an HTML-enabled text field. There are two
 	types of text events: `TextEvent.LINK` and
 	`TextEvent.TEXT_INPUT`.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class TextEvent extends Event
 {
 	/**
@@ -53,9 +47,6 @@ class TextEvent extends Event
 		`<a>` tag.
 	**/
 	public var text:String;
-
-	// @:noCompletion private static var __pool:ObjectPool<TextEvent> = new ObjectPool<TextEvent>(function() return new TextEvent(null),
-	// function(event) event.__init());
 
 	/**
 		Creates an Event object that contains information about text events. Event
@@ -104,6 +95,3 @@ class TextEvent extends Event
 		text = "";
 	}
 }
-#else
-typedef TextEvent = flash.events.TextEvent;
-#end

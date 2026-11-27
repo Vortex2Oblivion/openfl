@@ -1,6 +1,6 @@
 package openfl.sensors;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.errors.IllegalOperationError;
 import openfl.permissions.PermissionStatus;
 
@@ -71,7 +71,7 @@ class Geolocation
 	**/
 	public static var isSupported(get, never):Bool;
 
-	private static function get_isSupported():Bool
+	@:noCompletion private static function get_isSupported():Bool
 	{
 		return false;
 	}
@@ -151,8 +151,4 @@ class Geolocation
 	**/
 	public function setRequestedUpdateInterval(interval:Float):Void {}
 }
-#else
-#if air
-typedef Geolocation = flash.sensors.Geolocation;
-#end
 #end

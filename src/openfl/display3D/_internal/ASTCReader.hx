@@ -1,9 +1,8 @@
 package openfl.display3D._internal;
 
-#if !flash
+import lime.utils.UInt8Array;
 import openfl.errors.IllegalOperationError;
 import openfl.utils.ByteArray;
-import openfl.utils._internal.UInt8Array;
 
 /**
 	This class can read ASTC texture containers according to the Khronos ASTC specification.
@@ -34,12 +33,13 @@ class ASTCReader
 
 	public var expectedDataSize(default, null):Int;
 
-	@:noCompletion
-	private var data:ByteArray;
+	@:noCompletion private var data:ByteArray;
 
 	public function new(data:ByteArray):Void
 	{
 		this.data = data;
+
+		data.position = 0;
 
 		final sig0:UInt = data.readUnsignedByte();
 		final sig1:UInt = data.readUnsignedByte();
@@ -91,4 +91,3 @@ class ASTCReader
 		data = null;
 	}
 }
-#end

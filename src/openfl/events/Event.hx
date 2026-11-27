@@ -1,6 +1,5 @@
 package openfl.events;
 
-#if !flash
 import openfl.utils.Object;
 #if openfl_pool_events
 import openfl.utils.ObjectPool;
@@ -52,10 +51,6 @@ import openfl.utils.ObjectPool;
 	@see [Event listeners](https://books.openfl.org/openfl-developers-guide/handling-events/event-listeners.html)
 	@see [Handling events for display objects](https://books.openfl.org/openfl-developers-guide/display-programming/working-with-display-objects/handling-events-for-display-objects.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class Event
 {
 	/**
@@ -107,8 +102,6 @@ class Event
 	**/
 	public static inline var ADDED_TO_STAGE:EventType<Event> = "addedToStage";
 
-	// @:noCompletion @:dox(hide) @:require(flash15) public static var BROWSER_ZOOM_CHANGE:String;
-
 	/**
 		The `Event.CANCEL` constant defines the value of the `type` property
 		of a `cancel` event object.
@@ -136,9 +129,6 @@ class Event
 		| `target` | The object that has had its value modified. The `target` is not always the object in the display list that registered the event listener. Use the `currentTarget` property to access the object in the display list that is currently processing the event. |
 	**/
 	public static inline var CHANGE:EventType<Event> = "change";
-
-	// @:noCompletion @:dox(hide) public static var CHANNEL_MESSAGE:String;
-	// @:noCompletion @:dox(hide) public static var CHANNEL_STATE:String;
 
 	/**
 		The `Event.CLEAR` constant defines the value of the `type` property of
@@ -659,22 +649,6 @@ class Event
 	**/
 	public static inline var TEXTURE_READY:EventType<Event> = "textureReady";
 
-	#if false
-	/**
-		The `Event.TEXT_INTERACTION_MODE_CHANGE` constant defines the value of
-		the `type` property of a `interaction mode` event object.
-		This event has the following properties:
-
-		| Property | Value |
-		| --- | --- |
-		| `bubbles` | `false` |
-		| `cancelable` | `false`; there is no default behavior to cancel. |
-		| `currentTarget` | The object that is actively processing the Event object with an event listener. |
-		| `target` | The TextField object whose interaction mode property is changed. For example on Android, one can change the interaction mode to SELECTION via context menu. The `target` property is not always the object in the display list that registered the event listener. Use the `currentTarget` property to access the object in the display list that is currently processing the event. |
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash11) public static var TEXT_INTERACTION_MODE_CHANGE:String;
-	#end
-
 	/**
 		The `Event.UNLOAD` constant defines the value of the `type` property
 		of an `unload` event object.
@@ -688,9 +662,6 @@ class Event
 		| `target` | The LoaderInfo object associated with the SWF file being unloaded or replaced. |
 	**/
 	public static inline var UNLOAD:EventType<Event> = "unload";
-
-	// @:noCompletion @:dox(hide) public static var VIDEO_FRAME:String;
-	// @:noCompletion @:dox(hide) public static var WORKER_STATE:String;
 
 	/**
 		Indicates whether an event is a bubbling event. If the event can bubble,
@@ -955,6 +926,3 @@ class Event
 		__preventDefault = false;
 	}
 }
-#else
-typedef Event = flash.events.Event;
-#end

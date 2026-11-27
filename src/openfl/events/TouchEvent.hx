@@ -1,7 +1,5 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
 import openfl.display.InteractiveObject;
 import openfl.geom.Point;
 import openfl.utils.ByteArray;
@@ -35,20 +33,8 @@ import openfl.utils.ByteArray;
 	@see [Touch, multitouch, and gesture input](https://books.openfl.org/openfl-developers-guide/touch-multitouch-and-gesture-input/)
 	@see [Touch event handling](https://books.openfl.org/openfl-developers-guide/touch-multitouch-and-gesture-input/touch-event-handling.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class TouchEvent extends Event
 {
-	// @:noCompletion @:dox(hide) public static var PROXIMITY_BEGIN:String;
-	// @:noCompletion @:dox(hide) public static var PROXIMITY_END:String;
-	// @:noCompletion @:dox(hide) public static var PROXIMITY_MOVE:String;
-	// @:noCompletion @:dox(hide) public static var PROXIMITY_OUT:String;
-	// @:noCompletion @:dox(hide) public static var PROXIMITY_OVER:String;
-	// @:noCompletion @:dox(hide) public static var PROXIMITY_ROLL_OUT:String;
-	// @:noCompletion @:dox(hide) public static var PROXIMITY_ROLL_OVER:String;
-
 	/**
 		Defines the value of the `type` property of a `TOUCH_BEGIN` touch
 		event object.
@@ -324,20 +310,6 @@ class TouchEvent extends Event
 	**/
 	public var isPrimaryTouchPoint:Bool;
 
-	#if false
-	/**
-		If `true`, the `relatedObject` property is set to `null` for reasons
-		related to security sandboxes. If the nominal value of `relatedObject`
-		is a reference to a DisplayObject in another sandbox, `relatedObject`
-		is set to `null` unless there is permission in both directions across
-		this sandbox boundary. Permission is established by calling
-		`Security.allowDomain()` from a SWF file, or by providing a policy
-		file from the server of an image file, and setting the
-		`LoaderContext.checkPolicyFile` property when loading the image.
-	**/
-	// @:noCompletion @:dox(hide) public var isRelatedObjectInaccessible:Bool;
-	#end
-
 	/**
 		The horizontal coordinate at which the event occurred relative to the
 		containing sprite.
@@ -411,9 +383,6 @@ class TouchEvent extends Event
 	public var touchPointID:Int;
 
 	@:noCompletion private var __updateAfterEventFlag:Bool;
-
-	// @:noCompletion private static var __pool:ObjectPool<TouchEvent> = new ObjectPool<TouchEvent>(function() return new TouchEvent(null),
-	// function(event) event.__init());
 
 	/**
 		Creates an Event object that contains information about touch events.
@@ -554,6 +523,3 @@ class TouchEvent extends Event
 		__updateAfterEventFlag = false;
 	}
 }
-#else
-typedef TouchEvent = flash.events.TouchEvent;
-#end

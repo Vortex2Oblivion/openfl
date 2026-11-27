@@ -1,15 +1,9 @@
 package openfl.display3D;
 
-#if !flash
-#if !openfljs
-#if cs
-import openfl.utils._internal.NullUtils;
-#end
-
 /**
 	Defines the values to use for specifying the Context3D profile.
 **/
-#if (haxe_ver >= 4.0) enum #else @:enum #end abstract Context3DProfile(Null<Int>)
+enum abstract Context3DProfile(Null<Int>)
 {
 	/**
 		Use the default feature support profile.
@@ -76,9 +70,6 @@ import openfl.utils._internal.NullUtils;
 	**/
 	public var STANDARD_EXTENDED = 5;
 
-	#if air
-	// public var ENHANCED = 6;
-	#end
 	@:from private static function fromString(value:String):Context3DProfile
 	{
 		return switch (value)
@@ -88,11 +79,7 @@ import openfl.utils._internal.NullUtils;
 			case "baselineExtended": BASELINE_EXTENDED;
 			case "standard": STANDARD;
 			case "standardConstrained": STANDARD_CONSTRAINED;
-			case "standardExtended":
-				STANDARD_EXTENDED;
-				#if air
-				// case "enhanced": ENHANCED;
-				#end
+			case "standardExtended": STANDARD_EXTENDED;
 			default: null;
 		}
 	}
@@ -106,43 +93,8 @@ import openfl.utils._internal.NullUtils;
 			case Context3DProfile.BASELINE_EXTENDED: "baselineExtended";
 			case Context3DProfile.STANDARD: "standard";
 			case Context3DProfile.STANDARD_CONSTRAINED: "standardConstrained";
-			case Context3DProfile.STANDARD_EXTENDED:
-				"standardExtended";
-				#if air
-				// case Context3DProfile.ENHANCED: "enhanced";
-				#end
+			case Context3DProfile.STANDARD_EXTENDED: "standardExtended";
 			default: null;
 		}
 	}
-
-	#if cs
-	@:noCompletion @:op(A == B) private static function equals(a:Context3DProfile, b:Context3DProfile):Bool
-	{
-		return NullUtils.valueEquals(a, b, Int);
-	}
-	#end
-
-	#if cs
-	@:noCompletion @:op(A != B) private static function notEquals(a:Context3DProfile, b:Context3DProfile):Bool
-	{
-		return !equals(a, b);
-	}
-	#end
 }
-#else
-@SuppressWarnings("checkstyle:FieldDocComment") #if (haxe_ver >= 4.0) enum #else @:enum #end abstract Context3DProfile(String) from String to String
-{
-	public var BASELINE = "baseline";
-	public var BASELINE_CONSTRAINED = "baselineConstrained";
-	public var BASELINE_EXTENDED = "baselineExtended";
-	public var STANDARD = "standard";
-	public var STANDARD_CONSTRAINED = "standardConstrained";
-	public var STANDARD_EXTENDED = "standardExtended";
-	#if air
-	// public var ENHANCED = "enhanced";
-	#end
-}
-#end
-#else
-typedef Context3DProfile = flash.display3D.Context3DProfile;
-#end

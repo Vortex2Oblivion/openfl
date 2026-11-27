@@ -1,6 +1,6 @@
 package openfl.events;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.net.dns.ResourceRecord;
 
 /**
@@ -13,10 +13,6 @@ import openfl.net.dns.ResourceRecord;
 
 	_OpenFL target support:_ Not currently supported, except when targeting AIR.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class DNSResolverEvent extends Event
 {
 	/**
@@ -52,8 +48,4 @@ class DNSResolverEvent extends Event
 		return new DNSResolverEvent(type, bubbles, cancelable, host, resourceRecords);
 	}
 }
-#else
-#if air
-typedef DNSResolverEvent = flash.events.DNSResolverEvent;
-#end
 #end

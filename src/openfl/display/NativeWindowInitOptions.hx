@@ -1,6 +1,6 @@
 package openfl.display;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 /**
 	The NativeWindowInitOptions class defines the initialization options used
 	to construct a new NativeWindow instance.
@@ -162,14 +162,13 @@ class NativeWindowInitOptions
 		such as combo-boxes that open a short-lived display area. When the
 		lightweight type is used, `systemChrome` must be set to
 		`NativeWindowSystemChrome.NONE`.
+
+		_OpenFL target support:_ This property is not currently supported on
+		any target, except Adobe AIR.
 	**/
 	public var type:NativeWindowType = NativeWindowType.NORMAL;
 
 	// used by openfl.display.Application for the initial window
 	@:noCompletion private var __window:Window;
 }
-#else
-#if air
-typedef NativeWindowInitOptions = flash.display.NativeWindowInitOptions;
-#end
 #end

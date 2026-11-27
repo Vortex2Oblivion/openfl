@@ -1,6 +1,5 @@
 package openfl.utils;
 
-#if !flash
 /**
 	QName objects represent qualified names of XML elements and attributes. Each
 	QName object has a local name and a namespace Uniform Resource Identifier
@@ -10,10 +9,6 @@ package openfl.utils;
 	with a `uri` from a `Namespace` object and a `localName` from a QName
 	object.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class QName
 {
 	/**
@@ -28,20 +23,6 @@ class QName
 
 	@:noCompletion private var __uri:String;
 	@:noCompletion private var __localName:String;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped global.Object.defineProperties(QName.prototype, {
-			"uri": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_uri (); }")
-			},
-			"localName": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_localName (); }")
-			}
-		});
-	}
-	#end
 
 	/**
 		Creates a QName object. The values assigned to the uri and localName
@@ -130,6 +111,3 @@ class QName
 		return __localName;
 	}
 }
-#else
-typedef QName = flash.utils.QName;
-#end

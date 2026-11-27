@@ -1,21 +1,15 @@
 package openfl.utils._internal;
 
 import haxe.PosInfos;
-import openfl.utils._internal.Log;
-#if !openfl_unit_testing
-import openfl.display.Application;
-#end
+import lime.utils.Log;
 import openfl.display.MovieClip;
+import openfl.display.Application;
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 class Lib
 {
-	public static var application:#if !openfl_unit_testing Application #else Dynamic #end;
-	public static var current:MovieClip #if flash = flash.Lib.current #end;
+	public static var application:Application;
+	public static var current:MovieClip;
 	@:noCompletion private static var __sentWarnings:Map<String, Bool> = new Map();
 
 	@SuppressWarnings("checkstyle:NullableParameter")

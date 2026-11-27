@@ -1,6 +1,6 @@
 package openfl.desktop;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 /**
 	The SystemTrayIcon class represents the Windows® taskbar notification area
 	(system tray)-style icon.
@@ -40,21 +40,10 @@ class SystemTrayIcon extends InteractiveIcon
 		super();
 	}
 
-	#if false
-	/**
-		The system tray icon menu.
-	**/
-	// public var menu:NativeMenu;
-	#end
-
 	/**
 		The tooltip that pops up for the system tray icon. If the string is
 		longer than `SystemTrayIcon.MAX_TIP_LENGTH`, the tip will be truncated.
 	**/
 	public var tooltip:String;
 }
-#else
-#if air
-typedef SystemTrayIcon = flash.desktop.SystemTrayIcon;
-#end
 #end

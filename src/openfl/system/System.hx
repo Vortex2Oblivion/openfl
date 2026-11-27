@@ -1,16 +1,9 @@
 package openfl.system;
 
-#if !flash
-#if lime
 import lime.system.Clipboard;
 import lime.system.System as LimeSystem;
-#end
-#if neko
-import neko.vm.Gc;
-#elseif cpp
+#if cpp
 import cpp.vm.Gc;
-#elseif hl
-import hl.Gc;
 #end
 
 /**
@@ -25,44 +18,8 @@ import hl.Gc;
 	This class contains only static methods and properties. You cannot
 	create new instances of the System class.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:final class System
 {
-	#if false
-	/**
-		The amount of memory (in bytes) that is allocated to
-		Adobe<sup>®</sup> Flash<sup>®</sup> Player or Adobe<sup>®</sup>
-		AIR<sup>®</sup> and that is not in use. This unused portion of
-		allocated memory (`System.totalMemory`) fluctuates as garbage
-		collection takes place. Use this property to monitor garbage
-		collection.
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash10_1) public static var freeMemory (default, null):Float;
-	#end
-	#if false
-	/**
-		The currently installed system IME. To register for imeComposition
-		events, call `addEventListener()` on this instance.
-	**/
-	// @:noCompletion @:dox(hide) public static var ime (default, null):openfl.system.IME;
-	#end
-	#if false
-	/**
-		The entire amount of memory (in bytes) used by an application. This is
-		the amount of resident private memory for the entire process.
-		AIR developers should use this property to determine the entire memory
-		consumption of an application.
-
-		For Flash Player, this includes the memory used by the container
-		application, such as the web browser.
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash10_1) public static var privateMemory (default, null):Float;
-	#end
-	// @:noCompletion @:dox(hide) @:require(flash11) public static var processCPUUsage (default, null):Float;
-
 	/**
 		The amount of memory (in bytes) currently in use that has been directly
 		allocated by Flash Player or AIR.
@@ -147,26 +104,6 @@ import hl.Gc;
 	**/
 	@:noCompletion @:dox(hide) public static var vmVersion(get, never):String;
 
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(System, {
-			"totalMemory": {
-				get: function()
-				{
-					return System.get_totalMemory();
-				}
-			},
-			"vmVersion": {
-				get: function()
-				{
-					return System.get_vmVersion();
-				}
-			},
-		});
-	}
-	#end
-
 	/**
 		Makes the specified XML object immediately available for garbage
 		collection. This method will remove parent and child connections
@@ -191,9 +128,7 @@ import hl.Gc;
 	**/
 	public static function exit(code:Int):Void
 	{
-		#if lime
 		LimeSystem.exit(code);
-		#end
 	}
 
 	/**
@@ -212,44 +147,10 @@ import hl.Gc;
 	**/
 	public static function gc():Void
 	{
-		#if (cpp || neko)
+		#if cpp
 		return Gc.run(true);
-		#elseif hl
-		return Gc.major();
 		#end
 	}
-
-	#if !openfl_strict
-	/**
-		Pauses Flash Player or the AIR Debug Launcher (ADL). After calling this
-		method, nothing in the application continues except the delivery of Socket
-		events.
-
-		_For the Flash Player debugger version or the AIR Debug Launcher
-		(ADL) only._
-
-	**/
-	public static function pause():Void
-	{
-		openfl.utils._internal.Lib.notImplemented();
-	}
-	#end
-
-	// @:noCompletion @:dox(hide) @:require(flash11) public static function pauseForGCIfCollectionImminent (imminence:Float = 0.75):Void;
-
-	#if !openfl_strict
-	/**
-		Resumes the application after calling `System.pause()`.
-
-		_For the Flash Player debugger version or the AIR Debug Launcher
-		(ADL) only._
-
-	**/
-	public static function resume():Void
-	{
-		openfl.utils._internal.Lib.notImplemented();
-	}
-	#end
 
 	/**
 		Replaces the contents of the Clipboard with a specified text string. This
@@ -268,23 +169,16 @@ import hl.Gc;
 	**/
 	public static function setClipboard(string:String):Void
 	{
-		#if lime
 		Clipboard.text = string;
-		#end
 	}
 
 	// Getters & Setters
 	@:noCompletion private static function get_totalMemory():Int
 	{
-		#if neko
-		return Gc.stats().heap;
-		#elseif cpp
+		#if cpp
 		return untyped __global__.__hxcpp_gc_used_bytes();
 		#elseif (js && html5)
-		return
-			untyped #if haxe4 js.Syntax.code #else __js__ #end ("(window.performance && window.performance.memory) ? window.performance.memory.usedJSHeapSize : 0");
-		#elseif hl
-		return Std.int(Gc.stats().currentMemory);
+		return untyped js.Syntax.code("(window.performance && window.performance.memory) ? window.performance.memory.usedJSHeapSize : 0");
 		#else
 		return 0;
 		#end
@@ -294,8 +188,6 @@ import hl.Gc;
 	{
 		#if cpp
 		return Gc.memInfo64(cpp.vm.Gc.MEM_INFO_USAGE);
-		#elseif hl
-		return Gc.stats().currentMemory;
 		#else
 		return System.totalMemory;
 		#end
@@ -306,6 +198,3 @@ import hl.Gc;
 		return "1.0.0";
 	}
 }
-#else
-typedef System = flash.system.System;
-#end

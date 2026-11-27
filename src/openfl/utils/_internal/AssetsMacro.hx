@@ -10,13 +10,10 @@ import sys.io.File;
 @SuppressWarnings("checkstyle:FieldDocComment")
 class AssetsMacro
 {
-	private static var base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-	private static var base64Encoder:BaseCode;
-	#if 0
-	private static var __suppressWarning:Array<Class<Dynamic>> = [Expr];
-	#end
+	@:noCompletion private static var base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	@:noCompletion private static var base64Encoder:BaseCode;
 
-	private static function base64Encode(bytes:Bytes):String
+	@:noCompletion private static function base64Encode(bytes:Bytes):String
 	{
 		var extension = (switch (bytes.length % 3)
 		{
@@ -54,16 +51,15 @@ class AssetsMacro
 					}
 					else
 					{
-						__loadFromBase64(haxe.Resource.getString(resourceName), resourceType).onComplete(function(b)
+						lime.graphics.Image.loadFromBase64(haxe.Resource.getString(resourceName), resourceType).onComplete(function(img)
 						{
-							if (preload == null)
-							{
-								preload = b.image;
-							}
+							__fromImage(img);
+
+							preload ??= img;
 
 							if (onload != null && Reflect.isFunction(onload))
 							{
-								onload(b);
+								onload(this);
 							}
 						});
 					}
@@ -135,7 +131,7 @@ class AssetsMacro
 		return fields;
 	}
 
-	private static function embedData(metaName:String, encode:Bool = false):Array<Field>
+	@:noCompletion private static function embedData(metaName:String, encode:Bool = false):Array<Field>
 	{
 		var classType = Context.getLocalClass().get();
 		var metaData = classType.meta.get();

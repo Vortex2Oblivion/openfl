@@ -1,18 +1,11 @@
 package openfl.display._internal;
 
-#if !flash
-import openfl.display3D.Context3DClearMask;
+import lime.math.ARGB;
 import openfl.display.DisplayObject;
 import openfl.display.OpenGLRenderer;
+import openfl.display3D.Context3DClearMask;
 import openfl.geom.Rectangle;
-#if lime
-import lime.math.ARGB;
-#end
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display.DisplayObject)
 @:access(openfl.geom.Matrix)
@@ -39,10 +32,8 @@ class Context3DDisplayObject
 			rect.setTo(0, 0, displayObject.width, displayObject.height);
 			renderer.__pushMaskRect(rect, displayObject.__renderTransform);
 
-			#if lime
 			var color:ARGB = (displayObject.opaqueBackground : ARGB);
-			context.clear(color.r / 0xFF, color.g / 0xFF, color.b / 0xFF, 1, 0, 0, Context3DClearMask.COLOR);
-			#end
+			context.__clear(true, color.r / 0xFF, color.g / 0xFF, color.b / 0xFF, 1, 0, 0, Context3DClearMask.COLOR);
 
 			renderer.__popMaskRect();
 			renderer.__popMaskObject(displayObject);
@@ -114,4 +105,3 @@ class Context3DDisplayObject
 		}
 	}
 }
-#end

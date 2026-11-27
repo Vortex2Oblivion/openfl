@@ -1,6 +1,5 @@
 package openfl.security;
 
-#if !flash
 /**
 	The X500DistinguishedName class defines Distinguished Name (DN) properties
 	for use in the X509Certificate class. The Distinguished Name protocol is
@@ -25,7 +24,7 @@ package openfl.security;
 **/
 class X500DistinguishedName
 {
-	private function new() {}
+	@:noCompletion private function new() {}
 
 	/**
 		Returns the DN CommonName attribute.
@@ -90,6 +89,3 @@ class X500DistinguishedName
 		return result;
 	}
 }
-#else
-typedef X500DistinguishedName = flash.security.X500DistinguishedName;
-#end

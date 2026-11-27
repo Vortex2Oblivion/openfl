@@ -1,10 +1,9 @@
 package openfl.display3D.textures;
 
-#if !flash
-import openfl.display._internal.SamplerState;
+import lime.utils.ArrayBufferView;
+import lime.utils.UInt8Array;
 import openfl.display.BitmapData;
-import openfl.utils._internal.ArrayBufferView;
-import openfl.utils._internal.UInt8Array;
+import openfl.display._internal.SamplerState;
 import openfl.utils.ByteArray;
 
 /**
@@ -16,24 +15,19 @@ import openfl.utils.ByteArray;
 	Texture cannot be instantiated directly. Create instances by using Context3D
 	`createRectangleTexture()` method.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display.Stage)
 @:final class RectangleTexture extends TextureBase
 {
 	@:noCompletion private function new(context:Context3D, width:Int, height:Int, format:String, optimizeForRenderToTexture:Bool)
 	{
-		super(context);
+		super(context, format);
 
 		__width = width;
 		__height = height;
-		// __format = format;
 		__optimizeForRenderToTexture = optimizeForRenderToTexture;
-
 		__textureTarget = __context.gl.TEXTURE_2D;
+
 		uploadFromTypedArray(null);
 
 		if (optimizeForRenderToTexture) __getGLFramebuffer(true, 0, 0);
@@ -51,10 +45,10 @@ import openfl.utils.ByteArray;
 	**/
 	public function uploadFromBitmapData(source:BitmapData):Void
 	{
-		#if lime
 		if (source == null) return;
 
 		var image = __getImage(source);
+
 		if (image == null) return;
 
 		#if (js && html5)
@@ -70,7 +64,6 @@ import openfl.utils.ByteArray;
 		#end
 
 		uploadFromTypedArray(image.data);
-		#end
 	}
 
 	/**
@@ -91,7 +84,6 @@ import openfl.utils.ByteArray;
 	**/
 	public function uploadFromByteArray(data:ByteArray, byteArrayOffset:UInt):Void
 	{
-		#if lime
 		#if (js && !display)
 		if (byteArrayOffset == 0)
 		{
@@ -101,7 +93,6 @@ import openfl.utils.ByteArray;
 		#end
 
 		uploadFromTypedArray(new UInt8Array(data.toArrayBuffer(), byteArrayOffset));
-		#end
 	}
 
 	/**
@@ -116,7 +107,7 @@ import openfl.utils.ByteArray;
 		var gl = __context.gl;
 
 		__context.__bindGLTexture2D(__textureID);
-		gl.texImage2D(__textureTarget, 0, __internalFormat, __width, __height, 0, __format, gl.UNSIGNED_BYTE, data);
+		__uploadTexture2D(__textureTarget, __width, __height, __internalFormat, __format, data);
 		__context.__bindGLTexture2D(null);
 	}
 
@@ -151,6 +142,3 @@ import openfl.utils.ByteArray;
 		return false;
 	}
 }
-#else
-typedef RectangleTexture = flash.display3D.textures.RectangleTexture;
-#end

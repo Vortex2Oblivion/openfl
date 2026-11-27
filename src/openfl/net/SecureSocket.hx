@@ -1,8 +1,8 @@
 package openfl.net;
 
 import openfl.errors.ArgumentError;
-import openfl.errors.IllegalOperationError;
 import openfl.errors.IOError;
+import openfl.errors.IllegalOperationError;
 import openfl.errors.SecurityError;
 import openfl.events.Event;
 import openfl.events.IOErrorEvent;
@@ -22,7 +22,6 @@ import sys.ssl.Certificate;
 import sys.ssl.Socket as SysSecureSocket;
 #end
 
-#if !flash
 /**
 	The SecureSocket class enables code to make socket connections using the
 	Secure Sockets Layer (SSL) and Transport Layer Security (TLS) protocols.
@@ -107,7 +106,7 @@ class SecureSocket extends Socket
 	**/
 	public static var isSupported(get, never):Bool;
 
-	private static function get_isSupported():Bool
+	@:noCompletion private static function get_isSupported():Bool
 	{
 		#if sys
 		return true;
@@ -371,7 +370,6 @@ class SecureSocket extends Socket
 			try
 			{
 				secureSocket.handshake();
-				blocked = false;
 			}
 			catch (e:Error)
 			{
@@ -420,6 +418,3 @@ class SecureSocket extends Socket
 		super.this_onEnterFrame(event);
 	}
 }
-#else
-typedef SecureSocket = flash.net.SecureSocket;
-#end

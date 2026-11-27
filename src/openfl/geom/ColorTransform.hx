@@ -1,11 +1,8 @@
 package openfl.geom;
 
-#if !flash
-import openfl.utils.ObjectPool;
-#if lime
-import openfl.utils._internal.Float32Array;
 import lime.math.ColorMatrix;
-#end
+import lime.utils.Float32Array;
+import openfl.utils.ObjectPool;
 
 /**
 	The ColorTransform class lets you adjust the color values in a display
@@ -51,15 +48,10 @@ import lime.math.ColorMatrix;
 	@see `openfl.geom.Transform.colorTransform`
 	@see `openfl.display.DisplayObject.transform`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class ColorTransform
 {
-	#if lime
 	@:noCompletion private static var __limeColorMatrix:Float32Array;
-	#end
+
 	@:noCompletion private static var __pool:ObjectPool<ColorTransform> = new ObjectPool<ColorTransform>(function() return new ColorTransform(),
 		function(ct) ct.__identity());
 
@@ -131,16 +123,6 @@ class ColorTransform
 		has been multiplied by the `redMultiplier` value.
 	**/
 	public var redOffset:Float;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperty(ColorTransform.prototype, "color", {
-			get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_color (); }"),
-			set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_color (v); }")
-		});
-	}
-	#end
 
 	/**
 		Creates a ColorTransform object for a display object with the specified
@@ -331,7 +313,6 @@ class ColorTransform
 		return color;
 	}
 
-	#if lime
 	@:noCompletion private function __toLimeColorMatrix():ColorMatrix
 	{
 		if (__limeColorMatrix == null)
@@ -350,8 +331,4 @@ class ColorTransform
 
 		return __limeColorMatrix;
 	}
-	#end
 }
-#else
-typedef ColorTransform = flash.geom.ColorTransform;
-#end

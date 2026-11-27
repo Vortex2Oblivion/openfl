@@ -1,11 +1,8 @@
 package openfl.display._internal;
 
-#if !flash
+import lime.math.ARGB;
 import openfl.display.CanvasRenderer;
 import openfl.display.DisplayObject;
-#if lime
-import lime.math.ARGB;
-#end
 
 @:access(openfl.display.DisplayObject)
 @:access(openfl.geom.Matrix)
@@ -74,4 +71,3 @@ class CanvasDisplayObject
 		}
 	}
 }
-#end

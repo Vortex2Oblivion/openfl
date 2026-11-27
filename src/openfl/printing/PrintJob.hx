@@ -1,18 +1,15 @@
 package openfl.printing;
 
-#if !flash
 import haxe.Timer;
 import openfl.display.BitmapData;
 import openfl.display.Sprite;
 import openfl.geom.Rectangle;
-#if lime
-import lime._internal.graphics.ImageCanvasUtil; // TODO
-#end
 #if (js && html5)
+import js.Browser;
 import js.html.DivElement;
 import js.html.Image;
 import js.html.StyleElement;
-import js.Browser;
+import lime._internal.graphics.ImageCanvasUtil;
 #end
 
 /**
@@ -60,10 +57,6 @@ import js.Browser;
 	`PrintJob.addPage()` on the PrintJob instance causes the Flash Player or
 	Adobe AIR to throw a runtime exception.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(lime.graphics.ImageBuffer)
 class PrintJob
 {
@@ -435,6 +428,3 @@ class PrintJob
 		return false;
 	}
 }
-#else
-typedef PrintJob = flash.printing.PrintJob;
-#end

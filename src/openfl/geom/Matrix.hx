@@ -1,11 +1,8 @@
 package openfl.geom;
 
-#if !flash
-import openfl.utils.ObjectPool;
-#if lime
-import openfl.utils._internal.Float32Array;
 import lime.math.Matrix3;
-#end
+import lime.utils.Float32Array;
+import openfl.utils.ObjectPool;
 
 /**
 	The Matrix class represents a transformation matrix that determines how to
@@ -70,17 +67,11 @@ import lime.math.Matrix3;
 	@see [Working with geometry](https://books.openfl.org/openfl-developers-guide/working-with-geometry/)
 	@see [Using Matrix objects](https://books.openfl.org/openfl-developers-guide/working-with-geometry/using-matrix-objects.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class Matrix
 {
 	@:noCompletion private static var __identity:Matrix = new Matrix();
 	@:noCompletion private static var __pool:ObjectPool<Matrix> = new ObjectPool<Matrix>(function() return new Matrix(), function(m) m.identity());
-	#if lime
 	@:noCompletion private static var __matrix3:Matrix3 = new Matrix3();
-	#end
 
 	/**
 		The value that affects the positioning of pixels along the _x_ axis
@@ -116,9 +107,7 @@ class Matrix
 	**/
 	public var ty:Float;
 
-	#if lime
 	@:noCompletion private var __array:Float32Array;
-	#end
 
 	/**
 		Creates a new Matrix object with the specified parameters. In matrix
@@ -746,7 +735,6 @@ class Matrix
 		ty += dy;
 	}
 
-	#if lime
 	@:noCompletion private function toArray(transpose:Bool = false):Float32Array
 	{
 		if (__array == null)
@@ -781,7 +769,6 @@ class Matrix
 
 		return __array;
 	}
-	#end
 
 	@:noCompletion private inline function __cleanValues():Void
 	{
@@ -793,13 +780,11 @@ class Matrix
 		ty = Math.round(ty * 10) / 10;
 	}
 
-	#if lime
 	@:noCompletion private function __toMatrix3():Matrix3
 	{
 		__matrix3.setTo(a, b, c, d, tx, ty);
 		return __matrix3;
 	}
-	#end
 
 	@:noCompletion private inline function __transformInversePoint(point:Point):Void
 	{
@@ -873,6 +858,3 @@ class Matrix
 		// __cleanValues ();
 	}
 }
-#else
-typedef Matrix = flash.geom.Matrix;
-#end

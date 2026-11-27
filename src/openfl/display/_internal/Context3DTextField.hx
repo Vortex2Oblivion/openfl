@@ -1,9 +1,8 @@
 package openfl.display._internal;
 
-#if !flash
+import openfl.display.OpenGLRenderer;
 import openfl.display._internal.CairoTextField;
 import openfl.display._internal.CanvasTextField;
-import openfl.display.OpenGLRenderer;
 import openfl.text.TextField;
 
 #if !openfl_debug
@@ -60,4 +59,3 @@ class Context3DTextField
 		textField.__graphics.__hardwareDirty = false;
 	}
 }
-#end

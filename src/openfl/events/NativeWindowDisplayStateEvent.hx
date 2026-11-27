@@ -1,6 +1,6 @@
 package openfl.events;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 import openfl.display.NativeWindowDisplayState;
 
 /**
@@ -92,8 +92,4 @@ class NativeWindowDisplayStateEvent extends Event
 		return __formatToString("NativeWindowDisplayStateEvent", ["type", "bubbles", "cancelable", "beforeDisplayState", "afterDisplayState"]);
 	}
 }
-#else
-#if air
-typedef NativeWindowDisplayStateEvent = flash.events.NativeWindowDisplayStateEvent;
-#end
 #end

@@ -1,27 +1,20 @@
 package openfl.display3D._internal;
 
-#if !flash
 import haxe.Int64;
+import lime.graphics.opengl.GL;
+import lime.utils.Log;
 import openfl.display._internal.SamplerState;
-import openfl.utils._internal.Log;
 import openfl.display3D.Context3DMipFilter;
 import openfl.display3D.Context3DTextureFilter;
 import openfl.display3D.Context3DWrapMode;
 import openfl.errors.IllegalOperationError;
 import openfl.utils.ByteArray;
 import openfl.utils.Endian;
-#if lime
-import lime.graphics.opengl.GL;
-#end
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 class AGALConverter
 {
-	private static var limitedProfile:Null<Bool> #if !desktop = true #end;
+	@:noCompletion private static var limitedProfile:Null<Bool> #if !desktop = true #end;
 
 	public static function prefixFromType(regType:RegisterType, programType:ProgramType):String
 	{
@@ -44,7 +37,7 @@ class AGALConverter
 		}
 	}
 
-	private static function readUInt64(byteArray:ByteArray):Int64
+	@:noCompletion private static function readUInt64(byteArray:ByteArray):Int64
 	{
 		var low = byteArray.readInt();
 		var high = byteArray.readInt();
@@ -70,12 +63,6 @@ class AGALConverter
 		}
 
 		var version = agal.readInt();
-
-		if (version != 1)
-		{
-			throw new IllegalOperationError("Version must be 1");
-		}
-
 		var shaderTypeID = agal.readByte() & 0xFF;
 
 		if (shaderTypeID != 0xA1)
@@ -363,6 +350,86 @@ class AGALConverter
 						map.addSR(sr2, RegisterUsage.VECTOR_4, 2);
 					}
 
+				case 0x1a: // ddx
+
+					if (version < 2)
+					{
+						throw new IllegalOperationError("Version must be 2");
+					}
+					sb.add(dr.toGLSL() + " = ddx(" + sr1.toGLSL() + "); // ddx");
+					map.addDR(dr, RegisterUsage.VECTOR_4);
+					map.addSR(sr1, RegisterUsage.VECTOR_4);
+
+				case 0x1b: // ddy
+
+					if (version < 2)
+					{
+						throw new IllegalOperationError("Version must be 2");
+					}
+					sb.add(dr.toGLSL() + " = ddy(" + sr1.toGLSL() + "); // ddy");
+					map.addDR(dr, RegisterUsage.VECTOR_4);
+					map.addSR(sr1, RegisterUsage.VECTOR_4);
+
+				case 0x1c: // ife
+
+					if (version < 2)
+					{
+						throw new IllegalOperationError("Version must be 2");
+					}
+					sr1.sourceMask = sr2.sourceMask = 0x1;
+					sb.add("if (" + sr1.toGLSL() + " == " + sr2.toGLSL() + ") { // ife");
+					map.addSR(sr1, RegisterUsage.VECTOR_4);
+					map.addSR(sr2, RegisterUsage.VECTOR_4);
+
+				case 0x1d: // ine
+
+					if (version < 2)
+					{
+						throw new IllegalOperationError("Version must be 2");
+					}
+					sr1.sourceMask = sr2.sourceMask = 0x1;
+					sb.add("if (" + sr1.toGLSL() + " != " + sr2.toGLSL() + ") { // ine");
+					map.addSR(sr1, RegisterUsage.VECTOR_4);
+					map.addSR(sr2, RegisterUsage.VECTOR_4);
+
+				case 0x1e: // ifg
+
+					if (version < 2)
+					{
+						throw new IllegalOperationError("Version must be 2");
+					}
+					sr1.sourceMask = sr2.sourceMask = 0x1;
+					sb.add("if (" + sr1.toGLSL() + " >= " + sr2.toGLSL() + ") { // ifg");
+					map.addSR(sr1, RegisterUsage.VECTOR_4);
+					map.addSR(sr2, RegisterUsage.VECTOR_4);
+
+				case 0x1f: // ifl
+
+					if (version < 2)
+					{
+						throw new IllegalOperationError("Version must be 2");
+					}
+					sr1.sourceMask = sr2.sourceMask = 0x1;
+					sb.add("if (" + sr1.toGLSL() + " < " + sr2.toGLSL() + ") { // ifl");
+					map.addSR(sr1, RegisterUsage.VECTOR_4);
+					map.addSR(sr2, RegisterUsage.VECTOR_4);
+
+				case 0x20: // els
+
+					if (version < 2)
+					{
+						throw new IllegalOperationError("Version must be 2");
+					}
+					sb.add("} else { // els");
+
+				case 0x21: // eif
+
+					if (version < 2)
+					{
+						throw new IllegalOperationError("Version must be 2");
+					}
+					sb.add("} // eif");
+
 				case 0x27: // kill /  discard
 
 					if (true)
@@ -474,13 +541,11 @@ class AGALConverter
 			sb.add("\n");
 		}
 
-		#if lime
 		if (limitedProfile == null)
 		{
 			var version:String = GL.getParameter(GL.VERSION);
 			limitedProfile = (version.indexOf("OpenGL ES") > -1 || version.indexOf("WebGL") > -1);
 		}
-		#end
 
 		// combine parts into final progam
 		var glsl = new StringBuf();
@@ -527,10 +592,6 @@ class AGALConverter
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 private class DestRegister
 {
@@ -589,14 +650,10 @@ private enum ProgramType
 	FRAGMENT;
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 class RegisterMap
 {
-	private var mEntries:Array<RegisterMapEntry> = new Array();
+	@:noCompletion private var mEntries:Array<RegisterMapEntry> = new Array();
 
 	public function new()
 	{
@@ -804,10 +861,6 @@ class RegisterMap
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 private class RegisterMapEntry
 {
 	public var name:String;
@@ -818,7 +871,7 @@ private class RegisterMapEntry
 	public function new() {}
 }
 
-#if (haxe_ver >= 4.0) enum #else @:enum #end abstract RegisterType(Int)
+enum abstract RegisterType(Int)
 {
 	public var ATTRIBUTE = 0;
 	public var CONSTANT = 1;
@@ -840,10 +893,6 @@ private enum RegisterUsage
 	VECTOR_4_ARRAY;
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 private class SamplerRegister
 {
@@ -941,10 +990,6 @@ private class SamplerRegister
 	}
 }
 
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @SuppressWarnings("checkstyle:FieldDocComment")
 private class SourceRegister
 {
@@ -1042,4 +1087,3 @@ private class SourceRegister
 		return str;
 	}
 }
-#end

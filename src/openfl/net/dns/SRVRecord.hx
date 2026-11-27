@@ -1,6 +1,6 @@
 package openfl.net.dns;
 
-#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
+#if sys
 /**
 	The SRVRecord class represents a Domain Name System (DNS) SRV resource
 	record containing a service host.
@@ -45,8 +45,4 @@ class SRVRecord extends ResourceRecord
 		super();
 	}
 }
-#else
-#if air
-typedef SRVRecord = flash.net.dns.SRVRecord;
-#end
 #end

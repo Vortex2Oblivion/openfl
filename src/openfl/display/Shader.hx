@@ -1,11 +1,15 @@
 package openfl.display;
 
-import openfl.display3D.Context3DWrapMode;
-import openfl.display3D.Context3DMipFilter;
-import openfl.display3D.Context3DTextureFilter;
-#if !flash
+import lime.graphics.opengl.GLProgram;
+import lime.graphics.opengl.GLShader;
+import lime.utils.Float32Array;
+import lime.utils.Log;
+import openfl.Lib;
 import openfl.display._internal.ShaderBuffer;
 import openfl.display3D.Context3D;
+import openfl.display3D.Context3DMipFilter;
+import openfl.display3D.Context3DTextureFilter;
+import openfl.display3D.Context3DWrapMode;
 import openfl.display3D.Program3D;
 import openfl.display3D._internal.GLProgram;
 import openfl.display3D._internal.GLShader;
@@ -112,10 +116,6 @@ import openfl.Lib;
 	[AIR Profile Support](https://help.adobe.com/en_US/air/build/WS144092a96ffef7cc16ddeea2126bb46b82f-8000.html)
 	for more information regarding API support across multiple profiles.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(openfl.display3D.Context3D)
 @:access(openfl.display3D.Program3D)
 @:access(openfl.display.ShaderInput)
@@ -195,7 +195,7 @@ class Shader
 
 		This property is not available on the Flash target.
 	**/
-	@SuppressWarnings("checkstyle:Dynamic") public var glProgram(default, null):GLProgram;
+	public var glProgram(default, null):GLProgram;
 
 	/**
 		The default GLSL vertex header, before being applied to the vertex source.
@@ -269,6 +269,11 @@ class Shader
 
 	@:noCompletion private var __alpha:ShaderParameter<Float>;
 	@:noCompletion private var __bitmap:ShaderInput<BitmapData>;
+	@:noCompletion private var __blendMode:ShaderParameter<Int>;
+	@:noCompletion private var __blendBitmap:ShaderInput<BitmapData>;
+	@:noCompletion private var __blendBitmapTransform:ShaderParameter<Float>;
+	@:noCompletion private var __blendBitmapMerge:ShaderInput<BitmapData>;
+	@:noCompletion private var __blendBitmapMergeTransform:ShaderParameter<Float>;
 	@:noCompletion private var __colorMultiplier:ShaderParameter<Float>;
 	@:noCompletion private var __colorOffset:ShaderParameter<Float>;
 	@:noCompletion private var __context:Context3D;
@@ -297,56 +302,7 @@ class Shader
 	@:noCompletion private var __textureCoord:ShaderParameter<Float>;
 	@:noCompletion private var __texture:ShaderInput<BitmapData>;
 	@:noCompletion private var __textureSize:ShaderParameter<Float>;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Shader.prototype, {
-			"data": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_data (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_data (v); }")
-			},
-			"glVertexExtensions": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glVertexExtensions (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_glVertexExtensions (v); }")
-			},
-			"glFragmentExtensions": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glFragmentExtensions (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_glFragmentExtensions (v); }")
-			},
-			"glVersion": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glVersion (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_glVersion (v); }")
-			},
-			"glFragmentHeaderRaw": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glFragmentHeaderRaw (); }"),
-			},
-			"glFragmentBodyRaw": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glFragmentBodyRaw (); }"),
-			},
-			"glFragmentSourceRaw": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glFragmentSourceRaw (); }"),
-			},
-			"glFragmentSource": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glFragmentSource (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_glFragmentSource (v); }")
-			},
-			"glVertexHeaderRaw": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glVertexHeaderRaw (); }"),
-			},
-			"glVertexBodyRaw": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glVertexBodyRaw (); }"),
-			},
-			"glVertexSourceRaw": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glVertexSourceRaw (); }"),
-			},
-			"glVertexSource": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_glVertexSource (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_glVertexSource (v); }")
-			},
-		});
-	}
-	#end
+	@:noCompletion private var __fieldList:Array<String> = null;
 
 	/**
 		Creates a new Shader instance.
@@ -381,36 +337,6 @@ class Shader
 		}
 	}
 
-	// private function __clone ():Shader {
-	// var classType = Type.getClass (this);
-	// var shader = Type.createInstance (classType, []);
-	// for (input in __inputBitmapData) {
-	// 	if (input.input != null) {
-	// 		var field = Reflect.field (shader.data, input.name);
-	// 		field.channels = input.channels;
-	// 		field.height = input.height;
-	// 		field.input = input.input;
-	// 		field.smoothing = input.smoothing;
-	// 		field.width = input.width;
-	// 	}
-	// }
-	// for (param in __paramBool) {
-	// 	if (param.value != null) {
-	// 		Reflect.field (shader.data, param.name).value = param.value.copy ();
-	// 	}
-	// }
-	// for (param in __paramFloat) {
-	// 	if (param.value != null) {
-	// 		Reflect.field (shader.data, param.name).value = param.value.copy ();
-	// 	}
-	// }
-	// for (param in __paramInt) {
-	// 	if (param.value != null) {
-	// 		Reflect.field (shader.data, param.name).value = param.value.copy ();
-	// 	}
-	// }
-	// return shader;
-	// }
 	@:noCompletion private function __createGLShader(source:String, type:Int):GLShader
 	{
 		var gl = __context.gl;
@@ -564,12 +490,10 @@ class Shader
 
 		__context.__bindGLArrayBuffer(null);
 
-		#if lime
 		if (__context.__context.type == OPENGL)
 		{
 			gl.disable(gl.TEXTURE_2D);
 		}
-		#end
 	}
 
 	@:noCompletion private function __enable():Void
@@ -594,12 +518,10 @@ class Shader
 			textureCount++;
 		}
 
-		#if lime
 		if (__context.__context.type == OPENGL && textureCount > 0)
 		{
 			gl.enable(gl.TEXTURE_2D);
 		}
-		#end
 	}
 
 	@:noCompletion private function __init():Void
@@ -626,31 +548,20 @@ class Shader
 			extensions += "#extension " + ext.name + " : " + ext.behavior + "\n";
 		}
 
-		var complexBlendsSupported = OpenGLRenderer.__complexBlendsSupported && isFragment;
+		var standardDerivativesSupported = OpenGLRenderer.__standardDerivativesSupported && isFragment;
 
-		#if lime
-		if (__context.__context.type == OPENGL)
+		if (standardDerivativesSupported)
 		{
-			complexBlendsSupported = complexBlendsSupported && (__glVersion == "150" || !StringTools.startsWith(__glVersion, "1"));
+			extensions += "#extension GL_OES_standard_derivatives : enable\n";
 		}
-		else if (__context.__context.type == OPENGLES)
+
+		if (OpenGLRenderer.__drawBuffersEXT)
 		{
-			complexBlendsSupported = complexBlendsSupported && !StringTools.startsWith(__glVersion, "1");
+			extensions += "#extension GL_EXT_draw_buffers : enable\n";
 		}
-		#end
-
-		if (complexBlendsSupported)
+		else if (OpenGLRenderer.__drawBuffersARB)
 		{
-			extensions += "#extension GL_KHR_blend_equation_advanced : enable\n";
-
-			#if lime
-			if (__context.__context.type == OPENGL)
-			{
-				// compiling without this gives the error
-				// 'gl_SampleID' : required extension not requested: GL_ARB_sample_shading
-				extensions += "#extension GL_ARB_sample_shading : enable\n";
-			}
-			#end
+			extensions += "#extension GL_ARB_draw_buffers : enable\n";
 		}
 
 		// #version must be the first directive and cannot be repeated,
@@ -672,11 +583,6 @@ class Shader
 			+ "
 				#endif
 				";
-
-		if (complexBlendsSupported)
-		{
-			prefix += "#ifdef GL_KHR_blend_equation_advanced\nlayout (blend_support_all_equations) out;\n#endif\n";
-		}
 
 		return prefix;
 	}
@@ -837,6 +743,10 @@ class Shader
 						__texture = input;
 					case "bitmap":
 						__bitmap = input;
+					case "openfl_BlendBitmap":
+						__blendBitmap = input;
+					case "openfl_BlendBitmapMerge":
+						__blendBitmapMerge = input;
 					default:
 				}
 
@@ -937,6 +847,11 @@ class Shader
 						parameter.__length = length;
 						__paramInt.push(parameter);
 
+						if (name == "openfl_BlendMode")
+						{
+							__blendMode = parameter;
+						}
+
 						Reflect.setField(__data, name, parameter);
 
 						try
@@ -953,9 +868,9 @@ class Shader
 						parameter.name = name;
 						parameter.type = parameterType;
 						parameter.__arrayLength = arrayLength;
-						#if lime
+
 						if (arrayLength > 0) parameter.__uniformMatrix = new Float32Array(arrayLength * arrayLength);
-						#end
+
 						parameter.__isFloat = true;
 						parameter.__isUniform = isUniform;
 						parameter.__length = length;
@@ -972,6 +887,8 @@ class Shader
 								case "openfl_Position": __position = parameter;
 								case "openfl_TextureCoord": __textureCoord = parameter;
 								case "openfl_TextureSize": __textureSize = parameter;
+								case "openfl_BlendBitmapTransform": __blendBitmapTransform = parameter;
+								case "openfl_BlendBitmapMergeTransform": __blendBitmapMergeTransform = parameter;
 								default:
 							}
 						}
@@ -1054,11 +971,18 @@ class Shader
 			inputMipFilter = shaderBuffer.inputMipFilter[i];
 			inputWrap = shaderBuffer.inputWrap[i];
 
+			if (inputData == null && (input == __blendBitmap || input == __blendBitmapMerge)) inputData = input.input;
+
 			if (inputData != null)
 			{
 				input.__updateGL(__context, textureCount, inputData, inputFilter, inputMipFilter, inputWrap);
-				textureCount++;
 			}
+			else
+			{
+				__context.setTextureAt(textureCount, null);
+			}
+
+			textureCount++;
 		}
 
 		var gl = __context.gl;
@@ -1178,6 +1102,16 @@ class Shader
 				intIndex++;
 			}
 		}
+	}
+
+	@:noCompletion private function thisHasField(name:String)
+	{
+		// Reflect.hasField(this, name) is REALLY expensive so we cache the result.
+		if (__fieldList == null)
+		{
+			__fieldList = Reflect.fields(this).concat(Type.getInstanceFields(Type.getClass(this)));
+		}
+		return __fieldList.indexOf(name) != -1;
 	}
 
 	// Get & Set Methods
@@ -1300,19 +1234,4 @@ class Shader
 
 		return __glVertexSource = value;
 	}
-
-	private var __fieldList:Array<String> = null;
-
-	private function thisHasField(name:String)
-	{
-		// Reflect.hasField(this, name) is REALLY expensive so we cache the result.
-		if (__fieldList == null)
-		{
-			__fieldList = Reflect.fields(this).concat(Type.getInstanceFields(Type.getClass(this)));
-		}
-		return __fieldList.indexOf(name) != -1;
-	}
 }
-#else
-typedef Shader = flash.display.Shader;
-#end

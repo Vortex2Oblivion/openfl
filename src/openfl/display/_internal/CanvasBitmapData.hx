@@ -1,10 +1,7 @@
 package openfl.display._internal;
 
-#if !flash
-#if lime
-import lime._internal.graphics.ImageCanvasUtil; // TODO
+import lime._internal.graphics.ImageCanvasUtil;
 
-#end
 @:access(openfl.display.BitmapData)
 class CanvasBitmapData
 {
@@ -31,4 +28,3 @@ class CanvasBitmapData
 
 	public static function renderDrawableMask(bitmapData:BitmapData, renderer:CanvasRenderer):Void {}
 }
-#end

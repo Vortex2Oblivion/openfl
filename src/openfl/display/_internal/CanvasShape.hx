@@ -1,6 +1,5 @@
 package openfl.display._internal;
 
-#if !flash
 import openfl.display.CanvasRenderer;
 import openfl.display.DisplayObject;
 import openfl.geom.Matrix;
@@ -34,7 +33,6 @@ class CanvasShape
 				var transform = graphics.__worldTransform;
 				var context = renderer.context;
 				var scrollRect = shape.__scrollRect;
-				var scale9Grid = shape.__worldScale9Grid;
 
 				// TODO: Render for scroll rect?
 
@@ -45,95 +43,15 @@ class CanvasShape
 
 					context.globalAlpha = alpha;
 
-					if (scale9Grid != null && transform.b == 0 && transform.c == 0)
-					{
-						#if (openfl_disable_hdpi || openfl_disable_hdpi_graphics)
-						var pixelRatio = 1;
-						#else
-						var pixelRatio = renderer.__pixelRatio;
-						#end
+					var renderTransform = Matrix.__pool.get();
+					renderTransform.scale(1 / graphics.__bitmapScaleX, 1 / graphics.__bitmapScaleY);
+					renderTransform.concat(transform);
 
-						var matrix = Matrix.__pool.get();
-						matrix.translate(transform.tx, transform.ty);
+					renderer.setTransform(renderTransform, context);
 
-						renderer.setTransform(matrix, context);
+					context.drawImage(canvas, 0, 0, width, height);
 
-						Matrix.__pool.release(matrix);
-
-						var bounds = graphics.__bounds;
-
-						var scaleX = graphics.__renderTransform.a / graphics.__bitmapScale;
-						var scaleY = graphics.__renderTransform.d / graphics.__bitmapScale;
-						var renderScaleX = (scaleX * transform.a);
-						var renderScaleY = (scaleY * transform.d);
-
-						var left = Math.max(1, Math.round(scale9Grid.x * scaleX));
-						var top = Math.round(scale9Grid.y * scaleY);
-						var right = Math.max(1, Math.round((bounds.right - scale9Grid.right) * scaleX));
-						var bottom = Math.round((bounds.bottom - scale9Grid.bottom) * scaleY);
-						var centerWidth = Math.round(scale9Grid.width * scaleX);
-						var centerHeight = Math.round(scale9Grid.height * scaleY);
-
-						var renderLeft = Math.round(left / pixelRatio);
-						var renderTop = Math.round(top / pixelRatio);
-						var renderRight = Math.round(right / pixelRatio);
-						var renderBottom = Math.round(bottom / pixelRatio);
-						var renderCenterWidth = (bounds.width * renderScaleX) - renderLeft - renderRight;
-						var renderCenterHeight = (bounds.height * renderScaleY) - renderTop - renderBottom;
-
-						// TODO: Allow smoothing, even though it shows seams?
-						renderer.applySmoothing(context, false);
-
-						if (centerWidth != 0 && centerHeight != 0)
-						{
-							context.drawImage(canvas, 0, 0, left, top, 0, 0, renderLeft, renderTop);
-							context.drawImage(canvas, left, 0, centerWidth, top, renderLeft, 0, renderCenterWidth, renderTop);
-							context.drawImage(canvas, left + centerWidth, 0, right, top, renderLeft + renderCenterWidth, 0, renderRight, renderTop);
-
-							context.drawImage(canvas, 0, top, left, centerHeight, 0, renderTop, renderLeft, renderCenterHeight);
-							context.drawImage(canvas, left, top, centerWidth, centerHeight, renderLeft, renderTop, renderCenterWidth, renderCenterHeight);
-							context.drawImage(canvas, left + centerWidth, top, right, centerHeight, renderLeft + renderCenterWidth, renderTop, renderRight,
-								renderCenterHeight);
-
-							context.drawImage(canvas, 0, top + centerHeight, left, bottom, 0, renderTop + renderCenterHeight, renderLeft, renderBottom);
-							context.drawImage(canvas, left, top + centerHeight, centerWidth, bottom, renderLeft, renderTop + renderCenterHeight,
-								renderCenterWidth, renderBottom);
-							context.drawImage(canvas, left
-								+ centerWidth, top
-								+ centerHeight, right, bottom, renderLeft
-								+ renderCenterWidth,
-								renderTop
-								+ renderCenterHeight, renderRight, renderBottom);
-						}
-						else if (centerWidth == 0 && centerHeight != 0)
-						{
-							var renderWidth = renderLeft + renderCenterWidth + renderRight;
-
-							context.drawImage(canvas, 0, 0, width, top, 0, 0, renderWidth, renderTop);
-							context.drawImage(canvas, 0, top, width, centerHeight, 0, renderTop, renderWidth, renderCenterHeight);
-							context.drawImage(canvas, 0, top + centerHeight, width, bottom, 0, renderTop + renderCenterHeight, renderWidth, renderBottom);
-						}
-						else if (centerHeight == 0 && centerWidth != 0)
-						{
-							var renderHeight = renderTop + renderCenterHeight + renderBottom;
-
-							context.drawImage(canvas, 0, 0, left, height, 0, 0, renderLeft, renderHeight);
-							context.drawImage(canvas, left, 0, centerWidth, height, renderLeft, 0, renderCenterWidth, renderHeight);
-							context.drawImage(canvas, left + centerWidth, 0, right, height, renderLeft + renderCenterWidth, 0, renderRight, renderHeight);
-						}
-					}
-					else
-					{
-						// var matrix = Matrix.__pool.get();
-						// matrix.scale(1 / graphics.__bitmapScale, 1 / graphics.__bitmapScale);
-						// matrix.concat(transform);
-
-						renderer.setTransform(transform, context);
-
-						// Matrix.__pool.release(matrix);
-
-						context.drawImage(canvas, 0, 0, width, height);
-					}
+					Matrix.__pool.release(renderTransform);
 
 					renderer.__popMaskObject(shape);
 				}
@@ -142,4 +60,3 @@ class CanvasShape
 		#end
 	}
 }
-#end

@@ -1,7 +1,9 @@
 package openfl.media;
 
-#if !flash
 import haxe.Int64;
+import lime.media.AudioBuffer;
+import lime.media.AudioSource;
+import lime.utils.UInt8Array;
 import openfl.errors.IOError;
 import openfl.events.Event;
 import openfl.events.EventDispatcher;
@@ -18,11 +20,6 @@ import lime.media.WebAudioContext;
 import lime.media.AudioManager;
 import lime.media.OpenALAudioContext;
 #end
-#if lime
-import openfl.utils._internal.UInt8Array;
-import lime.media.AudioBuffer;
-import lime.media.AudioSource;
-#end
 
 /**
 	The Sound class lets you work with sound in an application. The Sound class
@@ -30,7 +27,7 @@ import lime.media.AudioSource;
 	that object, close the sound stream, and access data about the sound, such
 	as information about the number of bytes in the stream and ID3 metadata.
 	More detailed control of the sound is performed through the sound source
-	 -  the SoundChannel or Microphone object for the sound  -  and through the
+	 -  the SoundChannel or Microphone object for the sound — and through the
 	properties in the SoundTransform class that control the output of the sound
 	to the computer's speakers.
 
@@ -91,12 +88,9 @@ import lime.media.AudioSource;
 	@see [Controlling sound volume and panning](https://books.openfl.org/openfl-developers-guide/working-with-sound/controlling-sound-volume-and-panning.html)
 	@see [Working with dynamically generated audio](https://books.openfl.org/openfl-developers-guide/working-with-sound/working-with-dynamically-generated-audio.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(lime.media.AudioBuffer)
 @:access(lime.utils.AssetLibrary)
+@:access(openfl.events.Event)
 @:access(openfl.media.SoundMixer)
 @:access(openfl.media.SoundChannel)
 @:autoBuild(openfl.utils._internal.AssetsMacro.embedSound())
@@ -207,8 +201,6 @@ class Sound extends EventDispatcher
 	**/
 	public var isBuffering(default, null):Bool;
 
-	// @:noCompletion @:dox(hide) @:require(flash10_1) public var isURLInaccessible (default, null):Bool;
-
 	/**
 		The length of the current sound in milliseconds.
 	**/
@@ -244,33 +236,20 @@ class Sound extends EventDispatcher
 	public var url(default, null):String;
 
 	@:noCompletion private var __urlLoading:Bool = false;
-
-	#if lime
 	@:noCompletion private var __pendingSoundChannel:SoundChannel;
 	@:noCompletion private var __pendingAudioSource:AudioSource;
 	@:noCompletion private var __buffer:AudioBuffer;
-	#end
 
 	#if (js && html5)
 	public var sampleRate(get, never):Int;
 
-	private var __webAudioContext:WebAudioContext = null;
+	@:noCompletion private var __webAudioContext:WebAudioContext = null;
 	#end
 
 	#if lime_openal
 	public var sampleRate(get, never):Int;
 
-	private var __alAudioContext:OpenALAudioContext = null;
-	#end
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Sound.prototype, {
-			"id3": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_id3 (); }")},
-			"length": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_length (); }")},
-		});
-	}
+	@:noCompletion private var __alAudioContext:OpenALAudioContext = null;
 	#end
 
 	/**
@@ -341,43 +320,14 @@ class Sound extends EventDispatcher
 	**/
 	public function close():Void
 	{
-		#if lime
 		if (__buffer != null)
 		{
 			SoundMixer.__unregisterSoundChannelByBuffer(__buffer);
 			__buffer.dispose();
 			__buffer = null;
 		}
-		#end
 	}
 
-	#if false
-	/**
-		Extracts raw sound data from a Sound object.
-		This method is designed to be used when you are working with
-		dynamically generated audio, using a function you assign to the
-		`sampleData` event for a different Sound object. That is, you can use
-		this method to extract sound data from a Sound object. Then you can
-		write the data to the byte array that another Sound object is using to
-		stream dynamic audio.
-
-		The audio data is placed in the target byte array starting from the
-		current position of the byte array. The audio data is always exposed
-		as 44100 Hz Stereo. The sample type is a 32-bit floating-point value,
-		which can be converted to a Number using `ByteArray.readFloat()`.
-
-		@param target A ByteArray object in which the extracted sound samples
-					  are placed.
-		@param length The number of sound samples to extract. A sample
-					  contains both the left and right channels נthat is,
-					  two 32-bit floating-point values.
-		@return The number of samples written to the ByteArray specified in
-				the `target` parameter.
-	**/
-	// @:noCompletion @:dox(hide) @:require(flash10) public function extract (target:ByteArray, length:Float, startPosition:Float = -1):Float;
-	#end
-
-	#if lime
 	/**
 		Creates a new Sound from an AudioBuffer immediately.
 
@@ -390,7 +340,6 @@ class Sound extends EventDispatcher
 		sound.__buffer = buffer;
 		return sound;
 	}
-	#end
 
 	/**
 		Creates a new Sound from a file path synchronously. This means that the
@@ -407,16 +356,14 @@ class Sound extends EventDispatcher
 	**/
 	public static function fromFile(path:String):Sound
 	{
-		#if lime
 		var buffer = AudioBuffer.fromFile(path);
+
 		if (buffer == null)
 		{
 			throw new IOError("Error loading sound from file: " + path);
 		}
+
 		return fromAudioBuffer(buffer);
-		#else
-		return null;
-		#end
 	}
 
 	/**
@@ -499,8 +446,18 @@ class Sound extends EventDispatcher
 		url = stream.url;
 		__urlLoading = true;
 
-		#if lime
-		dispatchEvent(new Event(Event.OPEN));
+		#if openfl_pool_events
+		var openEvent = Event.__pool.get();
+		openEvent.type = Event.OPEN;
+		#else
+		var openEvent = new Event(Event.OPEN);
+		#end
+
+		dispatchEvent(openEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(openEvent);
+		#end
 
 		#if (js && html5)
 		var defaultLibrary = lime.utils.Assets.getLibrary("default"); // TODO: Improve this
@@ -531,7 +488,6 @@ class Sound extends EventDispatcher
 				AudioBuffer_onURLLoad(null);
 			});
 		#end
-		#end
 	}
 
 	/**
@@ -558,7 +514,6 @@ class Sound extends EventDispatcher
 			bytes = copy;
 		}
 
-		#if lime
 		__buffer = AudioBuffer.fromBytes(bytes);
 
 		if (__buffer == null)
@@ -567,13 +522,47 @@ class Sound extends EventDispatcher
 		}
 		else
 		{
-			dispatchEvent(new Event(Event.OPEN));
-			dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytes.length, bytes.length));
-			dispatchEvent(new Event(Event.COMPLETE));
+			#if openfl_pool_events
+			var openEvent = Event.__pool.get();
+			openEvent.type = Event.OPEN;
+			#else
+			var openEvent = new Event(Event.OPEN);
+			#end
+
+			dispatchEvent(openEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(openEvent);
+			#end
+
+			#if openfl_pool_events
+			var progressEvent = ProgressEvent.__pool.get();
+			progressEvent.type = ProgressEvent.PROGRESS;
+			progressEvent.bytesLoaded = bytes.length;
+			progressEvent.bytesTotal = bytes.length;
+			#else
+			var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytes.length, bytes.length);
+			#end
+
+			dispatchEvent(progressEvent);
+
+			#if openfl_pool_events
+			ProgressEvent.__pool.release(progressEvent);
+			#end
+
+			#if openfl_pool_events
+			var completeEvent = Event.__pool.get();
+			completeEvent.type = Event.COMPLETE;
+			#else
+			var completeEvent = new Event(Event.COMPLETE);
+			#end
+
+			dispatchEvent(completeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(completeEvent);
+			#end
 		}
-		#else
-		dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
-		#end
 	}
 
 	/**
@@ -588,14 +577,10 @@ class Sound extends EventDispatcher
 	**/
 	public static function loadFromFile(path:String):Future<Sound>
 	{
-		#if lime
 		return AudioBuffer.loadFromFile(path).then(function(audioBuffer)
 		{
 			return Future.withValue(fromAudioBuffer(audioBuffer));
 		});
-		#else
-		return cast Future.withError("Cannot load audio file");
-		#end
 	}
 
 	/**
@@ -611,14 +596,10 @@ class Sound extends EventDispatcher
 	**/
 	public static function loadFromFiles(paths:Array<String>):Future<Sound>
 	{
-		#if lime
 		return AudioBuffer.loadFromFiles(paths).then(function(audioBuffer)
 		{
 			return Future.withValue(fromAudioBuffer(audioBuffer));
 		});
-		#else
-		return cast Future.withError("Cannot load audio files");
-		#end
 	}
 
 	/**
@@ -659,20 +640,52 @@ class Sound extends EventDispatcher
 			bytes = copy;
 		}
 
-		#if lime
 		var audioBuffer = new AudioBuffer();
-		audioBuffer.bitsPerSample = bitsPerSample;
 		audioBuffer.channels = channels;
+		audioBuffer.dataFormat = (format == "float" ? F32 : S16);
 		audioBuffer.data = new UInt8Array(bytes);
 		audioBuffer.sampleRate = Std.int(sampleRate);
-
 		__buffer = audioBuffer;
 
-		dispatchEvent(new Event(Event.OPEN));
-		dispatchEvent(new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytes.length, bytes.length));
-		dispatchEvent(new Event(Event.COMPLETE));
+		#if openfl_pool_events
+		var openEvent = Event.__pool.get();
+		openEvent.type = Event.OPEN;
 		#else
-		dispatchEvent(new IOErrorEvent(IOErrorEvent.IO_ERROR));
+		var openEvent = new Event(Event.OPEN);
+		#end
+
+		dispatchEvent(openEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(openEvent);
+		#end
+
+		#if openfl_pool_events
+		var progressEvent = ProgressEvent.__pool.get();
+		progressEvent.type = ProgressEvent.PROGRESS;
+		progressEvent.bytesLoaded = bytes.length;
+		progressEvent.bytesTotal = bytes.length;
+		#else
+		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytes.length, bytes.length);
+		#end
+
+		dispatchEvent(progressEvent);
+
+		#if openfl_pool_events
+		ProgressEvent.__pool.release(progressEvent);
+		#end
+
+		#if openfl_pool_events
+		var completeEvent = Event.__pool.get();
+		completeEvent.type = Event.COMPLETE;
+		#else
+		var completeEvent = new Event(Event.COMPLETE);
+		#end
+
+		dispatchEvent(completeEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(completeEvent);
 		#end
 	}
 
@@ -698,12 +711,6 @@ class Sound extends EventDispatcher
 	**/
 	public function play(startTime:Float = 0.0, loops:Int = 0, sndTransform:SoundTransform = null):SoundChannel
 	{
-		#if lime
-		if (SoundMixer.__soundChannels.length >= SoundMixer.MAX_ACTIVE_CHANNELS)
-		{
-			return null;
-		}
-
 		if (sndTransform == null)
 		{
 			sndTransform = new SoundTransform();
@@ -752,21 +759,19 @@ class Sound extends EventDispatcher
 			}
 			#end
 		}
+
 		return soundChannel;
-		#else
-		return null;
-		#end
 	}
 
 	#if (js && html5)
-	private function get_sampleRate():Int
+	@:noCompletion private function get_sampleRate():Int
 	{
 		return Std.int(__webAudioContext.sampleRate);
 	}
 	#end
 
 	#if lime_openal
-	private function get_sampleRate():Int
+	@:noCompletion private function get_sampleRate():Int
 	{
 		return 44100;
 	}
@@ -778,23 +783,29 @@ class Sound extends EventDispatcher
 		return new ID3Info();
 	}
 
-	@:noCompletion private function get_length():Int
+	@:noCompletion private function get_length():Float
 	{
-		#if lime
 		if (__buffer != null)
 		{
-			#if (js && html5 && howlerjs)
-			return Std.int(__buffer.src.duration() * 1000);
+			#if (js && html5 && lime_howlerjs)
+			if (__buffer.__srcHowlerDefaultSprite != null)
+			{
+				var sprite = untyped __buffer.src._sprite[__buffer.__srcHowlerDefaultSprite];
+
+				if (sprite != null)
+				{
+					return sprite[1];
+				}
+			}
+
+			return __buffer.src.duration() * 1000;
 			#else
 			if (__buffer.data != null)
 			{
-				var samples = (__buffer.data.length * 8.0) / (__buffer.channels * __buffer.bitsPerSample);
-				return Std.int(samples / __buffer.sampleRate * 1000);
-			}
-			else if (__buffer.__srcVorbisFile != null)
-			{
-				var samples = Int64.toInt(__buffer.__srcVorbisFile.pcmTotal());
-				return Std.int(samples / __buffer.sampleRate * 1000);
+				var bytesPerFrame = __buffer.channels * (__buffer.bitsPerSample / 8.0);
+				var totalFrames = __buffer.data.length / bytesPerFrame;
+
+				return (totalFrames / __buffer.sampleRate) * 1000.0;
 			}
 			else
 			{
@@ -802,13 +813,11 @@ class Sound extends EventDispatcher
 			}
 			#end
 		}
-		#end
 
 		return 0;
 	}
 
 	// Event Handlers
-	#if lime
 	@:noCompletion private function AudioBuffer_onURLLoad(buffer:AudioBuffer):Void
 	{
 		__urlLoading = false;
@@ -819,7 +828,40 @@ class Sound extends EventDispatcher
 		else
 		{
 			__buffer = buffer;
-			dispatchEvent(new Event(Event.COMPLETE));
+			var byteLength = 1;
+			if (__buffer.data != null)
+			{
+				byteLength = __buffer.data.length;
+			}
+
+			#if openfl_pool_events
+			var progressEvent = ProgressEvent.__pool.get();
+			progressEvent.type = ProgressEvent.PROGRESS;
+			progressEvent.bytesLoaded = byteLength;
+			progressEvent.bytesTotal = byteLength;
+			#else
+			var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, byteLength, byteLength);
+			#end
+
+			dispatchEvent(progressEvent);
+
+			#if openfl_pool_events
+			ProgressEvent.__pool.release(progressEvent);
+			#end
+
+			#if openfl_pool_events
+			var completeEvent = Event.__pool.get();
+			completeEvent.type = Event.COMPLETE;
+			#else
+			var completeEvent = new Event(Event.COMPLETE);
+			#end
+
+			dispatchEvent(completeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(completeEvent);
+			#end
+
 			if (__pendingSoundChannel != null)
 			{
 				__pendingAudioSource.buffer = __buffer;
@@ -835,13 +877,19 @@ class Sound extends EventDispatcher
 
 	@:noCompletion private function AudioBuffer_onURLProgress(bytesLoaded:Int, bytesTotal:Int)
 	{
-		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS);
+		#if openfl_pool_events
+		var progressEvent = ProgressEvent.__pool.get();
+		progressEvent.type = ProgressEvent.PROGRESS;
 		progressEvent.bytesLoaded = bytesLoaded;
 		progressEvent.bytesTotal = bytesTotal;
+		#else
+		var progressEvent = new ProgressEvent(ProgressEvent.PROGRESS, false, false, bytesLoaded, bytesTotal);
+		#end
+
 		dispatchEvent(progressEvent);
+
+		#if openfl_pool_events
+		ProgressEvent.__pool.release(progressEvent);
+		#end
 	}
-	#end
 }
-#else
-typedef Sound = flash.media.Sound;
-#end

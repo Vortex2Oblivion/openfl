@@ -1,6 +1,8 @@
 package openfl.display;
 
-#if !flash
+import lime.graphics.WebGL2RenderContext;
+import lime.graphics.opengl.ext.KHR_debug;
+import lime.math.Matrix4;
 import openfl.display._internal.Context3DBitmap;
 import openfl.display._internal.Context3DBitmapData;
 import openfl.display._internal.Context3DDisplayObject;
@@ -12,28 +14,18 @@ import openfl.display._internal.Context3DTextField;
 import openfl.display._internal.Context3DTilemap;
 import openfl.display._internal.Context3DVideo;
 import openfl.display._internal.ShaderBuffer;
-import openfl.utils.ObjectPool;
-import openfl.display3D.Context3DClearMask;
 import openfl.display3D.Context3D;
+import openfl.display3D.Context3DBlendTarget;
+import openfl.display3D.Context3DClearMask;
 import openfl.geom.ColorTransform;
 import openfl.geom.Matrix;
 import openfl.geom.Rectangle;
-#if lime
-import lime.graphics.opengl.ext.KHR_debug;
-import lime.graphics.WebGLRenderContext;
-import lime.math.Matrix4;
-#end
+import openfl.utils.ObjectPool;
 
 /**
-	**BETA**
-
 	The OpenGLRenderer API exposes support for OpenGL render instructions within the
 	`RenderEvent.RENDER_OPENGL` event.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 @:access(lime.graphics.GLRenderContext)
 @:access(openfl.display._internal.ShaderBuffer)
 @:access(openfl.display3D.Context3D)
@@ -54,10 +46,13 @@ import lime.math.Matrix4;
 @:allow(openfl.text)
 class OpenGLRenderer extends DisplayObjectRenderer
 {
+	@:noCompletion private static var __bgraExtension:Null<Dynamic>;
+	@:noCompletion private static var __bgraAsInternalFormat:Null<Bool>;
 	@:noCompletion private static var __blendMinMaxSupported:Null<Bool>;
-	@:noCompletion private static var __complexBlendsSupported:Null<Bool>;
-	@:noCompletion private static var __coherentBlendsSupported:Null<Bool>;
+	@:noCompletion private static var __standardDerivativesSupported:Null<Bool>;
 	@:noCompletion private static var __sRGBWriteControlSupported:Null<Bool>;
+	@:noCompletion private static var __drawBuffersEXT:Null<Bool>;
+	@:noCompletion private static var __drawBuffersARB:Null<Bool>;
 
 	@:noCompletion private static var __alphaValue:Array<Float> = [1];
 	@:noCompletion private static var __colorMultipliersValue:Array<Float> = [0, 0, 0, 0];
@@ -68,12 +63,12 @@ class OpenGLRenderer extends DisplayObjectRenderer
 	@:noCompletion private static var __hasColorTransformValue:Array<Bool> = [false];
 	@:noCompletion private static var __scissorRectangle:Rectangle = new Rectangle();
 	@:noCompletion private static var __textureSizeValue:Array<Float> = [0, 0];
+	@:noCompletion private static var __shaderBlendModeValue:Int = 0;
 
 	/**
 		The current OpenGL render context
 	**/
-	@SuppressWarnings("checkstyle:Dynamic")
-	public var gl:#if lime WebGLRenderContext #else Dynamic #end;
+	public var gl:WebGL2RenderContext;
 
 	@:noCompletion private static var __staticDefaultDisplayShader:DisplayObjectShader;
 	@:noCompletion private static var __staticDefaultGraphicsShader:GraphicsShader;
@@ -81,6 +76,13 @@ class OpenGLRenderer extends DisplayObjectRenderer
 
 	@:noCompletion private var __context3D:Context3D;
 	@:noCompletion private var __clipRects:Array<Rectangle>;
+	@:noCompletion private var __blendRenderTargetBitmap:BitmapData;
+	@:noCompletion private var __blendTransform:Array<Float> = [0, 0, 0, 0];
+	@:noCompletion private var __blendBackBufferBitmap:BitmapData;
+	@:noCompletion private var __blendSource:BitmapData;
+	@:noCompletion private var __blendSourceMerge:BitmapData;
+	@:noCompletion private var __blendTransformMerge:Array<Float> = [0, 0, 0, 0];
+	@:noCompletion private var __shaderBlendMode:Null<BlendMode>;
 	@:noCompletion private var __currentDisplayShader:Shader;
 	@:noCompletion private var __currentGraphicsShader:Shader;
 	@:noCompletion private var __currentRenderTarget:BitmapData;
@@ -93,16 +95,17 @@ class OpenGLRenderer extends DisplayObjectRenderer
 	@:noCompletion private var __displayHeight:Int;
 	@:noCompletion private var __displayWidth:Int;
 	@:noCompletion private var __flipped:Bool;
-	@SuppressWarnings("checkstyle:Dynamic") @:noCompletion private var __gl:#if lime WebGLRenderContext #else Dynamic #end;
+	@:noCompletion private var __shaderOverride:Shader;
+	@:noCompletion private var __gl:WebGL2RenderContext;
 	@:noCompletion private var __height:Int;
 	@:noCompletion private var __maskShader:Context3DMaskShader;
-	@SuppressWarnings("checkstyle:Dynamic") @:noCompletion private var __matrix:#if lime Matrix4 #else Dynamic #end;
+	@:noCompletion private var __matrix:Matrix4;
 	@:noCompletion private var __maskObjects:Array<DisplayObject>;
 	@:noCompletion private var __numClipRects:Int;
 	@:noCompletion private var __offsetX:Int;
 	@:noCompletion private var __offsetY:Int;
-	@SuppressWarnings("checkstyle:Dynamic") @:noCompletion private var __projection:#if lime Matrix4 #else Dynamic #end;
-	@SuppressWarnings("checkstyle:Dynamic") @:noCompletion private var __projectionFlipped:#if lime Matrix4 #else Dynamic #end;
+	@:noCompletion private var __projection:Matrix4;
+	@:noCompletion private var __projectionFlipped:Matrix4;
 	@:noCompletion private var __scrollRectMasks:ObjectPool<Shape>;
 	@:noCompletion private var __softwareRenderer:DisplayObjectRenderer;
 	@:noCompletion private var __stencilReference:Int;
@@ -119,7 +122,14 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		__context3D = context;
 		__context = context.__context;
 
-		gl = context.__context.webgl;
+		#if (js && html5)
+		gl = context.__context.webgl2;
+		#elseif desktop
+		gl = context.__context.gl;
+		#elseif mobile
+		gl = context.__context.gles3;
+		#end
+
 		__gl = gl;
 
 		this.__defaultRenderTarget = defaultRenderTarget;
@@ -130,10 +140,7 @@ class OpenGLRenderer extends DisplayObjectRenderer
 			Graphics.maxTextureWidth = Graphics.maxTextureHeight = __gl.getParameter(__gl.MAX_TEXTURE_SIZE);
 		}
 
-		#if lime
 		__matrix = new Matrix4();
-		#end
-
 		__values = new Array();
 
 		#if gl_debug
@@ -160,17 +167,41 @@ class OpenGLRenderer extends DisplayObjectRenderer
 			}
 		}
 
+		if (__bgraExtension == null)
+		{
+			__bgraExtension = gl.getExtension("EXT_bgra");
+
+			if (__bgraExtension == null)
+			{
+				__bgraExtension = gl.getExtension("EXT_texture_format_BGRA8888");
+			}
+
+			if (__bgraExtension == null)
+			{
+				__bgraExtension = gl.getExtension("APPLE_texture_format_BGRA8888");
+			}
+
+			if (__bgraAsInternalFormat == null)
+			{
+				// Note: Get rid of this when `ANGLE` is added.
+				__bgraAsInternalFormat = #if !ios context.__context.type == OPENGLES #else false #end;
+			}
+		}
 		if (__blendMinMaxSupported == null)
 		{
 			__blendMinMaxSupported = exts.contains("EXT_blend_minmax");
 		}
-		if (__complexBlendsSupported == null)
+		if (__standardDerivativesSupported == null)
 		{
-			__complexBlendsSupported = exts.contains("KHR_blend_equation_advanced");
+			__standardDerivativesSupported = exts.contains("OES_standard_derivatives");
 		}
-		if (__coherentBlendsSupported == null)
+		if (__drawBuffersEXT == null)
 		{
-			__coherentBlendsSupported = exts.contains("KHR_blend_equation_advanced_coherent");
+			__drawBuffersEXT = exts.contains("EXT_draw_buffers");
+		}
+		if (__drawBuffersARB == null)
+		{
+			__drawBuffersARB = exts.contains("ARB_draw_buffers");
 		}
 
 		#if (js && html5)
@@ -179,20 +210,15 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		__softwareRenderer = new CairoRenderer(null);
 		#end
 
-		#if lime
 		__type = OPENGL;
-		#end
-
 		__setBlendMode(NORMAL);
 		__context3D.__setGLBlend(true);
 
 		__clipRects = new Array();
 		__maskObjects = new Array();
 		__numClipRects = 0;
-		#if lime
 		__projection = new Matrix4();
 		__projectionFlipped = new Matrix4();
-		#end
 		__stencilReference = 0;
 		__tempRect = new Rectangle();
 
@@ -353,8 +379,7 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		OpenGL rendering. Repeated calls to this method will return the same object with
 		new values, so it will need to be cloned if the result must be cached
 	**/
-	@SuppressWarnings("checkstyle:Dynamic")
-	public function getMatrix(transform:Matrix):#if lime Matrix4 #else Dynamic #end
+	public function getMatrix(transform:Matrix):Matrix4
 	{
 		if (gl != null)
 		{
@@ -425,6 +450,52 @@ class OpenGLRenderer extends DisplayObjectRenderer
 	public function setViewport():Void
 	{
 		__gl.viewport(__offsetX, __offsetY, __displayWidth, __displayHeight);
+
+		// bypass the viewport cache in Context3D to ensure that the GL viewport is always updated
+		if (__context3D != null)
+		{
+			@:privateAccess __context3D.__contextState.__currentGLViewportWidth = -1;
+		}
+	}
+
+	@:noCompletion private function applyShaderBlend():Void
+	{
+		if (__shaderBlendMode == null && __blendMode != null && __requiresShaderBlend(__blendMode, __getBlendTarget()))
+		{
+			__shaderBlendMode = __blendMode;
+			__context3D.setBlendFactors(ONE, ONE_MINUS_SOURCE_ALPHA);
+		}
+
+		if (__shaderBlendMode != null) __updateBlendBitmap();
+
+		__shaderBlendModeValue = __shaderBlendMode == null ? 0 : (cast __shaderBlendMode : Int) + 1;
+
+		if (__currentShaderBuffer != null)
+		{
+			__currentShaderBuffer.addIntOverride("openfl_BlendMode", [__shaderBlendModeValue]);
+
+			if (__shaderBlendMode != null)
+			{
+				__currentShaderBuffer.addFloatOverride("openfl_BlendBitmapTransform", __blendTransform);
+				__currentShaderBuffer.addFloatOverride("openfl_BlendBitmapMergeTransform", __blendTransformMerge);
+			}
+		}
+		else if (__currentShader != null)
+		{
+			if (__currentShader.__blendMode != null) __currentShader.__blendMode.value = [__shaderBlendModeValue];
+
+			if (__shaderBlendMode != null)
+			{
+				if (__currentShader.__blendBitmapTransform != null) __currentShader.__blendBitmapTransform.value = __blendTransform;
+				if (__currentShader.__blendBitmapMergeTransform != null) __currentShader.__blendBitmapMergeTransform.value = __blendTransformMerge;
+			}
+		}
+
+		if (__currentShader != null)
+		{
+			if (__currentShader.__blendBitmap != null) __currentShader.__blendBitmap.input = (__shaderBlendMode != null) ? __blendSource : null;
+			if (__currentShader.__blendBitmapMerge != null) __currentShader.__blendBitmapMerge.input = (__shaderBlendMode != null) ? __blendSourceMerge : null;
+		}
 	}
 
 	/**
@@ -434,6 +505,8 @@ class OpenGLRenderer extends DisplayObjectRenderer
 	**/
 	public function updateShader():Void
 	{
+		if (__currentShaderBuffer == null) applyShaderBlend();
+
 		if (__currentShader != null)
 		{
 			if (__currentShader.__position != null) __currentShader.__position.__useArray = true;
@@ -515,6 +588,9 @@ class OpenGLRenderer extends DisplayObjectRenderer
 
 			if (__currentShader.__texture != null) __currentShader.__texture.input = null;
 			if (__currentShader.__textureSize != null) __currentShader.__textureSize.value = null;
+			if (__currentShader.__blendBitmap != null) __currentShader.__blendBitmap.input = null;
+			if (__currentShader.__blendBitmapTransform != null) __currentShader.__blendBitmapTransform.value = null;
+			if (__currentShader.__blendMode != null) __currentShader.__blendMode.value = null;
 			if (__currentShader.__hasColorTransform != null) __currentShader.__hasColorTransform.value = null;
 			if (__currentShader.__position != null) __currentShader.__position.value = null;
 			if (__currentShader.__matrix != null) __currentShader.__matrix.value = null;
@@ -551,19 +627,24 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		__matrix[14] = 0;
 		__matrix[15] = 1;
 
-		if (pixelSnapping == ALWAYS ||
-			(pixelSnapping == AUTO && (__stage == null || __stage.quality == LOW || __stage.quality == MEDIUM)
-				&& __matrix[1] == 0 && __matrix[4] == 0
-				&& __matrix[0] < 1.001 && __matrix[0] > 0.999
-			)	&& __matrix[5] < 1.001 && __matrix[5] > 0.999
-		) {
+		if (pixelSnapping == ALWAYS
+			|| (pixelSnapping == AUTO
+				&& (__stage == null || __stage.quality == LOW || __stage.quality == MEDIUM)
+				&& __matrix[1] == 0
+				&& __matrix[4] == 0
+				&& __matrix[0] < 1.001
+				&& __matrix[0] > 0.999)
+			&& __matrix[5] < 1.001
+			&& __matrix[5] > 0.999)
+		{
 			__matrix[12] = Math.round(__matrix[12]);
 			__matrix[13] = Math.round(__matrix[13]);
 		}
 
 		__matrix.append(__flipped ? __projectionFlipped : __projection);
 
-		for (i in 0...16) __values[i] = __matrix[i];
+		for (i in 0...16)
+			__values[i] = __matrix[i];
 		return __values;
 	}
 
@@ -588,6 +669,8 @@ class OpenGLRenderer extends DisplayObjectRenderer
 
 	@:noCompletion private function __initDisplayShader(shader:Shader):Shader
 	{
+		if (shader == null && __shaderOverride != null) shader = __shaderOverride;
+
 		if (shader != null)
 		{
 			// TODO: Change of GL context?
@@ -607,6 +690,8 @@ class OpenGLRenderer extends DisplayObjectRenderer
 
 	@:noCompletion private function __initGraphicsShader(shader:Shader):Shader
 	{
+		if (shader == null && __shaderOverride != null) shader = __shaderOverride;
+
 		if (shader != null)
 		{
 			// TODO: Change of GL context?
@@ -622,6 +707,18 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		}
 
 		return __defaultGraphicsShader;
+	}
+
+	@:noCompletion private function __pushShaderOverride(shader:Shader):Shader
+	{
+		var previous = __shaderOverride;
+		__shaderOverride = shader;
+		return previous;
+	}
+
+	@:noCompletion private function __popShaderOverride(previous:Shader):Void
+	{
+		__shaderOverride = previous;
 	}
 
 	@:noCompletion private function __initShaderBuffer(shaderBuffer:ShaderBuffer):Shader
@@ -796,13 +893,11 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		__context3D.setScissorRectangle(null);
 
 		__blendMode = null;
+		__shaderBlendMode = null;
 		__setBlendMode(NORMAL);
 
 		if (__defaultRenderTarget == null)
 		{
-			#if openfl_dpi_aware
-			__scissorRectangle.setTo(__offsetX, __offsetY, __displayWidth, __displayHeight);
-			#else
 			if (__context3D.__backBufferWantsBestResolution)
 			{
 				__scissorRectangle.setTo(__offsetX / __pixelRatio, __offsetY / __pixelRatio, __displayWidth / __pixelRatio, __displayHeight / __pixelRatio);
@@ -811,7 +906,7 @@ class OpenGLRenderer extends DisplayObjectRenderer
 			{
 				__scissorRectangle.setTo(__offsetX, __offsetY, __displayWidth, __displayHeight);
 			}
-			#end
+
 			__context3D.setScissorRectangle(__scissorRectangle);
 
 			__upscaled = (__worldTransform.a != 1 || __worldTransform.d != 1);
@@ -871,9 +966,6 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		}
 		else
 		{
-			#if openfl_dpi_aware
-			__scissorRectangle.setTo(__offsetX, __offsetY, __displayWidth, __displayHeight);
-			#else
 			if (__context3D.__backBufferWantsBestResolution)
 			{
 				__scissorRectangle.setTo(__offsetX / __pixelRatio, __offsetY / __pixelRatio, __displayWidth / __pixelRatio, __displayHeight / __pixelRatio);
@@ -882,7 +974,7 @@ class OpenGLRenderer extends DisplayObjectRenderer
 			{
 				__scissorRectangle.setTo(__offsetX, __offsetY, __displayWidth, __displayHeight);
 			}
-			#end
+
 			__context3D.setScissorRectangle(__scissorRectangle);
 			// __gl.viewport (__offsetX, __offsetY, __displayWidth, __displayHeight);
 
@@ -1043,20 +1135,18 @@ class OpenGLRenderer extends DisplayObjectRenderer
 	{
 		if (clipRect != null)
 		{
-			var x = Math.ffloor(clipRect.x);
-			var y = Math.ffloor(clipRect.y);
-			var width = (clipRect.width > 0 ? Math.fceil(clipRect.right) - x : 0);
-			var height = (clipRect.height > 0 ? Math.fceil(clipRect.bottom) - y : 0);
-			#if !openfl_dpi_aware
+			var x = Math.fround(clipRect.x);
+			var y = Math.fround(clipRect.y);
+			var width = (clipRect.width > 0 ? Math.fround(clipRect.right) - x : 0);
+			var height = (clipRect.height > 0 ? Math.fround(clipRect.bottom) - y : 0);
+
 			if (__context3D.__backBufferWantsBestResolution)
 			{
-				var uv = 1.5 / __pixelRatio;
-				x = clipRect.x / __pixelRatio;
-				y = clipRect.y / __pixelRatio;
-				width = (clipRect.width > 0 ? (clipRect.right / __pixelRatio) - x + uv : 0);
-				height = (clipRect.height > 0 ? (clipRect.bottom / __pixelRatio) - y + uv : 0);
+				x /= __pixelRatio;
+				y /= __pixelRatio;
+				width /= __pixelRatio;
+				height /= __pixelRatio;
 			}
-			#end
 
 			if (width < 0) width = 0;
 			if (height < 0) height = 0;
@@ -1071,67 +1161,207 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		}
 	}
 
+	@:noCompletion private static function __requiresShaderBlend(value:BlendMode, blendTarget:Context3DBlendTarget = null):Bool
+	{
+		// Blending against a target that isn't the current render target MUST use a shader blend
+		final readsOtherTarget = switch (blendTarget)
+		{
+			case null, BlendRenderTarget: false;
+			default: true;
+		}
+
+		return switch (value)
+		{
+			case INVERT: true;
+			case LIGHTEN: readsOtherTarget || !__blendMinMaxSupported;
+			case DARKEN, DIFFERENCE, HARDLIGHT, OVERLAY, COLORDODGE, COLORBURN, SOFTLIGHT, EXCLUSION, HUE, SATURATION, COLOR, LUMINOSITY: true;
+			case ADD, MULTIPLY, SCREEN, SUBTRACT: readsOtherTarget;
+			default: false;
+		}
+	}
+
+	@:noCompletion private function __getBlendTarget():Context3DBlendTarget
+	{
+		if (__currentShader == null || __currentShader.__blendBitmap == null) return BlendRenderTarget;
+		if (__currentShaderBuffer != null) return __currentShaderBuffer.blendTarget ?? BlendRenderTarget;
+
+		final input = __currentShader.__bitmap != null ? __currentShader.__bitmap : __currentShader.__texture;
+
+		return input != null ? input.blendTarget ?? BlendRenderTarget : BlendRenderTarget;
+	}
+
+	@:noCompletion private function __resizeBlendBitmap(bitmap:BitmapData, width:Int, height:Int):BitmapData
+	{
+		if (bitmap != null && bitmap.width == width && bitmap.height == height) return bitmap;
+		if (bitmap != null) bitmap.dispose();
+
+		return BitmapData.fromTexture(__context3D.createRectangleTexture(width, height, RGBA, false), false);
+	}
+
+	@:noCompletion private inline function __setBlendTransformMerge(scaleX:Float, scaleY:Float, offsetX:Float, offsetY:Float):Void
+	{
+		__blendTransformMerge[0] = scaleX;
+		__blendTransformMerge[1] = scaleY;
+		__blendTransformMerge[2] = offsetX;
+		__blendTransformMerge[3] = offsetY;
+	}
+
+	@:noCompletion private inline function __setBlendTransform(scaleX:Float, scaleY:Float, offsetX:Float, offsetY:Float):Void
+	{
+		__blendTransform[0] = scaleX;
+		__blendTransform[1] = scaleY;
+		__blendTransform[2] = offsetX;
+		__blendTransform[3] = offsetY;
+	}
+
+	@:noCompletion private function __updateBlendBitmap():Void
+	{
+		final width = __width;
+		final height = __height;
+		final blendTarget = __getBlendTarget();
+
+		if (width <= 0 || height <= 0 || blendTarget == null)
+		{
+			__shaderBlendMode = null;
+			return;
+		}
+
+		switch (blendTarget)
+		{
+			case BlendCustomTarget(bitmap):
+				if (bitmap == null)
+				{
+					__shaderBlendMode = null;
+					return;
+				}
+
+				if (__flipped) __setBlendTransform(1 / width, -1 / height, 0, 1);
+				else
+					__setBlendTransform(1 / width, 1 / height, 0, 0);
+
+				__blendSourceMerge = null;
+				__setBlendTransformMerge(0, 0, 0, 0);
+				__blendSource = bitmap;
+
+			case BlendBackBuffer(viewport) | BlendMergedTarget(viewport):
+				final merging = blendTarget.match(BlendMergedTarget(_));
+				final scale = (__stage != null && !__context3D.__backBufferWantsBestResolution) ? __stage.window.scale : 1.0;
+				final backBufferWidth = Std.int(__context3D.backBufferWidth * scale);
+				final backBufferHeight = Std.int(__context3D.backBufferHeight * scale);
+
+				if (backBufferWidth <= 0 || backBufferHeight <= 0)
+				{
+					__shaderBlendMode = null;
+					return;
+				}
+
+				__blendBackBufferBitmap = __resizeBlendBitmap(__blendBackBufferBitmap, backBufferWidth, backBufferHeight);
+
+				if (!__context3D.__copyBackBuffer(__blendBackBufferBitmap.getTexture(__context3D), backBufferWidth, backBufferHeight))
+				{
+					__shaderBlendMode = null;
+					return;
+				}
+
+				if (__flipped)
+				{
+					__setBlendTransform(1 / width, 1 / height, 0, 0);
+				}
+				else if (__renderTargetTransform != null)
+				{
+					final t = __renderTargetTransform;
+					__setBlendTransform(t.a * scale / backBufferWidth, -t.d * scale / backBufferHeight, t.tx * scale / backBufferWidth,
+						1 - (t.ty * scale / backBufferHeight));
+				}
+				else
+				{
+					final x = viewport != null ? viewport.x : 0;
+					final y = viewport != null ? viewport.y : 0;
+					final w = viewport != null ? viewport.width : backBufferWidth;
+					final h = viewport != null ? viewport.height : backBufferHeight;
+
+					__setBlendTransform(w / (width * backBufferWidth), -h / (height * backBufferHeight), x / backBufferWidth, 1 - (y / backBufferHeight));
+				}
+
+				__blendSourceMerge = null;
+				__setBlendTransformMerge(0, 0, 0, 0);
+
+				if (merging)
+				{
+					__blendSourceMerge = __blendBackBufferBitmap;
+					__setBlendTransformMerge(__blendTransform[0], __blendTransform[1], __blendTransform[2], __blendTransform[3]);
+
+					__blendRenderTargetBitmap = __resizeBlendBitmap(__blendRenderTargetBitmap, width, height);
+
+					if (!__context3D.__copyRenderTarget(__blendRenderTargetBitmap.getTexture(__context3D), width, height))
+					{
+						__shaderBlendMode = null;
+						return;
+					}
+
+					__setBlendTransform(1 / width, 1 / height, 0, 0);
+					__blendSource = __blendRenderTargetBitmap;
+				}
+				else
+				{
+					__blendSource = __blendBackBufferBitmap;
+				}
+
+			default:
+				__blendRenderTargetBitmap = __resizeBlendBitmap(__blendRenderTargetBitmap, width, height);
+
+				if (!__context3D.__copyRenderTarget(__blendRenderTargetBitmap.getTexture(__context3D), width, height))
+				{
+					__shaderBlendMode = null;
+					return;
+				}
+
+				__setBlendTransform(1 / width, 1 / height, 0, 0);
+				__blendSourceMerge = null;
+				__setBlendTransformMerge(0, 0, 0, 0);
+				__blendSource = __blendRenderTargetBitmap;
+		}
+	}
+
 	@:noCompletion private override function __setBlendMode(value:BlendMode):Void
 	{
 		if (__overrideBlendMode != null) value = __overrideBlendMode;
-		if (__blendMode == value && !__complexBlendsSupported) return;
-		__blendMode = value;
 
-		if (__complexBlendsSupported)
+		if (__requiresShaderBlend(value))
 		{
-			if (!__coherentBlendsSupported)
-			{
-				// On AMD cards going back to the standard blend equations after using advanced blends resulted in
-				// invisible/black sprites so we need to reset the blend state as a workaround
-				@:privateAccess
-				var cacheBlendState = __context3D.__contextState.__enableGLBlend;
-				__context3D.__setGLBlend(false);
-				__context3D.__setGLBlend(cacheBlendState);
-			}
+			__blendMode = value;
+			__shaderBlendMode = value;
 
-			__context3D.__usingComplexBlend = true;
-			switch (value) {
-				case DARKEN:
-					if (__context3D.__usingComplexBlend = !__blendMinMaxSupported)
-						__context3D.__setGLBlendEquation(0x9297); // DARKEN_KHR
-				case DIFFERENCE: __context3D.__setGLBlendEquation(0x929E); // DIFFERENCE_KHR
-				case HARDLIGHT: __context3D.__setGLBlendEquation(0x929B); // HARDLIGHT_KHR
-				case LIGHTEN:
-					if (__context3D.__usingComplexBlend = !__blendMinMaxSupported)
-						__context3D.__setGLBlendEquation(0x9298); // LIGHTEN_KHR
-				//case MULTIPLY: __context3D.__setGLBlendEquation(0x9294); // MULTIPLY_KHR
-				case OVERLAY: __context3D.__setGLBlendEquation(0x9296); // OVERLAY_KHR
-				//case SCREEN: __context3D.__setGLBlendEquation(0x9295); // SCREEN_KHR
-				case COLORDODGE: __context3D.__setGLBlendEquation(0x929A); // COLORDODGE_KHR
-				case COLORBURN: __context3D.__setGLBlendEquation(0x9299); // COLORBURN_KHR
-				case SOFTLIGHT: __context3D.__setGLBlendEquation(0x929C); // SOFTLIGHT_KHR
-				case EXCLUSION: __context3D.__setGLBlendEquation(0x92A0); // EXCLUSION_KHR
-				case HUE: __context3D.__setGLBlendEquation(0x92AD); // HSL_HUE_KHR
-				case SATURATION: __context3D.__setGLBlendEquation(0x92AE); // HSL_SATURATION_KHR
-				case COLOR: __context3D.__setGLBlendEquation(0x92AF); // HSL_COLOR_KHR
-				case LUMINOSITY: __context3D.__setGLBlendEquation(0x92B0); // HSL_LUMINOSITY_KHR
-				default: __context3D.__usingComplexBlend = false;
-			}
-
-			if (__context3D.__usingComplexBlend) return;
+			__context3D.setBlendFactors(ONE, ONE_MINUS_SOURCE_ALPHA);
+			return;
 		}
+		__shaderBlendMode = null;
+
+		if (__blendMode == value) return;
+		__blendMode = value;
 
 		switch (value)
 		{
-			case ADD: __context3D.setBlendFactors(ONE, ONE);
-			case ALPHA: __context3D.setBlendFactors(SOURCE_ALPHA, ONE_MINUS_SOURCE_ALPHA);
+			case ADD:
+				__context3D.setBlendFactors(ONE, ONE);
+			case ALPHA:
+				__context3D.setBlendFactors(SOURCE_ALPHA, ONE_MINUS_SOURCE_ALPHA);
 			case DARKEN:
 				if (__blendMinMaxSupported)
 				{
-					__context3D.setBlendFactors(ONE, ONE_MINUS_SOURCE_ALPHA);
+					// Transparency doesn't fully work with this, so it needs khronos extension version of DARKEN instead.
+					__context3D.setBlendFactors(ONE, ONE);
 					__context3D.__setGLBlendEquation(0x8007); // GL_MIN
 				}
 				else
 				{
+					// Alternative innacurate implementation if unsupported
 					__context3D.setBlendFactors(DESTINATION_COLOR, ONE_MINUS_SOURCE_ALPHA);
 				}
-			case ERASE: __context3D.setBlendFactors(ZERO, ONE_MINUS_SOURCE_ALPHA);
-			case INVERT: __context3D.setBlendFactorsSeparate(ONE_MINUS_DESTINATION_COLOR, ONE_MINUS_SOURCE_ALPHA, ZERO, ONE);
+			case ERASE:
+				__context3D.setBlendFactors(ZERO, ONE_MINUS_SOURCE_ALPHA);
+			case INVERT:
+				__context3D.setBlendFactorsSeparate(ONE_MINUS_DESTINATION_COLOR, ONE_MINUS_SOURCE_ALPHA, ZERO, ONE);
 			case LIGHTEN:
 				if (__blendMinMaxSupported)
 				{
@@ -1140,14 +1370,18 @@ class OpenGLRenderer extends DisplayObjectRenderer
 				}
 				else
 				{
+					// Alternative innacurate implementation if unsupported
 					__context3D.setBlendFactors(ONE, ONE);
 				}
-			case MULTIPLY: __context3D.setBlendFactors(DESTINATION_COLOR, ONE_MINUS_SOURCE_ALPHA);
-			case SCREEN: __context3D.setBlendFactors(ONE, ONE_MINUS_SOURCE_COLOR);
+			case MULTIPLY:
+				__context3D.setBlendFactors(DESTINATION_COLOR, ONE_MINUS_SOURCE_ALPHA);
+			case SCREEN:
+				__context3D.setBlendFactors(ONE, ONE_MINUS_SOURCE_COLOR);
 			case SUBTRACT:
 				__context3D.setBlendFactors(ONE, ONE);
 				__context3D.__setGLBlendEquation(0x800B); // GL_FUNC_REVERSE_SUBTRACT
-			default: __context3D.setBlendFactors(ONE, ONE_MINUS_SOURCE_ALPHA);
+			default:
+				__context3D.setBlendFactors(ONE, ONE_MINUS_SOURCE_ALPHA);
 		}
 	}
 
@@ -1166,6 +1400,8 @@ class OpenGLRenderer extends DisplayObjectRenderer
 	{
 		setShader(shaderBuffer.shader);
 		__currentShaderBuffer = shaderBuffer;
+
+		applyShaderBlend();
 	}
 
 	@:noCompletion private function __suspendClipAndMask():Void
@@ -1190,6 +1426,3 @@ class OpenGLRenderer extends DisplayObjectRenderer
 		}
 	}
 }
-#else
-typedef OpenGLRenderer = Dynamic;
-#end

@@ -1,14 +1,12 @@
 package openfl.net;
 
-#if !flash
+import haxe.Serializer;
+import haxe.Timer;
+import haxe.Unserializer;
 import haxe.io.Bytes;
 import haxe.io.BytesBuffer;
 import haxe.io.Eof;
 import haxe.io.Error;
-import haxe.Serializer;
-import haxe.Timer;
-import haxe.Unserializer;
-import openfl.utils._internal.Lib;
 import openfl.errors.IOError;
 import openfl.errors.SecurityError;
 import openfl.events.Event;
@@ -19,14 +17,11 @@ import openfl.utils.ByteArray;
 import openfl.utils.Endian;
 import openfl.utils.IDataInput;
 import openfl.utils.IDataOutput;
+import openfl.utils._internal.Lib;
 #if (js && html5)
-#if haxe4
-import js.lib.ArrayBuffer;
-#else
-import js.html.ArrayBuffer;
-#end
-import js.html.WebSocket;
 import js.Browser;
+import js.html.WebSocket;
+import js.lib.ArrayBuffer;
 #end
 #if sys
 import sys.net.Host;
@@ -123,10 +118,7 @@ import sys.net.Socket as SysSocket;
 						 Events of type `socketData` do not use the
 						 `ProgressEvent.bytesTotal` property.
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
+@:access(openfl.events.Event)
 class Socket extends EventDispatcher implements IDataInput implements IDataOutput
 {
 	/**
@@ -157,7 +149,7 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 	**/
 	public var connected(get, never):Bool;
 
-	#if (sys && (!flash_doc_gen || air_doc_gen))
+	#if sys
 	/**
 	 * The IP address this socket is bound to on the local machine.
 	**/
@@ -183,7 +175,7 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 	**/
 	public var objectEncoding:ObjectEncoding;
 
-	#if (sys && (!flash_doc_gen || air_doc_gen))
+	#if sys
 	/**
 		The IP address of the remote machine to which this socket is connected.
 
@@ -220,21 +212,6 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 	@:noCompletion private var __port:Int;
 	@:noCompletion private var __socket:#if sys SysSocket #else Dynamic #end;
 	@:noCompletion private var __timestamp:Float;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Socket.prototype, {
-			"bytesAvailable": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bytesAvailable (); }")},
-			"bytesPending": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bytesPending (); }")},
-			"connected": {get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_connected (); }")},
-			"endian": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_endian (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_endian (v); }")
-			}
-		});
-	}
-	#end
 
 	/**
 		Creates a new Socket object. If no parameters are specified, an
@@ -1043,12 +1020,36 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 	// Event Handlers
 	@:noCompletion private function socket_onClose(_):Void
 	{
-		dispatchEvent(new Event(Event.CLOSE));
+		#if openfl_pool_events
+		var closeEvent = Event.__pool.get();
+		closeEvent.type = Event.CLOSE;
+		#else
+		var closeEvent = new Event(Event.CLOSE);
+		#end
+
+		dispatchEvent(closeEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(closeEvent);
+		#end
 	}
 
 	@:noCompletion private function socket_onError(e):Void
 	{
-		dispatchEvent(new Event(IOErrorEvent.IO_ERROR));
+		// TODO: should this be an IOErrorEvent instead of an Event?
+		// if not, then we should add a comment explaining why
+		#if openfl_pool_events
+		var ioErrorEvent = Event.__pool.get();
+		ioErrorEvent.type = IOErrorEvent.IO_ERROR;
+		#else
+		var ioErrorEvent = new Event(IOErrorEvent.IO_ERROR);
+		#end
+
+		dispatchEvent(ioErrorEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(ioErrorEvent);
+		#end
 	}
 
 	@:noCompletion private function socket_onMessage(msg:Dynamic):Void
@@ -1074,7 +1075,20 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 
 		if (__input.bytesAvailable > 0)
 		{
-			dispatchEvent(new ProgressEvent(ProgressEvent.SOCKET_DATA, false, false, __input.bytesAvailable, 0));
+			#if openfl_pool_events
+			var socketDataEvent = ProgressEvent.__pool.get();
+			socketDataEvent.type = ProgressEvent.SOCKET_DATA;
+			socketDataEvent.bytesLoaded = __input.bytesAvailable;
+			socketDataEvent.bytesTotal = 0;
+			#else
+			var socketDataEvent = new ProgressEvent(ProgressEvent.SOCKET_DATA, false, false, __input.bytesAvailable, 0);
+			#end
+
+			dispatchEvent(socketDataEvent);
+
+			#if openfl_pool_events
+			ProgressEvent.__pool.release(socketDataEvent);
+			#end
 		}
 		#end
 	}
@@ -1082,7 +1096,19 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 	@:noCompletion private function socket_onOpen(_):Void
 	{
 		__connected = true;
-		dispatchEvent(new Event(Event.CONNECT));
+
+		#if openfl_pool_events
+		var connectEvent = Event.__pool.get();
+		connectEvent.type = Event.CONNECT;
+		#else
+		var connectEvent = new Event(Event.CONNECT);
+		#end
+
+		dispatchEvent(connectEvent);
+
+		#if openfl_pool_events
+		Event.__pool.release(connectEvent);
+		#end
 	}
 
 	@:noCompletion private function this_onEnterFrame(event:Event):Void
@@ -1131,7 +1157,7 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 				var peer = __socket.peer();
 				if (peer == null)
 				{
-					// not connected yet (hxcpp and hl)
+					// not connected yet hxcpp
 					if (Sys.time() - __timestamp > timeout / 1000)
 					{
 						doClose = true;
@@ -1144,7 +1170,6 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 			}
 			catch (e:Dynamic)
 			{
-				// not connected yet (neko)
 				if (Sys.time() - __timestamp > timeout / 1000)
 				{
 					doClose = true;
@@ -1202,7 +1227,18 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 		{
 			__cleanSocket();
 
-			dispatchEvent(new Event(Event.CLOSE));
+			#if openfl_pool_events
+			var closeEvent = Event.__pool.get();
+			closeEvent.type = Event.CLOSE;
+			#else
+			var closeEvent = new Event(Event.CLOSE);
+			#end
+
+			dispatchEvent(closeEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(closeEvent);
+			#end
 		}
 		else if (doClose)
 		{
@@ -1213,7 +1249,19 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 		else if (doConnect)
 		{
 			__connected = true;
-			dispatchEvent(new Event(Event.CONNECT));
+
+			#if openfl_pool_events
+			var connectEvent = Event.__pool.get();
+			connectEvent.type = Event.CONNECT;
+			#else
+			var connectEvent = new Event(Event.CONNECT);
+			#end
+
+			dispatchEvent(connectEvent);
+
+			#if openfl_pool_events
+			Event.__pool.release(connectEvent);
+			#end
 		}
 
 		if (bLength > 0)
@@ -1229,7 +1277,20 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 			__input = newInput;
 			__input.endian = __endian;
 
-			dispatchEvent(new ProgressEvent(ProgressEvent.SOCKET_DATA, false, false, newData.length, 0));
+			#if openfl_pool_events
+			var socketDataEvent = ProgressEvent.__pool.get();
+			socketDataEvent.type = ProgressEvent.SOCKET_DATA;
+			socketDataEvent.bytesLoaded = newData.length;
+			socketDataEvent.bytesTotal = 0;
+			#else
+			var socketDataEvent = new ProgressEvent(ProgressEvent.SOCKET_DATA, false, false, newData.length, 0);
+			#end
+
+			dispatchEvent(socketDataEvent);
+
+			#if openfl_pool_events
+			ProgressEvent.__pool.release(socketDataEvent);
+			#end
 		}
 
 		if (__socket != null)
@@ -1315,6 +1376,3 @@ class Socket extends EventDispatcher implements IDataInput implements IDataOutpu
 	}
 	#end
 }
-#else
-typedef Socket = flash.net.Socket;
-#end

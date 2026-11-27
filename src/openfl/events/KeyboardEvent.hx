@@ -1,7 +1,5 @@
 package openfl.events;
 
-#if !flash
-// import openfl.utils.ObjectPool;
 import openfl.ui.KeyLocation;
 
 /**
@@ -19,10 +17,6 @@ import openfl.ui.KeyLocation;
 	@see [Capturing keyboard input](https://books.openfl.org/openfl-developers-guide/keyboard-input/capturing-keyboard-input.html)
 	@see `openfl.ui.Keyboard`
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class KeyboardEvent extends Event
 {
 	/**
@@ -85,7 +79,6 @@ class KeyboardEvent extends Event
 	**/
 	public var charCode:Int;
 
-	#if (!openfl_doc_gen || !flash_doc_gen || air_doc_gen)
 	/**
 		Indicates whether the Command key is active (`true`) or inactive
 		(`false`). Supported for Mac OS only. On Mac OS, the `commandKey`
@@ -99,7 +92,6 @@ class KeyboardEvent extends Event
 		is active.
 	**/
 	public var controlKey:Bool;
-	#end
 
 	/**
 		On Windows and Linux, indicates whether the Ctrl key is active
@@ -135,9 +127,6 @@ class KeyboardEvent extends Event
 	public var shiftKey:Bool;
 
 	@:noCompletion private var __updateAfterEventFlag:Bool;
-
-	// @:noCompletion private static var __pool:ObjectPool<KeyboardEvent> = new ObjectPool<KeyboardEvent>(function() return new KeyboardEvent(null),
-	// function(event) event.__init());
 
 	/**
 		Creates an Event object that contains specific information about keyboard
@@ -180,20 +169,15 @@ class KeyboardEvent extends Event
 		ctrlKey = ctrlKeyValue;
 		altKey = altKeyValue;
 		shiftKey = shiftKeyValue;
-
-		#if !openfl_doc_gen
 		controlKey = controlKeyValue;
 		commandKey = commandKeyValue;
-		#end
 
 		__updateAfterEventFlag = false;
 	}
 
 	public override function clone():KeyboardEvent
 	{
-		var event = new KeyboardEvent(type, bubbles, cancelable, charCode, keyCode, keyLocation, ctrlKey, altKey, shiftKey
-			#if !openfl_doc_gen, controlKey, commandKey #end);
-
+		var event = new KeyboardEvent(type, bubbles, cancelable, charCode, keyCode, keyLocation, ctrlKey, altKey, shiftKey, controlKey, commandKey);
 		event.target = target;
 		event.currentTarget = currentTarget;
 		event.eventPhase = eventPhase;
@@ -233,15 +217,9 @@ class KeyboardEvent extends Event
 		ctrlKey = false;
 		altKey = false;
 		shiftKey = false;
-
-		#if !openfl_doc_gen
 		controlKey = false;
 		commandKey = false;
-		#end
 
 		__updateAfterEventFlag = false;
 	}
 }
-#else
-typedef KeyboardEvent = flash.events.KeyboardEvent;
-#end

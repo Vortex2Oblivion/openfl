@@ -1,10 +1,7 @@
 package openfl.geom;
 
-#if !flash
-import openfl.utils.ObjectPool;
-#if lime
 import lime.math.Rectangle as LimeRectangle;
-#end
+import openfl.utils.ObjectPool;
 
 /**
 	A Rectangle object is an area defined by its position, as indicated by its
@@ -53,15 +50,10 @@ import lime.math.Rectangle as LimeRectangle;
 	@see [Working with geometry](https://books.openfl.org/openfl-developers-guide/working-with-geometry/)
 	@see [Using Rectangle objects](https://books.openfl.org/openfl-developers-guide/working-with-geometry/using-rectangle-objects.html)
 **/
-#if !openfl_debug
-@:fileXml('tags="haxe,release"')
-@:noDebug
-#end
 class Rectangle
 {
-	#if lime
 	@:noCompletion private static var __limeRectangle:LimeRectangle;
-	#end
+
 	@:noCompletion private static var __pool:ObjectPool<Rectangle> = new ObjectPool<Rectangle>(function() return new Rectangle(),
 		function(r) r.setTo(0, 0, 0, 0));
 
@@ -166,42 +158,6 @@ class Rectangle
 		`top` property.
 	**/
 	public var y:Float;
-
-	#if openfljs
-	@:noCompletion private static function __init__()
-	{
-		untyped Object.defineProperties(Rectangle.prototype, {
-			"bottom": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bottom (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_bottom (v); }")
-			},
-			"bottomRight": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_bottomRight (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_bottomRight (v); }")
-			},
-			"left": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_left (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_left (v); }")
-			},
-			"right": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_right (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_right (v); }")
-			},
-			"size": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_size (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_size (v); }")
-			},
-			"top": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_top (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_top (v); }")
-			},
-			"topLeft": {
-				get: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function () { return this.get_topLeft (); }"),
-				set: untyped #if haxe4 js.Syntax.code #else __js__ #end ("function (v) { return this.set_topLeft (v); }")
-			},
-		});
-	}
-	#end
 
 	/**
 		Creates a new Rectangle object with the top-left corner specified by the
@@ -696,7 +652,6 @@ class Rectangle
 		if (cacheBottom < y + height) this.height = y + height - this.y;
 	}
 
-	#if lime
 	@:noCompletion private function __toLimeRectangle():LimeRectangle
 	{
 		if (__limeRectangle == null)
@@ -707,7 +662,6 @@ class Rectangle
 		__limeRectangle.setTo(x, y, width, height);
 		return __limeRectangle;
 	}
-	#end
 
 	@:noCompletion private function __transform(rect:Rectangle, m:Matrix):Void
 	{
@@ -826,6 +780,3 @@ class Rectangle
 		return p.clone();
 	}
 }
-#else
-typedef Rectangle = flash.geom.Rectangle;
-#end
