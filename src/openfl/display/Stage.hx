@@ -811,12 +811,6 @@ class Stage extends DisplayObjectContainer implements IModule
 	@:noCompletion private var __colorString:String;
 	@:noCompletion private var __contentsScaleFactor:Float;
 	@:noCompletion private var __currentTabOrderIndex:Int;
-<<<<<<< HEAD
-	#if (commonjs && !nodejs)
-	@:noCompletion private var __cursor:LimeMouseCursor;
-	#end
-=======
->>>>>>> shader-blends
 	@:noCompletion private var __deltaTime:Float;
 	@:noCompletion private var __dirty:Bool;
 	@:noCompletion private var __displayMatrix:Matrix;
@@ -1083,10 +1077,6 @@ class Stage extends DisplayObjectContainer implements IModule
 		if (__renderer != null)
 		{
 			__renderer.__clear();
-<<<<<<< HEAD
-
-=======
->>>>>>> shader-blends
 			__renderer.__allowSmoothing = (quality != LOW);
 			__renderer.__pixelRatio = #if openfl_disable_hdpi 1 #else window.scale #end;
 			__renderer.__worldTransform = __displayMatrix;
@@ -2136,11 +2126,7 @@ class Stage extends DisplayObjectContainer implements IModule
 			__enterFrame(__deltaTime);
 		}
 
-<<<<<<< HEAD
-		__deltaTime = 0;
-=======
 		__deltaTime = 0.0;
->>>>>>> shader-blends
 
 		var cancelled = __render(context);
 		if (cancelled)
