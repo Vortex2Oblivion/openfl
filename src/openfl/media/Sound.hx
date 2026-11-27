@@ -642,7 +642,7 @@ class Sound extends EventDispatcher
 
 		var audioBuffer = new AudioBuffer();
 		audioBuffer.channels = channels;
-		audioBuffer.dataFormat = (format == "float" ? F32 : S16);
+		//audioBuffer.dataFormat = (format == "float" ? F32 : S16);
 		audioBuffer.data = new UInt8Array(bytes);
 		audioBuffer.sampleRate = Std.int(sampleRate);
 		__buffer = audioBuffer;

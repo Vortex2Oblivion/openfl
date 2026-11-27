@@ -220,7 +220,6 @@ class BitmapData implements IBitmapDrawable
 	@:noCompletion private var __worldTransform:Matrix;
 	@:noCompletion private var __asset:Bool;
 	@:noCompletion private var __renderer:OpenGLRenderer;
-	@:noCompletion private var __renderer:OpenGLRenderer;
 
 	/**
 		Creates a BitmapData object with a specified width and height. If you specify a value for
@@ -1369,8 +1368,6 @@ class BitmapData implements IBitmapDrawable
 
 		@see `BitmapData.readable`
 	**/
-	public static function fromTexture(texture:TextureBase, shared:Bool = true):BitmapData
-
 	public static function fromTexture(texture:TextureBase, shared:Bool = true):BitmapData
 	{
 		if (texture == null) return null;

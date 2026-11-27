@@ -230,7 +230,6 @@ class CairoRenderer extends DisplayObjectRenderer
 
 	@:noCompletion private function __setBlendModeCairo(cairo:Cairo, value:BlendMode):Void
 	{
-		#if lime
 		switch (value)
 		{
 			case ADD:
@@ -278,4 +277,5 @@ class CairoRenderer extends DisplayObjectRenderer
 			default:
 				cairo.setOperator(CairoOperator.OVER);
 		}
-		}}
+	}
+}

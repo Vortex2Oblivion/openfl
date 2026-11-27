@@ -25,7 +25,7 @@ import openfl.display3D.textures.MultiBufferTexture;
 import openfl.display3D.textures.RectangleTexture;
 import openfl.display3D.textures.S3TCTexture;
 import openfl.display3D.textures.Texture;
-import openfl.display3D.textures.ASTCTexture;
+import openfl.display3D.textures.TextureBase;
 import openfl.display3D.textures.VideoTexture;
 import openfl.errors.Error;
 import openfl.errors.IllegalOperationError;
@@ -35,16 +35,6 @@ import openfl.geom.Point;
 import openfl.geom.Rectangle;
 import openfl.utils.AGALMiniAssembler;
 import openfl.utils.ByteArray;
-import openfl.display.OpenGLRenderer;
-#if lime
-import lime.graphics.opengl.GL;
-import lime.graphics.Image;
-import lime.graphics.ImageBuffer;
-import lime.graphics.RenderContext;
-import lime.graphics.WebGLRenderContext;
-import lime.math.Rectangle as LimeRectangle;
-import lime.math.Vector2;
-#end
 
 /**
 	The Context3D class provides a context for rendering geometrically defined graphics.
@@ -136,7 +126,6 @@ import lime.math.Vector2;
 	and AIR.
 **/
 @:access(openfl.display3D._internal.Context3DState)
-@:access(openfl.display3D.textures.ASTCTexture)
 @:access(openfl.display3D.textures.ASTCTexture)
 @:access(openfl.display3D.textures.CubeTexture)
 @:access(openfl.display3D.textures.RectangleTexture)
@@ -270,6 +259,7 @@ import lime.math.Vector2;
 	@:noCompletion private static var __glTextureMaxAnisotropy:Int = -1;
 
 	@:noCompletion private var gl:WebGL2RenderContext;
+	@:noCompletion private var __backBufferDirty:Bool = true;
 	@:noCompletion private var __backBufferAntiAlias:Int;
 	@:noCompletion private var __backBufferTexture:RectangleTexture;
 	@:noCompletion private var __backBufferWantsBestResolution:Bool;
@@ -291,7 +281,6 @@ import lime.math.Vector2;
 	@:noCompletion private var __stage3D:Stage3D;
 	@:noCompletion private var __state:Context3DState;
 	@:noCompletion private var __vertexConstants:Float32Array;
-	@:noCompletion private var __usingComplexBlend:Bool;
 
 	@:noCompletion private function new(stage:Stage, contextState:Context3DState = null, stage3D:Stage3D = null)
 	{
@@ -485,6 +474,7 @@ import lime.math.Vector2;
 			{
 				if (__stage.context3D == this && !__stage.__renderer.__cleared) __stage.__renderer.__cleared = true;
 				__cleared = true;
+				if (__state.renderToTexture == null) __backBufferDirty = true;
 			}
 
 			clearMask |= gl.COLOR_BUFFER_BIT;
@@ -999,6 +989,39 @@ import lime.math.Vector2;
 	}
 
 	/**
+		Checks whether S3TC (DXT1, DXT3, DXT5) texture compression is supported on this Context3D instance.
+
+		@return `true` if S3TC textures can be used on this device, `false` otherwise.
+	**/
+	public function isS3TCSupported():Bool
+	{
+		if (S3TCTexture.__s3tcCompressedTexturesSupported == null)
+		{
+			S3TCTexture.__s3tcCompressedTexturesSupported = gl.getSupportedExtensions().contains("EXT_texture_compression_s3tc");
+		}
+
+		return S3TCTexture.__s3tcCompressedTexturesSupported == true;
+	}
+
+	/**
+		Creates a new S3TCTexture instance from S3TC-compressed data.
+
+		You must check `isS3TCSupported()` before calling this method.
+
+		@param data A ByteArray containing S3TC-compressed texture data.
+		@return An `S3TCTexture` ready for use in rendering.
+
+		@throws IllegalOperationError If S3TC is not supported on this device (missing extension).
+		@throws IllegalOperationError If the S3TC signature in `data` is invalid.
+		@throws IllegalOperationError If the S3TC compression format is not supported.
+		@throws IllegalOperationError If the S3TC file is too short for header + blocks.
+	**/
+	public function createS3TCTexture(data:ByteArray):S3TCTexture
+	{
+		return new S3TCTexture(this, data);
+	}
+
+	/**
 		Creates a VertexBuffer3D object.
 
 		Use a VertexBuffer3D object to upload a set of vertex data to the rendering
@@ -1302,21 +1325,9 @@ import lime.math.Vector2;
 
 		__bindGLElementArrayBuffer(indexBuffer.__id);
 
-		if (OpenGLRenderer.__coherentBlendsSupported)
-		{
-			gl.enable(0x9285); // BLEND_ADVANCED_COHERENT_KHR
-		}
-		else if (__usingComplexBlend)
-		{
-			gl.blendBarrier();
-		}
+		if (__state.renderToTexture == null) __backBufferDirty = true;
 
 		gl.drawElements(gl.TRIANGLES, count, gl.UNSIGNED_SHORT, firstIndex * 2);
-
-		if (OpenGLRenderer.__coherentBlendsSupported)
-		{
-			gl.disable(0x9285); // BLEND_ADVANCED_COHERENT_KHR
-		}
 	}
 
 	/**
@@ -2097,30 +2108,59 @@ import lime.math.Vector2;
 		}
 	}
 
-	@:noCompletion public function __copyRenderTarget(target:TextureBase, width:Int, height:Int, ?flush:Bool = true):Bool
+	@:noCompletion public function __copyRenderTarget(target:TextureBase, width:Int, height:Int):Bool
 	{
 		if (target == null || width <= 0 || height <= 0) return false;
 
-		final texture = target.__getTexture();
-		if (texture == null) return false;
+		__flushGLFramebuffer();
 
-		if (flush) __flushGLFramebuffer();
-		__setGLActiveTexture(0);
-		__bindGLTexture2D(texture);
-		gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 0, 0, width, height);
+		final state = __contextState.renderToTexture != null ? __contextState : __state;
+		var bufferW:Int = width;
+		var bufferH:Int = height;
+		if (__contextState.renderToTexture != null)
+		{
+			bufferW = state.renderToTexture.__width;
+			bufferH = state.renderToTexture.__height;
+		}
 
-		return true;
+		return __blitToTexture(__contextState.__currentGLFramebuffer, bufferW, bufferH, target, width, height, __state.renderToTextureDepthStencil,
+			__state.renderToTextureAntiAlias, __state.renderToTextureSurfaceSelector);
 	}
 
-	@:noCompletion public inline function __copyBackBuffer(target:TextureBase, width:Int, height:Int):Bool
+	@:noCompletion public function __copyBackBuffer(target:TextureBase, width:Int, height:Int):Bool
+	{
+		if (target == null || width <= 0 || height <= 0) return false;
+
+		return __blitToTexture(__state.__primaryGLFramebuffer, backBufferWidth, backBufferHeight, target, width, height,
+			__state.backBufferEnableDepthAndStencil, __backBufferAntiAlias, 0);
+	}
+
+	@:noCompletion private function __blitToTexture(srcFramebuffer:GLFramebuffer, srcWidth:Int, srcHeight:Int, target:TextureBase, width:Int, height:Int,
+			enableDepthAndStencil:Bool, antiAlias:Int, surfaceSelector:Int):Bool
 	{
 		final cacheFB = __contextState.__currentGLFramebuffer;
-		__bindGLFramebuffer(__state.__primaryGLFramebuffer);
 
-		final res = __copyRenderTarget(target, width, height, false);
-		__bindGLFramebuffer(cacheFB);
+		final framebuffer = target.__getGLFramebuffer(enableDepthAndStencil, antiAlias, surfaceSelector);
+		if (framebuffer == null)
+		{
+			gl.bindFramebuffer(gl.FRAMEBUFFER, cacheFB);
+			__contextState.__currentGLFramebuffer = cacheFB;
+			return false;
+		}
 
-		return res;
+		final scissor = __contextState.__enableGLScissorTest;
+		if (scissor) gl.disable(gl.SCISSOR_TEST);
+
+		gl.bindFramebuffer(gl.READ_FRAMEBUFFER, srcFramebuffer);
+		gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, framebuffer);
+		gl.blitFramebuffer(0, 0, srcWidth, srcHeight, 0, 0, width, height, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+
+		if (scissor) gl.enable(gl.SCISSOR_TEST);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, cacheFB);
+		__contextState.__currentGLFramebuffer = cacheFB;
+
+		return true;
 	}
 
 	@:noCompletion private function __bindGLFramebuffer(framebuffer:GLFramebuffer):Void
@@ -2229,21 +2269,9 @@ import lime.math.Vector2;
 			__state.program.__flush();
 		}
 
-		if (OpenGLRenderer.__coherentBlendsSupported)
-		{
-			gl.enable(0x9285); // BLEND_ADVANCED_COHERENT_KHR
-		}
-		else if (__usingComplexBlend)
-		{
-			gl.blendBarrier();
-		}
+		if (__state.renderToTexture == null) __backBufferDirty = true;
 
 		gl.drawArrays(gl.TRIANGLES, firstIndex, count);
-
-		if (OpenGLRenderer.__coherentBlendsSupported)
-		{
-			gl.disable(0x9285); // BLEND_ADVANCED_COHERENT_KHR
-		}
 	}
 
 	@:noCompletion private function __flushGL():Void
@@ -2573,13 +2601,11 @@ import lime.math.Vector2;
 					__bindGLTextureCubeMap(texture.__getTexture());
 				}
 
-				#if lime
 				if (__context.type == OPENGL)
 				{
 					// TODO: Cache?
 					gl.enable(gl.TEXTURE_2D);
 				}
-				#end
 
 				__contextState.textures[i] = texture;
 
@@ -2594,37 +2620,12 @@ import lime.math.Vector2;
 
 			if (__state.program != null && __state.program.__format == AGAL && samplerState.textureAlpha)
 			{
-				gl.activeTexture(gl.TEXTURE0 + sampler + 4);
+				__setGLActiveTexture(sampler + 4);
 
-				if (texture != null && texture.__alphaTexture != null)
+				__bindGLTexture2D(null);
+				if (__state.program.__agalAlphaSamplerEnabled[sampler] != null)
 				{
-					if (texture.__alphaTexture.__textureTarget == gl.TEXTURE_2D)
-					{
-						__bindGLTexture2D(texture.__alphaTexture.__getTexture());
-					}
-					else
-					{
-						__bindGLTextureCubeMap(texture.__alphaTexture.__getTexture());
-					}
-
-					texture.__alphaTexture.__setSamplerState(samplerState);
-					gl.uniform1i(__state.program.__agalAlphaSamplerEnabled[sampler].location, 1);
-
-					#if lime
-					if (__context.type == OPENGL)
-					{
-						// TODO: Cache?
-						gl.enable(gl.TEXTURE_2D);
-					}
-					#end
-				}
-				else
-				{
-					__bindGLTexture2D(null);
-					if (__state.program.__agalAlphaSamplerEnabled[sampler] != null)
-					{
-						gl.uniform1i(__state.program.__agalAlphaSamplerEnabled[sampler].location, 0);
-					}
+					gl.uniform1i(__state.program.__agalAlphaSamplerEnabled[sampler].location, 0);
 				}
 			}
 
@@ -2926,11 +2927,6 @@ import lime.math.Vector2;
 			}
 			__contextState.__enableGLStencilTest = enable;
 		}
-	}
-
-	@:noCompletion private inline function __glBlendBarrier():Void
-	{
-		gl.blendBarrier();
 	}
 
 	@:noCompletion private inline function __glBlendBarrier():Void

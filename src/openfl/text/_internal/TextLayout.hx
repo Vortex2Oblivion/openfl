@@ -104,7 +104,8 @@ class TextLayout
 			if (__font != font || __hbFontSize != size)
 			{
 				__font = font;
-				__font.setSize(size);
+				@:privateAccess
+				__font.__setSize(size);
 
 				__hbFont = new HBFTFont(font);
 				__hbFontSize = size;
@@ -123,7 +124,8 @@ class TextLayout
 				// with different sizes, so the size may have been changed by
 				// another TextLayout since this method was last called. we can
 				// simply restore our size, though.
-				font.setSize(size);
+				@:privateAccess
+				__font.__setSize(size);
 			}
 
 			if (__hbBuffer == null)
@@ -139,7 +141,7 @@ class TextLayout
 			__hbBuffer.script = script.toHBScript();
 			__hbBuffer.language = new HBLanguage(language);
 			__hbBuffer.clusterLevel = HBBufferClusterLevel.CHARACTERS;
-			__hbBuffer.addString(text, 0, -1);
+			//__hbBuffer.addString(text, 0, -1);
 
 			HB.shape(__hbFont, __hbBuffer);
 

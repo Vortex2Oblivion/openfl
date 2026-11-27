@@ -45,6 +45,7 @@ class TextureBase extends EventDispatcher
 	@:noCompletion private var __textureContext:RenderContext;
 	@:noCompletion private var __textureID:GLTexture;
 	@:noCompletion private var __textureTarget:Int;
+	@:noCompletion private var __alphaTexture:TextureBase;
 
 	@:noCompletion private function new(context:Context3D, ?format:Context3DTextureFormat)
 	{
@@ -105,6 +106,12 @@ class TextureBase extends EventDispatcher
 	public function dispose():Void
 	{
 		var gl = __context.gl;
+
+		if (__alphaTexture != null)
+		{
+			__alphaTexture.dispose();
+			__alphaTexture = null;
+		}
 
 		if (__textureID != null)
 		{
@@ -312,11 +319,8 @@ class TextureBase extends EventDispatcher
 			gl.texParameteri(__textureTarget, gl.TEXTURE_WRAP_S, wrapModeS);
 			gl.texParameteri(__textureTarget, gl.TEXTURE_WRAP_T, wrapModeT);
 
-			if (__samplerState == null)
-			{
-				__samplerState = state.clone();
-			}
-			#end
+
+			__samplerState ??= state.clone();
 
 			__samplerState.copyFrom(state);
 

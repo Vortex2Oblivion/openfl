@@ -34,7 +34,6 @@ class Application extends LimeApplication
 	public var window:Window;
 	#end
 
-
 	public function new()
 	{
 		super();
@@ -78,7 +77,6 @@ class Application extends LimeApplication
 			Lib.current.__loaderInfo.height = window.height;
 		}
 		#end
-
 		return window;
 	}
 
@@ -99,11 +97,6 @@ class Application extends LimeApplication
 			window.onRenderContextLost.add(onRenderContextLost);
 			window.onRenderContextRestored.add(onRenderContextRestored);
 			window.onDeactivate.add(onWindowDeactivate);
-			window.onDropFile.add(onWindowDropFile);
-			window.onDropText.add(onWindowDropText);
-			window.onDropBegin.add(onWindowDropBegin);
-			window.onDropComplete.add(onWindowDropComplete);
-			window.onDropPosition.add(onWindowDropPosition);
 			window.onEnter.add(onWindowEnter);
 			window.onExpose.add(onWindowExpose);
 			window.onFocusIn.add(onWindowFocusIn);
@@ -111,8 +104,8 @@ class Application extends LimeApplication
 			window.onFullscreen.add(onWindowFullscreen);
 			window.onKeyDown.add(onKeyDown);
 			window.onKeyUp.add(onKeyUp);
-			window.onKeyDownPrecise.add(onKeyDownPrecise);
-			window.onKeyUpPrecise.add(onKeyUpPrecise);
+			/*window.onKeyDownPrecise.add(onKeyDownPrecise);
+			window.onKeyUpPrecise.add(onKeyUpPrecise);*/
 			window.onLeave.add(onWindowLeave);
 			window.onMinimize.add(onWindowMinimize);
 			window.onMouseDown.add(onMouseDown);
@@ -137,31 +130,8 @@ class Application extends LimeApplication
 		}
 
 		onCreateWindow.dispatch(window);
-
-		return window;
 	}
 
-	@:noCompletion override public function exec():Int
-	{
-		#if (!flash && sys && (!flash_doc_gen || air_doc_gen))
-		// wait for the first update to dispatch invoke event
-		// to ensure that the document class constructor has completed
-		onUpdate.add(function(delta:Float):Void		{
-			if (NativeApplication.nativeApplication.hasEventListener(InvokeEvent.INVOKE))
-			{
-				var args = Sys.args();
-				var cwd = new openfl.filesystem.File(Sys.getCwd());
-				var invokeEvent = new openfl.events.InvokeEvent(InvokeEvent.INVOKE, false, false, cwd, args);
-				NativeApplication.nativeApplication.dispatchEvent(invokeEvent);
-			}
-		}, true);
-		#end
-
-		return super.exec();
-	}
-	#end
-
-	#if (lime >= "8.1.0")
 	@:noCompletion override private function __checkForAllWindowsClosed():Void
 	{
 		if (__windows.length > 0)

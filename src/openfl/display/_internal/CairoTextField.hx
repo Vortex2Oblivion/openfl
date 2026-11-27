@@ -443,7 +443,7 @@ class CairoTextField
 						cairo.closePath();
 					}
 
-					if (group.format.strikethrough)
+					/*if (group.format.strikethrough)
 					{
 						var strikethroughThickness:Float;
 						if (font != null && font.strikethroughThickness != 0.0)
@@ -472,7 +472,7 @@ class CairoTextField
 						cairo.lineTo(x + group.width, y);
 						cairo.stroke();
 						cairo.closePath();
-					}
+					}*/
 				}
 			}
 		}
